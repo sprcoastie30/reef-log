@@ -234,6 +234,11 @@ table.calc td.res { font-weight: 500; color: var(--ink); }
 .pill.fail { background: var(--bad-bg); color: var(--bad); }
 .cons-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
 .cons-guide p + p { margin-top: 4px; }
+.ro-stages { display: flex; flex-direction: column; gap: 8px; }
+.ro-stage { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr) auto; gap: 6px 10px; align-items: end; padding: 8px 0; border-bottom: 1px solid var(--grid); }
+.ro-stage .btns { display: flex; gap: 6px; }
+.ro-stage .btns button { padding: 5px 8px; font-size: 0.75rem; }
+@media (max-width: 620px) { .ro-stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .ro-stage .field:first-child { grid-column: 1 / -1; } .ro-stage .btns { grid-column: 1 / -1; } }
 .ls-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
 .ls-summary div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .ls-summary .big { font-family: var(--f-mono); font-size: 1.4rem; font-weight: 500; }
@@ -458,6 +463,37 @@ details.backup summary { cursor: pointer; list-style: revert; }
       <section class="panel">
         <h2>Test gear &amp; calibration log</h2>
         <div id="gear-list"><div class="skeleton">Loading test gear…</div></div>
+      </section>
+    </div>
+    <div class="cols" id="rodi-panel">
+      <section class="panel" id="rodi-setup">
+        <div><h2>RO/DI system</h2><p class="hint">List each filter stage and when it went in. Replacement reminders go into the schedule above and the calendar file.</p></div>
+        <div class="fields">
+          <div class="field" style="grid-column:1/-1"><label for="ro-name"><b>Unit</b></label><input id="ro-name" type="text" maxlength="60" placeholder="e.g. BRS 4-stage Universal"></div>
+          <div class="field"><label for="ro-rated"><b>Membrane rated rejection</b> %</label><input id="ro-rated" type="number" step="0.5" min="50" max="100" value="96"></div>
+          <div class="field"><label for="ro-check"><b>Log readings every</b> days</label><input id="ro-check" type="number" step="1" min="1" max="120" value="14"></div>
+        </div>
+        <div class="form-actions" id="ro-presets"><span class="label">Start from</span>
+          <button type="button" data-ropreset="4">4-stage</button><button type="button" data-ropreset="5">5-stage (2 carbon)</button><button type="button" data-ropreset="6">6-stage (2 carbon, 2 DI)</button><button type="button" data-ropreset="add">Add a stage</button>
+        </div>
+        <div id="ro-stages"></div>
+        <div class="form-actions"><button type="button" class="primary" id="ro-save">Save RO/DI setup</button><span class="status" id="ro-status" role="status"></span></div>
+      </section>
+      <section class="panel">
+        <h2>RO/DI readings</h2>
+        <div id="ro-summary"></div>
+        <div class="fields three">
+          <div class="field"><label for="rl-date"><b>Date</b></label><input id="rl-date" type="date"></div>
+          <div class="field"><label for="rl-tap"><b>Tap in</b> TDS ppm</label><input id="rl-tap" type="number" step="1" min="0"></div>
+          <div class="field"><label for="rl-ro"><b>After RO</b> TDS ppm</label><input id="rl-ro" type="number" step="0.1" min="0"></div>
+          <div class="field"><label for="rl-di"><b>After DI</b> TDS ppm</label><input id="rl-di" type="number" step="0.1" min="0"></div>
+          <div class="field"><label for="rl-cl"><b>Waste chlorine</b> ppm</label><input id="rl-cl" type="number" step="0.1" min="0" placeholder="Test strip"></div>
+          <div class="field"><label for="rl-psi"><b>Pressure</b> psi</label><input id="rl-psi" type="number" step="1" min="0"></div>
+        </div>
+        <div class="field"><label for="rl-note"><b>Notes</b></label><input id="rl-note" type="text" maxlength="160" placeholder="Resin color, gallons made, anything odd"></div>
+        <div class="form-actions"><button type="button" class="primary" id="rl-save">Save reading</button><span class="status" id="rl-status" role="status"></span></div>
+        <div class="chart" id="ro-chart" style="height:160px"></div>
+        <div id="ro-list"></div>
       </section>
     </div>
   </div>
@@ -1468,6 +1504,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       .concat(gearReminders().map(r => r.kind === "expiry"
         ? { ...r, due: { next: r.expires, d: r.d, cls: r.d < 0 ? "over" : r.d <= 7 ? "due" : "soon", label: r.d < 0 ? "Expired " + (-r.d) + " days ago" : r.d === 0 ? "Expires today" : "Expires in " + r.d + " days" } }
         : { ...r, due: taskDue(r) }))
+      .concat(rodiReminders().map(r => r.kind === "now" ? { ...r, due: { next: today(), d: 0, cls: "over", label: "Replace now" } } : { ...r, due: taskDue(r) }))
       .sort((a, b) => a.due.d - b.due.d || String(a.name).localeCompare(String(b.name)));
   }
   function renderDueChip(){
@@ -1492,14 +1529,15 @@ details.backup summary { cursor: pointer; list-style: revert; }
     host.innerHTML = list.map(r => {
       const meta = [];
       if (r.kind === "expiry") meta.push("Reagent expiry " + dstr(toTs(r.expires, "12:00")));
+      else if (r.kind === "now") meta.push("From your latest RO/DI reading (Bulk Reef Supply's replacement guidance)");
       else { meta.push("Every " + r.every + (r.every === 1 ? " day" : " days")); meta.push(r.lastDone ? "Last " + dstr(toTs(r.lastDone, "12:00")) : "Never logged"); if (r.due.d !== 0 || r.lastDone) meta.push("Next " + dshort(toTs(r.due.next, "12:00"))); }
       if (r.kind === "test" && r.params && r.params.length) meta.push("Logs " + r.params.map(k => (PARAMS.find(p => p.key === k) || {}).name || k).join(", "));
       if (r.marker) meta.push("Marks " + r.marker);
-      const btns = !canWrite ? "" : r.virtual
+      const btns = !canWrite ? "" : r.rodi ? '<button type="button" data-rodiopen="1">Open RO/DI</button>' : r.virtual
         ? '<button type="button" data-gearopen="' + esc(r.gearId) + '">' + (r.kind === "expiry" ? "Update" : "Log check") + '</button>'
         : (r.kind === "test" ? '<button type="button" data-mtlog="' + esc(r.id) + '">Log test</button>' : '') +
           '<button type="button" class="primary" data-mtdone="' + esc(r.id) + '">Done</button><button type="button" data-mtedit="' + esc(r.id) + '">Edit</button><button type="button" class="danger" data-mtdel="' + esc(r.id) + '">Delete</button>';
-      return '<div class="mt-item ' + r.due.cls + '"><span class="bar"></span><div style="min-width:0"><div class="name">' + esc(r.name) + (r.virtual ? ' <span class="hint">· test gear</span>' : '') + '</div>' +
+      return '<div class="mt-item ' + r.due.cls + '"><span class="bar"></span><div style="min-width:0"><div class="name">' + esc(r.name) + (r.virtual ? ' <span class="hint">· ' + (r.rodi ? "RO/DI" : "test gear") + '</span>' : '') + '</div>' +
         '<div class="meta">' + meta.map(m => '<span>' + esc(m) + '</span>').join("") + '</div>' + (r.notes ? '<div class="notes">' + esc(r.notes) + '</div>' : '') + '</div>' +
         '<div class="side"><span class="pill ' + r.due.cls + '">' + esc(r.due.label) + '</span><div class="btns">' + btns + '</div></div></div>';
     }).join("");
@@ -1532,6 +1570,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const done = ev.target.closest("[data-mtdone]"), ed = ev.target.closest("[data-mtedit]"), del = ev.target.closest("[data-mtdel]"), lg = ev.target.closest("[data-mtlog]"), go = ev.target.closest("[data-gearopen]");
     if (done) { const t = tasks.find(x => x.id === done.dataset.mtdone); if (t) { try { await markTaskDone(t, ymdToday(), true); } catch (e) { setStatus("m-status", "Couldn't update that task.", true); } } }
     if (lg) { const t = tasks.find(x => x.id === lg.dataset.mtlog); showTab("chemistry", true); $("entry").scrollIntoView({ block: "start" }); const k = t && t.params && t.params[0]; if (k) $("f-" + k).focus({ preventScroll: true }); }
+    const ro = ev.target.closest("[data-rodiopen]"); if (ro) { $("rodi-panel").scrollIntoView({ block: "start" }); return; }
     if (go) { gearOpen = go.dataset.gearopen; renderGear(); const el = document.getElementById("gi-" + gearOpen); if (el) el.scrollIntoView({ block: "center" }); }
     if (ed) {
       const t = tasks.find(x => x.id === ed.dataset.mtedit); if (!t) return;
@@ -1647,7 +1686,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Reef Log//Maintenance//EN", "CALSCALE:GREGORIAN", "X-WR-CALNAME:" + icsEsc(tankName + " maintenance")];
     let n = 0;
     allReminders().forEach(r => {
-      if (r.kind === "expiry") return;
+      if (r.kind === "expiry" || r.kind === "now") return;
       const start = r.due.d < 0 ? ymdToday() : r.due.next;
       lines.push("BEGIN:VEVENT", "UID:" + r.id + "@reef-log", "DTSTAMP:" + stampNow, "DTSTART:" + start.replace(/-/g, "") + "T" + time, "DURATION:PT15M",
         "RRULE:FREQ=DAILY;INTERVAL=" + Math.max(1, r.every || 1), "SUMMARY:" + icsEsc("Reef: " + r.name),
@@ -1672,6 +1711,113 @@ details.backup summary { cursor: pointer; list-style: revert; }
   try { const t = localStorage.getItem("reef-mt-time"); if (t) $("mt-time").value = t; } catch (e) {}
   $("mt-time").addEventListener("change", () => { try { localStorage.setItem("reef-mt-time", $("mt-time").value); } catch (e) {} });
   mtReset(); gReset();
+
+  // ---------- RO/DI system and readings ----------
+  // Defaults follow Bulk Reef Supply's guidance: sediment every 6-12 months (or on pressure drop), carbon every 12 months
+  // (or at >0.5 ppm chlorine in the waste water), membrane when rejection falls below its rated %, DI when output TDS > 0.
+  const RO_KINDS = {
+    sediment: { label: "Sediment filter", months: 6, rule: "Every 6–12 months, or sooner if pressure drops before the membrane." },
+    carbon:   { label: "Carbon block", months: 12, rule: "Every 12 months, or right away if the waste water shows more than 0.5 ppm total chlorine." },
+    membrane: { label: "RO membrane", months: 24, rule: "When rejection falls below its rated %. Two years or more is common with regular prefilter changes." },
+    di:       { label: "DI resin", months: 0, rule: "As soon as output TDS reads above 0, or when 75% of color-changing resin has changed color." },
+    other:    { label: "Other stage", months: 0, rule: "" }
+  };
+  const RO_PRESETS = { 4: ["sediment","carbon","membrane","di"], 5: ["sediment","carbon","carbon","membrane","di"], 6: ["sediment","carbon","carbon","membrane","di","di"] };
+  let rodi = null, roStages = [], roLog = [], roLoaded = false;
+  const roStageName = (s, i) => (s.label || RO_KINDS[s.kind]?.label || "Stage") + (roStages.filter(x => x.kind === s.kind).length > 1 ? " " + (roStages.filter((x, j) => x.kind === s.kind && j <= i).length) : "");
+  function roLatest(){ return [...roLog].sort((a, b) => b.ts - a.ts)[0] || null; }
+  const rejection = r => r && r.tap > 0 && r.ro != null ? (1 - r.ro / r.tap) * 100 : null;
+  function renderRoStages(){
+    $("ro-stages").innerHTML = roStages.length ? '<div class="ro-stages">' +
+      roStages.map((s, i) => '<div class="ro-stage"><div class="field"><label for="rsk-' + i + '"><b>Stage ' + (i + 1) + '</b></label><select id="rsk-' + i + '" data-rsk="' + i + '">' + Object.entries(RO_KINDS).map(([k, v]) => '<option value="' + k + '"' + (k === s.kind ? " selected" : "") + '>' + esc(v.label) + '</option>').join("") + '</select></div>' +
+        '<div class="field"><label for="rsi-' + i + '">Installed</label><input id="rsi-' + i + '" type="date" data-rsi="' + i + '" value="' + esc(s.installed || "") + '"></div>' +
+        '<div class="field"><label for="rsm-' + i + '">Replace every (mo)</label><input id="rsm-' + i + '" type="number" min="0" max="120" step="1" data-rsm="' + i + '" value="' + (s.months || "") + '" placeholder="' + (s.kind === "di" ? "by TDS" : "") + '"></div>' +
+        '<div class="btns"><button type="button" data-rsr="' + i + '">Replaced today</button><button type="button" class="danger" data-rsx="' + i + '">Remove</button></div></div>').join("") + '</div>' +
+      '<div class="hint" style="display:flex;flex-direction:column;gap:4px;margin-top:6px">' + [...new Set(roStages.map(s => s.kind))].filter(k => RO_KINDS[k].rule).map(k => '<span><b>' + esc(RO_KINDS[k].label) + ':</b> ' + esc(RO_KINDS[k].rule) + '</span>').join("") + '<span>Guidance: Bulk Reef Supply.</span></div>'
+      : '<p class="hint">No stages yet. Start from a common layout above, then set each install date.</p>';
+  }
+  function readRoStages(){
+    document.querySelectorAll("[data-rsk]").forEach(el => { const i = +el.dataset.rsk; roStages[i].kind = el.value; });
+    document.querySelectorAll("[data-rsi]").forEach(el => { const i = +el.dataset.rsi; roStages[i].installed = el.value || ""; });
+    document.querySelectorAll("[data-rsm]").forEach(el => { const i = +el.dataset.rsm; roStages[i].months = Math.max(0, Math.round(num(el.value) || 0)); });
+  }
+  $("ro-presets").addEventListener("click", ev => {
+    const b = ev.target.closest("[data-ropreset]"); if (!b) return;
+    readRoStages();
+    const mk = k => ({ id: Math.random().toString(36).slice(2, 9), kind: k, installed: "", months: RO_KINDS[k].months });
+    if (b.dataset.ropreset === "add") roStages.push(mk("other")); else roStages = RO_PRESETS[b.dataset.ropreset].map(mk);
+    renderRoStages();
+  });
+  $("ro-stages").addEventListener("change", ev => { const el = ev.target; if (el.dataset.rsk != null) { readRoStages(); const s = roStages[+el.dataset.rsk]; s.months = RO_KINDS[s.kind].months; renderRoStages(); } });
+  $("ro-stages").addEventListener("click", async ev => {
+    const r = ev.target.closest("[data-rsr]"), x = ev.target.closest("[data-rsx]");
+    if (r) { readRoStages(); roStages[+r.dataset.rsr].installed = today(); renderRoStages(); await saveRodi(); }
+    if (x) { readRoStages(); roStages.splice(+x.dataset.rsx, 1); renderRoStages(); }
+  });
+  async function saveRodi(){
+    if (!db) { setStatus("ro-status", "Saving isn't available in this view.", true); return; }
+    readRoStages();
+    const rec = { name: $("ro-name").value.trim(), rated: num($("ro-rated").value) || 96, checkEvery: Math.max(1, Math.round(num($("ro-check").value) || 14)), stages: roStages };
+    try { await db.doc("settings/rodi").set(rec); setStatus("ro-status", "RO/DI setup saved."); } catch (e) { setStatus("ro-status", "Couldn't save the setup.", true); }
+  }
+  $("ro-save").addEventListener("click", saveRodi);
+  function applyRodi(d){
+    rodi = d || null; roStages = d && Array.isArray(d.stages) ? d.stages.map(s => ({ ...s })) : [];
+    $("ro-name").value = d && d.name || ""; $("ro-rated").value = d && d.rated || 96; $("ro-check").value = d && d.checkEvery || 14;
+    renderRoStages(); renderRoReadings(); renderMaintenance();
+  }
+  // reminders for the schedule: timed stage changes, condition-based replacements, and the reading check itself
+  function rodiReminders(){
+    const out = []; if (!rodi && !roStages.length) return out;
+    const saved = rodi && Array.isArray(rodi.stages) ? rodi.stages : [];
+    saved.forEach((s, i) => {
+      if (s.months > 0) out.push({ id: "ro-" + (s.id || i), virtual: true, rodi: true, name: "Replace " + (n => /^[A-Z]{2}/.test(n) ? n : n.charAt(0).toLowerCase() + n.slice(1))(RO_KINDS[s.kind]?.label || "stage") + (rodi.name ? " (" + rodi.name + ")" : ""), kind: "gear", every: Math.round(s.months * 30.44), lastDone: s.installed || "" });
+    });
+    const last = roLatest(), rated = rodi && rodi.rated || 96, now = [];
+    if (last) {
+      const rej = rejection(last);
+      if (last.di != null && last.di > 0 && saved.some(s => s.kind === "di")) now.push("Replace DI resin: output reads " + last.di + " ppm TDS (should be 0)");
+      if (rej != null && rej < rated) now.push("Replace RO membrane: rejection " + rej.toFixed(1) + "% is below its rated " + rated + "%");
+      if (last.cl != null && last.cl > 0.5) now.push("Replace carbon block: waste water shows " + last.cl + " ppm chlorine");
+    }
+    now.forEach((n, i) => out.push({ id: "ronow-" + i, virtual: true, rodi: true, name: n, kind: "now" }));
+    const lastDate = last ? ymd(last.ts) : "";
+    out.push({ id: "ro-check", virtual: true, rodi: true, name: "Log RO/DI TDS readings", kind: "gear", every: rodi && rodi.checkEvery || 14, lastDone: lastDate });
+    return out;
+  }
+  // readings
+  $("rl-date").value = today();
+  function renderRoReadings(){
+    const last = roLatest(), rated = rodi && rodi.rated || 96, rej = rejection(last);
+    const tiles = [];
+    if (last) {
+      tiles.push('<div><span class="label">Membrane rejection</span><span class="big">' + (rej == null ? "—" : rej.toFixed(1) + "%") + '</span><small>' + (rej == null ? "needs tap and after-RO" : rej >= rated ? "at or above rated " + rated + "%" : "below rated " + rated + "%") + '</small></div>');
+      tiles.push('<div><span class="label">After DI</span><span class="big">' + (last.di == null ? "—" : last.di) + '</span><small>' + (last.di == null ? "not logged" : last.di > 0 ? "replace resin" : "ppm TDS, good") + '</small></div>');
+      tiles.push('<div><span class="label">Last reading</span><span class="big" style="font-size:1rem">' + dstr(last.ts) + '</span><small>' + (last.psi ? last.psi + " psi" : "") + '</small></div>');
+    }
+    $("ro-summary").innerHTML = last ? '<div class="vol-out" style="border-top:0;padding-top:0">' + tiles.join("") + '</div>' : '<p class="hint">Log a reading with a TDS meter (inline or handheld): tap water in, after the RO membrane, and after DI. Add waste-water chlorine from a test strip when you check the carbon.</p>';
+    const pts = [...roLog].sort((a, b) => a.ts - b.ts);
+    lineChart($("ro-chart"), [
+      { name: "After RO (ppm)", color: "var(--ch-db)", pts: pts.filter(p => p.ro != null).map(p => ({ x: p.ts, y: p.ro })) },
+      { name: "After DI (ppm)", color: "var(--bad)", pts: pts.filter(p => p.di != null).map(p => ({ x: p.ts, y: p.di })) }
+    ], { dots: true, xFmt: dshort, label: "RO and DI output TDS over time", empty: "TDS after RO and after DI will chart here" });
+    $("ro-list").innerHTML = pts.length ? '<div class="tablewrap"><table><thead><tr><th>Date</th><th>Tap</th><th>After RO</th><th>Rejection</th><th>After DI</th><th>Chlorine</th><th>psi</th><th class="note">Notes</th>' + (canWrite ? '<th></th>' : '') + '</tr></thead><tbody>' +
+      [...pts].reverse().map(p => { const rj = rejection(p); return '<tr><td>' + dstr(p.ts) + '</td><td>' + (p.tap ?? "—") + '</td><td>' + (p.ro ?? "—") + '</td><td class="' + (rj != null && rj < rated ? "out" : "") + '">' + (rj == null ? "—" : rj.toFixed(1) + "%") + '</td><td class="' + (p.di > 0 ? "out" : "") + '">' + (p.di ?? "—") + '</td><td class="' + (p.cl > 0.5 ? "out" : "") + '">' + (p.cl ?? "—") + '</td><td>' + (p.psi ?? "—") + '</td><td class="note">' + esc(p.note) + '</td>' +
+        (canWrite ? '<td class="act"><button type="button" class="danger" data-rldel="' + esc(p.id) + '">Delete</button></td>' : '') + '</tr>'; }).join("") + '</tbody></table></div>' : "";
+  }
+  $("rl-save").addEventListener("click", async () => {
+    const rec = { ts: toTs($("rl-date").value || today(), nowTime()), tap: num($("rl-tap").value), ro: num($("rl-ro").value), di: num($("rl-di").value), cl: num($("rl-cl").value), psi: num($("rl-psi").value), note: $("rl-note").value.trim() };
+    if ([rec.tap, rec.ro, rec.di, rec.cl, rec.psi].every(v => v == null)) { setStatus("rl-status", "Enter at least one reading.", true); return; }
+    if (!db) { setStatus("rl-status", "Saving isn't available in this view.", true); return; }
+    try { await db.collection("rodilog").add(rec); ["rl-tap","rl-ro","rl-di","rl-cl","rl-psi","rl-note"].forEach(k => { $(k).value = ""; }); setStatus("rl-status", "Reading saved."); }
+    catch (e) { setStatus("rl-status", "Couldn't save the reading.", true); }
+  });
+  $("ro-list").addEventListener("click", async ev => {
+    const d = ev.target.closest("[data-rldel]"); if (!d) return;
+    if (d.dataset.confirm !== "1") { d.dataset.confirm = "1"; d.textContent = "Confirm"; return; }
+    try { await db.collection("rodilog").doc(d.dataset.rldel).delete(); } catch (e) {}
+  });
+  renderRoStages();
 
   // ---------- dosing & salt ----------
   const GAL_IN3 = 231, ROCK_GAL_PER_LB = 0.0444, SAND_SOLID = 0.6;
@@ -2503,7 +2649,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
 
   // ---------- backup ----------
-  const BK_COLS = ["tests","tasks","gear","livestock","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile"];
+  const BK_COLS = ["tests","tasks","gear","rodilog","livestock","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile","settings/rodi"];
   const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
   async function buildBackup(){
     const docs = [], blobs = {};
@@ -2562,6 +2708,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
     db.collection("tasks").limit(500).onSnapshot(snap => { tasks = snap.docs.map(d => ({ id: d.id, ...d.data() })); mtLoaded = true; renderMaintenance(); }, () => { mtLoaded = true; renderMaintenance(); });
     db.collection("gear").limit(500).onSnapshot(snap => { gear = snap.docs.map(d => ({ id: d.id, ...d.data() })); gearLoaded = true; renderGear(); renderMaintenance(); }, () => { gearLoaded = true; renderGear(); renderMaintenance(); });
     setInterval(renderDueChip, 10 * 60 * 1000);
+    db.doc("settings/rodi").onSnapshot(snap => applyRodi(snap.exists ? snap.data() : null), () => {});
+    db.collection("rodilog").orderBy("ts", "asc").limit(1000).onSnapshot(snap => { roLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderRoReadings(); renderMaintenance(); }, () => {});
     db.collection("livestock").limit(1000).onSnapshot(snap => { livestock = snap.docs.map(d => ({ id: d.id, ...d.data() })); lsLoaded = true; renderLivestock(); }, () => { lsLoaded = true; renderLivestock(); });
     db.collection("equipment").limit(500).onSnapshot(snap => { equipment = snap.docs.map(d => ({ id: d.id, ...d.data() })); eqLoaded = true; renderEquipment(); }, () => { eqLoaded = true; renderEquipment(); });
     db.collection("photos").orderBy("ts", "desc").limit(1000).onSnapshot(snap => { photos = snap.docs.map(d => ({ id: d.id, ...d.data() })); phLoaded = true; renderPhotos(); }, () => { phLoaded = true; renderPhotos(); });
