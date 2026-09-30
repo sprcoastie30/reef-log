@@ -19,7 +19,7 @@ Because these are loaded from the CDN rather than bundled, no license files need
 
 ## Trademarks
 
-Product, brand and fixture names (including Noopsyche, K7, Brightwell, Reef Code, Magnesion, Red Sea, Reef Foundation, ReefLED, Tropic Marin, All-For-Reef, Carbocalcium, Seachem, Reef Fusion, Reef Builder, ESV, B-Ionic, Aquaforest, Bulk Reef Supply, AI, Hydra, Prime, EcoTech, Radion, Kessil, NICREW, Hanna, Neptune, Trident, AquaticLife) are trademarks of their respective owners. They are used only to identify the products Holdfast works with. Holdfast is not affiliated with, sponsored by or endorsed by any of these companies, and it uses no logos or brand artwork.
+Product, brand and fixture names (including Noopsyche, K7, Brightwell, Reef Code, Magnesion, Red Sea, Reef Foundation, ReefLED, Tropic Marin, All-For-Reef, Carbocalcium, Seachem, Reef Fusion, Reef Builder, ESV, B-Ionic, Aquaforest, Bulk Reef Supply, Aqua Illumination (AI), Hydra, Prime, EcoTech, Radion, Kessil, NICREW, Hanna, Neptune, Trident) are trademarks of their respective owners. They are used only to identify the products Holdfast works with. Holdfast is not affiliated with, sponsored by or endorsed by any of these companies, and it uses no logos or brand artwork.
 
 If code from the K7 LED Controller project is ever copied into this repository, its MIT license requires including this notice:
 
