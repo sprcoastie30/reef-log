@@ -49,7 +49,10 @@ h2 { font-size: 1.2rem; font-weight: 600; }
 .mono, .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
 button, .btn { font: 600 0.9rem var(--f-display); letter-spacing: 0.03em; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 8px 14px; cursor: pointer; }
 button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.primary, .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+a.btn { display: inline-block; text-decoration: none; }
+.about h3 { margin-top: 4px; }
+.about p { margin: 0; }
 button.danger { color: var(--bad); }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, label.chip:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -351,7 +354,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
         <input type="file" id="imp" accept=".csv,text/csv" hidden>
         <span class="status" id="io-status"></span>
       </div>
-      <p class="hint">Import columns: <code>date,time,alk,ca,mg,no3,po4,sal,temp,ph,events,note</code>. Date as YYYY-MM-DD; events separated by <code>;</code>.</p>
+      <p class="hint">Import columns: <code>date,time,alk,ca,mg,no3,po4,sal,temp,ph,events,note</code>. Date as YYYY-MM-DD; events separated by <code>;</code>; temperature in the units set in your tank profile.</p>
     </section>
   </div>
   </div>
@@ -555,7 +558,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       <section class="panel">
         <div><h2>System water volume</h2><p class="hint" id="vol-hint">Aqueon 75 display (48.5 × 18.5 × 21.2 in outside) plus Eshopps RS-75 sump (20 × 10 × 16 in, 12 gal to the rim). Measure your actual water depths and adjust; everything below uses the net figure.</p></div>
         <div class="vol-cols">
-          <fieldset><legend class="label">Display, inside dimensions (in)</legend>
+          <fieldset><legend class="label">Display, inside dimensions (<span data-ul="len">in</span>)</legend>
             <div class="trio">
               <div class="field"><label for="v-dl">Length</label><input id="v-dl" type="number" step="0.25"></div>
               <div class="field"><label for="v-dw">Width</label><input id="v-dw" type="number" step="0.25"></div>
@@ -564,12 +567,12 @@ details.backup summary { cursor: pointer; list-style: revert; }
           </fieldset>
           <fieldset><legend class="label">Displacement</legend>
             <div class="trio">
-              <div class="field"><label for="v-sand">Sand bed (in)</label><input id="v-sand" type="number" step="0.25"></div>
-              <div class="field"><label for="v-rock">Rock (lb)</label><input id="v-rock" type="number" step="1"></div>
-              <div class="field"><label for="v-other">Other (gal)</label><input id="v-other" type="number" step="0.5" title="Plumbing adds; equipment in the sump subtracts. Use a negative number to subtract."></div>
+              <div class="field"><label for="v-sand">Sand bed (<span data-ul="len">in</span>)</label><input id="v-sand" type="number" step="0.25"></div>
+              <div class="field"><label for="v-rock">Rock (<span data-ul="wt">lb</span>)</label><input id="v-rock" type="number" step="1"></div>
+              <div class="field"><label for="v-other">Other (<span data-ul="vol">gal</span>)</label><input id="v-other" type="number" step="0.5" title="Plumbing adds; equipment in the sump subtracts. Use a negative number to subtract."></div>
             </div>
           </fieldset>
-          <fieldset><legend class="label">Sump, running level (in)</legend>
+          <fieldset><legend class="label">Sump, running level (<span data-ul="len">in</span>)</legend>
             <div class="trio">
               <div class="field"><label for="v-sl">Length</label><input id="v-sl" type="number" step="0.25"></div>
               <div class="field"><label for="v-sw">Width</label><input id="v-sw" type="number" step="0.25"></div>
@@ -599,7 +602,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
             <p style="margin:0"><b>Repeat the check</b> when you add corals, change lights or photoperiod, or once a month while the tank is growing in; consumption rises as corals grow.</p>
           </div>
         </details>
-        <fieldset><legend class="label">What you dose now (mL per day)</legend>
+        <fieldset><legend class="label">What you dose now (mL per day; grams for powders)</legend>
           <div class="fields three" id="cd-fields"></div>
           <div class="fields three" style="margin-top:8px">
             <div class="field"><label for="cd-from"><b>Since</b></label><input id="cd-from" type="date"></div>
@@ -648,7 +651,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
           <div class="field"><label for="s-mg"><b>Mix Mg</b> ppm</label><input id="s-mg" type="number" step="10"></div>
           <div class="field"><label for="s-k"><b>Mix K</b> ppm</label><input id="s-k" type="number" step="5"></div>
           <div class="field"><label for="s-sg"><b>Mixed to</b> SG</label><input id="s-sg" type="number" step="0.001"></div>
-          <div class="field"><label for="s-gpg"><b>Salt per gallon</b> g</label><input id="s-gpg" type="number" step="1"></div>
+          <div class="field"><label for="s-gpg"><b>Salt</b> <span data-ul="gpg">g per gal</span></label><input id="s-gpg" type="number" step="1"></div>
         </div>
         <div class="form-actions"><button type="button" id="s-save">Save salt profile</button><span class="status" id="s-status"></span></div>
         <p class="hint">Aquaforest publishes lab results for each production batch through its "Check your salt" page. Enter your batch's numbers in the mix fields for the most accurate prediction.</p>
@@ -665,7 +668,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
           </select></div>
           <div class="field"><label for="w-pct"><b>Change size</b> % of system</label><input id="w-pct" type="number" step="0.5" min="0.1" max="100"></div>
           <div class="field"><label for="w-every"><b>Every</b> days</label><input id="w-every" type="number" step="1" min="1" max="120"></div>
-          <div class="field" id="w-res-wrap"><label for="w-res"><b>AWC saltwater reservoir</b> gal</label><input id="w-res" type="number" step="0.5" min="0.5" value="5"></div>
+          <div class="field" id="w-res-wrap"><label for="w-res"><b>AWC saltwater reservoir</b> <span data-ul="vol">gal</span></label><input id="w-res" type="number" step="0.5" min="0.5" value="5"></div>
         </div>
         <div id="wc-out"></div>
         <h3 style="font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:4px 0 0">Compare the three plans</h3>
@@ -763,7 +766,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
                 <div class="field"><label for="ll-ps"><b>Peak starts</b></label><input id="ll-ps" type="time" value="13:00"></div>
                 <div class="field"><label for="ll-pe"><b>Peak ends</b></label><input id="ll-pe" type="time" value="17:00"></div>
                 <div class="field"><label for="ll-off"><b>Lights off</b></label><input id="ll-off" type="time" value="20:00"></div>
-                <div class="field"><label for="ll-height"><b>Height above water</b> in</label><input id="ll-height" type="number" min="0" step="0.5"></div>
+                <div class="field"><label for="ll-height"><b>Height above water</b> <span data-ul="len">in</span></label><input id="ll-height" type="number" min="0" step="0.5"></div>
                 <div class="field"><label for="ll-master"><b>Master / overall</b> %</label><input id="ll-master" type="number" min="0" max="100" step="1"></div>
               </div>
             </fieldset>
@@ -807,6 +810,21 @@ details.backup summary { cursor: pointer; list-style: revert; }
       <div id="bk-confirm" hidden class="callout">Restoring replaces everything currently in this app with the backup's contents. <button type="button" class="danger" id="bk-yes">Replace my data</button> <button type="button" id="bk-no">Cancel</button></div>
     </div>
   </details>
+  <details class="panel backup" id="about">
+    <summary><span class="label" style="font-size:.8rem">About, privacy &amp; feedback</span></summary>
+    <div class="about" style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+      <div class="form-actions"><a class="btn primary" id="fb-link" href="https://github.com/sprcoastie30/reef-log/issues/new" target="_blank" rel="noopener">Send feedback or report a problem</a><span class="hint" id="fb-hint">Opens the Reef Log issue tracker on GitHub (free account needed).</span></div>
+      <h3 class="label">Privacy</h3>
+      <p class="hint" id="priv-claude" hidden>This copy runs inside Claude, and its log is stored with this Claude artifact under your account. The notes below describe the standalone Reef Log website.</p>
+      <p class="hint"><b>On this device.</b> Your log, photos and settings are saved in this browser's storage on this device. Nothing leaves the device unless you sign in to sync.</p>
+      <p class="hint"><b>If you sign in to sync.</b> Your records and photos are copied to the Reef Log database (hosted by Supabase) so your other devices can load them. The database only lets each account read and change its own records. The app's owner runs that database and can technically reach it; it is used only to run sync, is never sold or shared, and isn't looked at except to fix a problem you report.</p>
+      <p class="hint"><b>No ads, analytics or tracking cookies.</b> Loading the app does contact a few services that see your connection (like any website): Cloudflare hosts the app, jsDelivr serves code libraries, Google Fonts serves the typefaces, and Supabase handles sign-in and sync if you use them.</p>
+      <p class="hint"><b>Your data stays yours.</b> Download a full backup any time under Data &amp; backup. To have your synced account and everything in it deleted, ask through the feedback link.</p>
+      <h3 class="label">About the numbers</h3>
+      <p class="hint">Dosing, consumption and water change figures are estimates built from product labels (or strengths worked out from the maker's stated concentration) and your own test results. Check them against the product label, change doses gradually, and retest before and after any big change. Light and equipment details are starting points; your fixture's app and manual have the final word.</p>
+      <p class="hint">Reef Log © Carl Peterson. All rights reserved.</p>
+    </div>
+  </details>
 </div>
 
 <div class="lightbox" id="pf" hidden role="dialog" aria-modal="true" aria-labelledby="pf-title">
@@ -819,11 +837,11 @@ details.backup summary { cursor: pointer; list-style: revert; }
           <div class="field"><label for="pf-display"><b>Display tank model</b></label><input id="pf-display" type="text" placeholder="e.g. Aqueon 75" maxlength="60"></div>
         </div>
         <div class="trio" style="margin-top:8px">
-          <div class="field"><label for="pf-dl">Inside length (in)</label><input id="pf-dl" type="number" step="0.25" min="0"></div>
-          <div class="field"><label for="pf-dw">Inside width (in)</label><input id="pf-dw" type="number" step="0.25" min="0"></div>
-          <div class="field"><label for="pf-dd">Water depth (in)</label><input id="pf-dd" type="number" step="0.25" min="0"></div>
-          <div class="field"><label for="pf-sand">Sand bed (in)</label><input id="pf-sand" type="number" step="0.25" min="0"></div>
-          <div class="field"><label for="pf-rock">Rock (lb)</label><input id="pf-rock" type="number" step="1" min="0"></div>
+          <div class="field"><label for="pf-dl">Inside length (<span data-ul="len">in</span>)</label><input id="pf-dl" type="number" step="0.25" min="0"></div>
+          <div class="field"><label for="pf-dw">Inside width (<span data-ul="len">in</span>)</label><input id="pf-dw" type="number" step="0.25" min="0"></div>
+          <div class="field"><label for="pf-dd">Water depth (<span data-ul="len">in</span>)</label><input id="pf-dd" type="number" step="0.25" min="0"></div>
+          <div class="field"><label for="pf-sand">Sand bed (<span data-ul="len">in</span>)</label><input id="pf-sand" type="number" step="0.25" min="0"></div>
+          <div class="field"><label for="pf-rock">Rock (<span data-ul="wt">lb</span>)</label><input id="pf-rock" type="number" step="1" min="0"></div>
         </div>
       </fieldset>
       <fieldset><legend class="label">Sump</legend>
@@ -831,14 +849,17 @@ details.backup summary { cursor: pointer; list-style: revert; }
         <div id="pf-sump" style="display:flex;flex-direction:column;gap:8px">
           <div class="field"><label for="pf-sumpmodel"><b>Sump model</b></label><input id="pf-sumpmodel" type="text" placeholder="e.g. Eshopps RS-75" maxlength="60"></div>
           <div class="trio">
-            <div class="field"><label for="pf-sl">Length (in)</label><input id="pf-sl" type="number" step="0.25" min="0"></div>
-            <div class="field"><label for="pf-sw">Width (in)</label><input id="pf-sw" type="number" step="0.25" min="0"></div>
-            <div class="field"><label for="pf-sd">Running depth (in)</label><input id="pf-sd" type="number" step="0.25" min="0"></div>
+            <div class="field"><label for="pf-sl">Length (<span data-ul="len">in</span>)</label><input id="pf-sl" type="number" step="0.25" min="0"></div>
+            <div class="field"><label for="pf-sw">Width (<span data-ul="len">in</span>)</label><input id="pf-sw" type="number" step="0.25" min="0"></div>
+            <div class="field"><label for="pf-sd">Running depth (<span data-ul="len">in</span>)</label><input id="pf-sd" type="number" step="0.25" min="0"></div>
           </div>
         </div>
       </fieldset>
-      <fieldset><legend class="label">Salt</legend>
-        <div class="field"><label for="pf-salt"><b>Salt mix</b></label><select id="pf-salt"></select></div>
+      <fieldset><legend class="label">Salt and units</legend>
+        <div class="fields">
+          <div class="field"><label for="pf-salt"><b>Salt mix</b></label><select id="pf-salt"></select></div>
+          <div class="field"><label for="pf-units"><b>Units</b></label><select id="pf-units"><option value="us">US (gal, in, lb, °F)</option><option value="metric">Metric (L, cm, kg, °C)</option></select></div>
+        </div>
       </fieldset>
       <fieldset><legend class="label">Dosing products</legend>
         <div id="pf-products" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -886,7 +907,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     { key:"no3",  name:"Nitrate",    unit:"ppm", step:"0.5",  dp:1, lo:2,     hi:10 },
     { key:"po4",  name:"Phosphate",  unit:"ppm", step:"0.01", dp:2, lo:0.03,  hi:0.10 },
     { key:"sal",  name:"Salinity",   unit:"SG",  step:"0.001",dp:3, lo:1.025, hi:1.027, t:1.026 },
-    { key:"temp", name:"Temperature",unit:"°F",  step:"0.1",  dp:1, lo:76,    hi:79 },
+    { key:"temp", name:"Temperature",unit:"°F",  step:"0.1",  dp:1, lo:76,    hi:79, ut:"temp" },
     { key:"ph",   name:"pH",         unit:"",    step:"0.01", dp:2, lo:7.9,   hi:8.3 }
   ];
   const DEFAULTS = Object.fromEntries(PARAMS.map(p => [p.key, p.t != null ? {lo:p.lo, hi:p.hi, t:p.t} : {lo:p.lo, hi:p.hi}]));
@@ -894,7 +915,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   const EVENTS = ["Water change","Dosing change","New livestock","Equipment","Lighting","Filter media","Treatment"];
   const DAY = 86400000;
 
-  let db = null, canWrite = true, tests = [], usingExamples = true, range = 90, editingId = null;
+  let db = null, canWrite = true, tests = [], testsRaw = [], targetsRaw = null, usingExamples = true, range = 90, editingId = null;
   let targets = JSON.parse(JSON.stringify(DEFAULTS));
   const $ = id => document.getElementById(id);
   const fmt = (p, v) => v == null ? "—" : Number(v).toFixed(p.dp);
@@ -902,6 +923,44 @@ details.backup summary { cursor: pointer; list-style: revert; }
   const dstr = ts => new Date(ts).toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"});
   const dshort = ts => new Date(ts).toLocaleDateString(undefined, {month:"short", day:"numeric"});
   const num = v => (v === "" || v == null || isNaN(Number(v))) ? null : Number(v);
+
+  // ---------- units: everything is stored in US units (gal, in, lb, °F); metric converts on screen ----------
+  let UNITS = "us";
+  try { if (localStorage.getItem("reef-units") === "metric") UNITS = "metric"; } catch (e) {}
+  const L_GAL = 3.78541, CM_IN = 2.54, KG_LB = 0.45359237;
+  const isMetric = () => UNITS === "metric";
+  const CONV = {
+    // dp = decimals when showing a value; inUS / inM = decimals when filling an input box
+    len:  { us: "in",        m: "cm",        out: v => v * CM_IN,         inp: v => v / CM_IN,         dp: 1, inUS: 2, inM: 1 },
+    wt:   { us: "lb",        m: "kg",        out: v => v * KG_LB,         inp: v => v / KG_LB,         dp: 1, inUS: 1, inM: 2 },
+    vol:  { us: "gal",       m: "L",         out: v => v * L_GAL,         inp: v => v / L_GAL,         dp: 1, inUS: 2, inM: 2 },
+    temp: { us: "°F",        m: "°C",        out: v => (v - 32) * 5 / 9,  inp: v => v * 9 / 5 + 32,   dp: 1, inUS: 1, inM: 1 },
+    gpg:  { us: "g per gal", m: "g per L",   out: v => v / L_GAL,         inp: v => v * L_GAL,         dp: 1, inUS: 1, inM: 2 },
+    pot:  { us: "per gal",   m: "per 100 L", out: v => v * L_GAL / 100,   inp: v => v * 100 / L_GAL,   dp: 4, inUS: 3, inM: 5 }
+  };
+  const uLabel = t => isMetric() ? CONV[t].m : CONV[t].us;
+  const toDisp = (t, v) => v == null ? null : isMetric() ? CONV[t].out(v) : v;
+  const fromDisp = (t, v) => v == null ? null : isMetric() ? CONV[t].inp(v) : v;
+  // setU remembers the stored value it showed, so an untouched box reads back exactly (no rounding drift)
+  const getU = (id, t) => { const el = $(id); if (el.dataset.shown != null && el.value === el.dataset.shown && el.dataset.canon !== "") return Number(el.dataset.canon); return fromDisp(t, num(el.value)); };
+  const setU = (id, t, v) => { const el = $(id), empty = v == null || v === "";
+    el.value = empty ? "" : t === "pot" ? +toDisp(t, Number(v)).toPrecision(4) : +toDisp(t, Number(v)).toFixed(isMetric() ? CONV[t].inM : CONV[t].inUS);
+    el.dataset.shown = el.value; el.dataset.canon = empty ? "" : String(Number(v)); };
+  const fmtU = (t, v, dp) => toDisp(t, v).toFixed(dp ?? CONV[t].dp) + " " + uLabel(t);
+  const fmtVol = (gal, dp) => fmtU("vol", gal, dp);
+  const fmtLen = (inch, dp) => fmtU("len", inch, dp);
+  function renderUnitLabels(){ document.querySelectorAll("[data-ul]").forEach(el => { el.textContent = uLabel(el.dataset.ul); }); }
+  // tests and targets: temperature shows in the chosen unit and is stored in °F
+  const convTest = t => t.temp == null || !isMetric() ? t : { ...t, temp: +toDisp("temp", t.temp).toFixed(2) };
+  const unconvTest = r => r.temp == null || !isMetric() ? r : { ...r, temp: +fromDisp("temp", r.temp).toFixed(2) };
+  function targetsFrom(raw){
+    const t = JSON.parse(JSON.stringify(DEFAULTS));
+    if (raw) PARAMS.forEach(p => { const d = raw[p.key]; if (d) t[p.key] = d.t != null ? { lo: d.lo, hi: d.hi, t: d.t } : { lo: d.lo, hi: d.hi }; });
+    if (isMetric()) { const x = t.temp, c = v => +toDisp("temp", v).toFixed(1); t.temp = x.t != null ? { lo: c(x.lo), hi: c(x.hi), t: c(x.t) } : { lo: c(x.lo), hi: c(x.hi) }; }
+    return t;
+  }
+  function applyParamUnits(){ PARAMS.forEach(p => { if (p.ut) p.unit = uLabel(p.ut); }); }
+  applyParamUnits(); targets = targetsFrom(null);
 
   // ---------- example data (never stored) ----------
   function exampleTests(){
@@ -925,7 +984,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const t = targets[p.key];
     if (v < t.lo) return "low"; if (v > t.hi) return "high"; return "ok";
   }
-  function data(){ return usingExamples ? exampleTests() : tests; }
+  function data(){ return usingExamples ? exampleTests().map(convTest) : tests; }
   function windowed(list){
     if (!range) return list;
     const cut = Date.now() - range*DAY; return list.filter(t => t.ts >= cut);
@@ -1033,7 +1092,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
 
   // ---------- form ----------
   function buildForm(){
-    $("param-fields").innerHTML = PARAMS.map(p => '<div class="field"><label for="f-' + p.key + '"><b>' + p.name + '</b> ' + p.unit + '</label><input id="f-' + p.key + '" type="number" inputmode="decimal" step="' + p.step + '"></div>').join("");
+    $("param-fields").innerHTML = PARAMS.map(p => '<div class="field"><label for="f-' + p.key + '"><b>' + p.name + '</b> ' + (p.ut ? '<span data-ul="' + p.ut + '">' + p.unit + '</span>' : p.unit) + '</label><input id="f-' + p.key + '" type="number" inputmode="decimal" step="' + p.step + '"></div>').join("");
     $("f-events").innerHTML = EVENTS.map((e, i) => '<label class="chip"><input type="checkbox" id="f-ev' + i + '" value="' + esc(e) + '">' + esc(e) + '</label>').join("");
     resetForm();
   }
@@ -1067,7 +1126,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
     $("f-save").disabled = true; setStatus("f-status", "Saving…");
     try {
       const col = db.collection("tests");
-      if (editingId) await col.doc(editingId).set(rec); else await col.add(rec);
+      const stored = unconvTest(rec);
+      if (editingId) await col.doc(editingId).set(stored); else await col.add(stored);
       setStatus("f-status", editingId ? "Changes saved." : "Test saved."); resetForm();
       completeFromTest(rec);
     } catch (e) { setStatus("f-status", e && e.code === "invalid_argument" ? "You don't have permission to save to this log." : "Couldn't save (" + (e && e.code || "error") + "). Try again.", true); }
@@ -1116,6 +1176,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       if (tv != null && (tv < lo || tv > hi)) { setStatus("t-status", p.name + ": target must sit between low and high.", true); return; }
       obj[p.key] = tv != null ? {lo, hi, t: tv} : {lo, hi};
     }
+    if (isMetric() && obj.temp) { const raw = (targetsRaw && targetsRaw.temp) || DEFAULTS.temp, f = (v, key) => targets.temp && v === targets.temp[key] && raw[key] != null ? raw[key] : +fromDisp("temp", v).toFixed(2); obj.temp = obj.temp.t != null ? { lo: f(obj.temp.lo, "lo"), hi: f(obj.temp.hi, "hi"), t: f(obj.temp.t, "t") } : { lo: f(obj.temp.lo, "lo"), hi: f(obj.temp.hi, "hi") }; }
     saveTargets(obj);
   });
   $("t-reset").addEventListener("click", () => saveTargets(JSON.parse(JSON.stringify(DEFAULTS))));
@@ -1158,7 +1219,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(get("date"))) { bad++; continue; }
       const rec = { ts: toTs(get("date"), get("time")), note: get("note"), events: get("events") ? get("events").split(";").map(s => s.trim()).filter(Boolean) : [] };
       PARAMS.forEach(p => { rec[p.key] = num(get(p.key)); });
-      try { await db.collection("tests").add(rec); ok++; setStatus("io-status", "Importing… " + ok); } catch (e) { bad++; }
+      try { await db.collection("tests").add(unconvTest(rec)); ok++; setStatus("io-status", "Importing… " + ok); } catch (e) { bad++; }
     }
     setStatus("io-status", "Imported " + ok + (ok === 1 ? " row" : " rows") + (bad ? ", skipped " + bad : "") + ".", !!bad && !ok);
   });
@@ -1259,14 +1320,14 @@ details.backup summary { cursor: pointer; list-style: revert; }
       '<button type="button" class="thumb" data-photo="' + esc(p.id) + '"><img loading="lazy" src="' + esc(photoSrc(p)) + '" alt="' + esc(p.caption || "Tank photo") + '"><span class="cap"><span>' + (p.caption ? esc(p.caption) : '<span style="color:var(--muted)">Add a caption</span>') + '</span><span class="d">' + dstr(p.ts) + '</span></span></button>').join("") + '</div></section>').join("");
   }
   async function shrink(file){
-    // Re-encode large phone photos to max 2400px JPEG to keep storage down; fall back to the original file.
+    // Re-encode phone photos to max 1600px JPEG (roughly 300-600 KB) so synced storage stretches further; fall back to the original file.
     try {
       const bmp = await createImageBitmap(file);
-      const scale = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
-      if (scale === 1 && file.size < 3e6 && /jpe?g|png|webp/.test(file.type)) return file;
+      const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+      if (scale === 1 && file.size < 8e5 && /jpe?g|png|webp/.test(file.type)) return file;
       const c = document.createElement("canvas"); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
       c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
-      return await new Promise(res => c.toBlob(b => res(b || file), "image/jpeg", 0.86));
+      return await new Promise(res => c.toBlob(b => res(b || file), "image/jpeg", 0.82));
     } catch (e) { return file; }
   }
   async function uploadFiles(files){
@@ -1853,18 +1914,26 @@ details.backup summary { cursor: pointer; list-style: revert; }
       { name:"Red Sea Reef Foundation B", potency:2.5, basis:"label: 1 mL raises 25 gal by 0.1 dKH" },
       { name:"Seachem Reef Fusion 2", potency:3.26, basis:"calc: stated 4,400 meq/L" },
       { name:"BRS Pharma Soda Ash (mixed 381 g per gal)", potency:1.41, basis:"calc: BRS mix of 381 g per gallon of solution", maxDay:1.4, maxNote:"BRS: no more than 1.4 dKH per day" },
-      { name:"Tropic Marin All-For-Reef", potency:1.48, basis:"calc: stated 2,800 dKH per 500 mL", allInOne:true, maxDay:1.4, maxNote:"label max 25 mL per 100 L per day (≈1.4 dKH)" }
+      { name:"Tropic Marin All-For-Reef", potency:1.48, basis:"calc: stated 2,800 dKH per 500 mL", allInOne:true, maxDay:1.4, maxNote:"label max 25 mL per 100 L per day (≈1.4 dKH)" },
+      { name:"ESV B-Ionic Part 1 (alkalinity)", potency:2.07, basis:"label: 1 mL per gal raises 2.07 dKH; start at 1 mL per 4 gal a day" },
+      { name:"Aquaforest Component 2+", potency:0.69, basis:"label: 25 mL per 100 L raises 0.65 dKH" },
+      { name:"Seachem Reef Builder (powder)", potency:9.25, du:"g", basis:"label: 3 g per 150 L raises 0.25 meq/L (0.7 dKH)", maxDay:2.8, maxNote:"label max 12 g per 150 L per day (≈2.8 dKH); about 1 dKH a day is gentler" },
+      { name:"Kalkwasser (saturated limewater)", potency:0.0303, basis:"calc: saturated at 25 °C ≈ 41 meq/L alkalinity, 816 ppm calcium (Holmes-Farley)", allInOne:true, kalk:true, maxDay:1.0, maxNote:"limited by how much water evaporates; kalkwasser goes in as top-off" }
     ],
     ca: [
       { name:"Brightwell Reef Code A", potency:16, basis:"label", maxDay:8, maxNote:"label max 5 mL per 10 gal per day (≈8 ppm)" },
       { name:"Red Sea Reef Foundation A", potency:50, basis:"label: 1 mL raises 25 gal by 2 ppm" },
       { name:"Seachem Reef Fusion 1", potency:26.4, basis:"calc: stated 100,000 mg/L calcium" },
-      { name:"Tropic Marin All-For-Reef", potency:10.57, basis:"calc: stated 20,000 mg calcium per 500 mL", allInOne:true }
+      { name:"Tropic Marin All-For-Reef", potency:10.57, basis:"calc: stated 20,000 mg calcium per 500 mL", allInOne:true },
+      { name:"ESV B-Ionic Part 2 (calcium)", potency:16, basis:"label: 1 mL per gal raises 16 ppm; start at 1 mL per 4 gal a day" },
+      { name:"Aquaforest Component 1+", potency:4.76, basis:"label: 25 mL per 100 L raises 4.5 ppm" },
+      { name:"Kalkwasser (saturated limewater)", potency:0.216, basis:"calc: saturated at 25 °C ≈ 816 ppm calcium (Holmes-Farley)", allInOne:true, kalk:true }
     ],
     mg: [
       { name:"Brightwell Magnesion", potency:26, basis:"label", maxDay:13, maxNote:"label max 10 mL per 20 gal per day (≈13 ppm)" },
       { name:"Red Sea Reef Foundation C", potency:25, basis:"label: 1 mL raises 25 gal by 1 ppm" },
-      { name:"Tropic Marin All-For-Reef", potency:0.5, basis:"calc: stated 950 mg magnesium per 500 mL", allInOne:true }
+      { name:"Tropic Marin All-For-Reef", potency:0.5, basis:"calc: stated 950 mg magnesium per 500 mL", allInOne:true },
+      { name:"Aquaforest Component 3+", potency:0.4, basis:"label: 25 mL per 100 L raises 0.38 ppm (mainly minor elements; use a magnesium supplement for Mg)" }
     ]
   };
   const GENERIC_MAX = { alk: { maxDay:1.0, maxNote:"no maker limit stated; about 1 dKH per day is a common safe pace" },
@@ -1872,6 +1941,11 @@ details.backup summary { cursor: pointer; list-style: revert; }
     mg: { maxDay:100, maxNote:"no maker limit stated; magnesium is usually raised no more than about 100 ppm a day" } };
   const productInfo = (k, name) => PRODUCTS[k].find(x => x.name === name) || null;
   const isAllInOne = () => { const a = productInfo("alk", DOSE.alk.product); return !!(a && a.allInOne && DOSE.ca.product === DOSE.alk.product); };
+  const mgInOne = () => isAllInOne() && DOSE.mg.product === DOSE.alk.product; // all three from one bottle (not kalkwasser, which has no magnesium)
+  const duOf = (k, name) => (productInfo(k, name) || {}).du || "mL"; // dose unit: mL, or g for powders
+  const du = k => duOf(k, DOSE[k].product);
+  const isKalk = () => !!(productInfo("alk", DOSE.alk.product) || {}).kalk;
+  const doseHeads = () => isAllInOne() ? (mgInOne() ? ["alk"] : ["alk","mg"]) : ["alk","ca","mg"];
   const SALTS = {
     af35: { label:"Aquaforest Reef Salt, mixed to 35 ppt (1.026)", alk:8.0, ca:450, mg:1390, k:null, sg:1.026, gpg:157, range:"Published: KH 7.7–8.3 dKH, Ca 440–460, Mg 1360–1420 at 35 ppt." },
     af33: { label:"Aquaforest Reef Salt, mixed to 33 ppt (1.025)", alk:7.8, ca:425, mg:1340, k:390, sg:1.025, gpg:148, range:"Published: KH 7.4–8.2 dKH, Ca 410–440, Mg 1300–1380, K 380–400 at 33 ppt. Mixing: about 390 g per 10 L." },
@@ -1880,8 +1954,9 @@ details.backup summary { cursor: pointer; list-style: revert; }
   let dosingDoc = null, maintDirty = {}, profile = null;
   $("s-preset").innerHTML = Object.entries(SALTS).map(([k, s]) => '<option value="' + k + '">' + esc(s.label) + '</option>').join("");
   const VKEYS = Object.keys(VOL_DEF);
-  function setVol(v){ VKEYS.forEach(k => { $("v-" + k).value = v[k] ?? VOL_DEF[k]; }); }
-  function getVol(){ const o = {}; VKEYS.forEach(k => { o[k] = num($("v-" + k).value) ?? 0; }); return o; }
+  const VUNIT = k => k === "rock" ? "wt" : k === "other" ? "vol" : "len";
+  function setVol(v){ VKEYS.forEach(k => setU("v-" + k, VUNIT(k), v[k] ?? VOL_DEF[k])); }
+  function getVol(){ const o = {}; VKEYS.forEach(k => { o[k] = getU("v-" + k, VUNIT(k)) ?? 0; }); return o; }
   function volume(){
     const v = getVol();
     const gross = v.dl * v.dw * v.dd / GAL_IN3, sand = v.dl * v.dw * v.sand / GAL_IN3 * SAND_SOLID, rock = v.rock * ROCK_GAL_PER_LB;
@@ -1897,7 +1972,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function renderCorrection(V){
     const rows = Object.entries(DOSE).map(([k, d]) => {
       const cur = latestVal(k);
-      return '<tr data-k="' + k + '"><td>' + d.name + '</td><td class="prod">' + esc(d.product) + '<br><span class="hint">' + '<input id="p-' + k + '" type="number" step="0.01" aria-label="' + d.name + ' potency" value="' + d.potency + '" title="Set in Tank profile"> ' + d.unit + ' per mL per gal</span></td>' +
+      return '<tr data-k="' + k + '"><td>' + d.name + '</td><td class="prod">' + esc(d.product) + '<br><span class="hint">' + '<input id="p-' + k + '" type="number" step="any" aria-label="' + d.name + ' potency" value="' + +toDisp("pot", d.potency).toPrecision(4) + '" title="Set in Tank profile"> ' + d.unit + ' per ' + du(k) + ' ' + uLabel("pot") + '</span></td>' +
         '<td><input id="c-' + k + '" type="number" step="any" aria-label="Current ' + d.name + '" value="' + (cur ? cur[k] : "") + '"></td>' +
         '<td><input id="t-d-' + k + '" type="number" step="any" aria-label="Target ' + d.name + '" value="' + (targets[k] && targets[k].t != null ? targets[k].t : d.target) + '" title="Set under Target ranges on the Chemistry tab"></td>' +
         '<td class="res" id="r-' + k + '"></td></tr>';
@@ -1908,16 +1983,16 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function updateCorrection(){
     const V = volume().net;
     Object.entries(DOSE).forEach(([k, d]) => {
-      const cur = num($("c-" + k).value), tgt = num($("t-d-" + k).value), pot = num($("p-" + k).value), out = $("r-" + k);
+      const cur = num($("c-" + k).value), tgt = num($("t-d-" + k).value), pot = getU("p-" + k, "pot"), out = $("r-" + k);
       out.style.textAlign = "left"; out.style.whiteSpace = "normal";
       if (cur == null || tgt == null || !pot || !V) { out.innerHTML = '<span class="hint">Enter current value</span>'; return; }
       const delta = tgt - cur;
       if (delta <= 0) { out.innerHTML = delta === 0 ? "At target" : '<span class="hint">Above target by ' + Math.abs(delta).toFixed(d.dp) + ' ' + d.unit + '. No dose; let consumption bring it down.</span>'; return; }
       const ml = delta * V / pot, days = Math.max(1, Math.ceil(delta / d.maxDay - 1e-9));
-      out.innerHTML = '<b class="num">' + ml.toFixed(1) + ' mL</b> total' + (days > 1 ? '<br><span class="hint">Split over ' + days + ' days: ' + (ml / days).toFixed(1) + ' mL/day (' + d.maxNote + ')</span>' : '<br><span class="hint">Raises ' + delta.toFixed(d.dp) + ' ' + d.unit + '; OK in one day</span>');
+      out.innerHTML = '<b class="num">' + ml.toFixed(1) + ' ' + du(k) + '</b> total' + (days > 1 ? '<br><span class="hint">Split over ' + days + ' days: ' + (ml / days).toFixed(1) + ' ' + du(k) + '/day (' + d.maxNote + ')</span>' : '<br><span class="hint">Raises ' + delta.toFixed(d.dp) + ' ' + d.unit + '; OK in one day</span>');
     });
     const v = volume().net;
-    $("corr-note").textContent = "Based on " + v.toFixed(1) + " gal net. Dose into the sump or a high-flow area, and retest before the next day's dose. Reef Code A and B are meant to be dosed in equal volumes for routine maintenance; using one alone is for correcting a single parameter.";
+    $("corr-note").textContent = "Based on " + fmtVol(v) + " net. Dose into the sump or a high-flow area, and retest before the next day's dose." + (/brightwell reef code/i.test(DOSE.alk.product + DOSE.ca.product) ? " Reef Code A and B are meant to be dosed in equal volumes for routine maintenance; using one alone is for correcting a single parameter." : "") + (isKalk() ? " Kalkwasser is too weak for quick corrections; use a two-part or a single-parameter product to raise a low reading, and kalkwasser to hold it." : "");
   }
   // ---------- daily maintenance dose: by hand or auto doser ----------
   function readMethod(){
@@ -1934,8 +2009,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
     syncMethodFields();
   }
   function renderContainers(vals){
-    const heads = isAllInOne() ? ["alk"] : ["alk","ca","mg"];
-    $("dm-cont").innerHTML = heads.map(k => '<div class="field"><label for="dm-c-' + k + '"><b>' + esc(DOSE[k].product) + '</b> container mL</label><input id="dm-c-' + k + '" type="number" step="50" min="0" placeholder="e.g. 500" value="' + (vals[k] ?? "") + '"></div>').join("");
+    const heads = doseHeads();
+    $("dm-cont").innerHTML = heads.map(k => '<div class="field"><label for="dm-c-' + k + '"><b>' + esc(DOSE[k].product) + '</b> container ' + (du(k) === "g" ? "g" : "mL") + '</label><input id="dm-c-' + k + '" type="number" step="50" min="0" placeholder="e.g. 500" value="' + (vals[k] ?? "") + '"></div>').join("");
   }
   function syncMethodFields(){
     const auto = $("dm-mode").value === "auto";
@@ -1958,21 +2033,29 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const cont = k => num($("dm-c-" + k) ? $("dm-c-" + k).value : null);
     const line = (k, ml, head) => {
       const per = ml / m.perDay, eff = per * DOSE[k].potency / V, c = cont(k);
-      const how = m.mode === "auto" ? m.perDay + " doses of " + per.toFixed(2) + " mL" : (m.perDay === 1 ? "once a day" : per.toFixed(1) + " mL, " + m.perDay + " times a day");
-      items.push('<li><span>' + (head ? '<span class="hint">Head ' + head + ' · </span>' : '') + esc(DOSE[k].product) + '</span><span><b>' + ml.toFixed(1) + ' mL/day</b> · ' + how +
+      const u = du(k), how = m.mode === "auto" ? m.perDay + " doses of " + per.toFixed(2) + " " + u : (m.perDay === 1 ? "once a day" : per.toFixed(1) + " " + u + ", " + m.perDay + " times a day");
+      items.push('<li><span>' + (head ? '<span class="hint">Head ' + head + ' · </span>' : '') + esc(DOSE[k].product) + '</span><span><b>' + ml.toFixed(1) + ' ' + u + '/day</b> · ' + how +
         (c ? ' · container lasts ' + Math.floor(c / Math.max(ml, 0.01)) + ' days' : '') + '</span></li>');
-      if (m.mode === "auto" && m.minMl && per < m.minMl) notes.push(DOSE[k].product + ": " + per.toFixed(2) + " mL per dose is below your doser's " + m.minMl + " mL minimum. Use " + Math.max(1, Math.floor(ml / m.minMl)) + " doses a day or fewer.");
-      if (m.mode === "manual" && k === "alk" && eff > 0.5) notes.push("Each hand dose of " + DOSE.alk.product + " raises alkalinity about " + eff.toFixed(2) + " dKH at once. Splitting it into two or more doses a day, or moving to a doser, keeps the swings smaller.");
+      if (m.mode === "auto" && u === "g") notes.push(DOSE[k].product + " is a powder, so a dosing pump can't dose it directly. Dissolve a known weight in RO/DI water and enter that solution as a custom product with its own strength, or dose it by hand.");
+      else if (m.mode === "auto" && m.minMl && per < m.minMl) notes.push(DOSE[k].product + ": " + per.toFixed(2) + " mL per dose is below your doser's " + m.minMl + " mL minimum. Use " + Math.max(1, Math.floor(ml / m.minMl)) + " doses a day or fewer.");
+      if (m.mode === "manual" && k === "alk" && eff > 0.5 && !isKalk()) notes.push("Each hand dose of " + DOSE.alk.product + " raises alkalinity about " + eff.toFixed(2) + " dKH at once. Splitting it into two or more doses a day, or moving to a doser, keeps the swings smaller.");
     };
     if (isAllInOne()) {
       if (plan.alk) {
         line("alk", plan.alk.ml, m.mode === "auto" ? 1 : 0);
         const addCa = plan.alk.ml * DOSE.ca.potency / V, addMg = plan.alk.ml * DOSE.mg.potency / V;
         const cu = plan.ca ? plan.ca.used : null, mu = plan.mg ? plan.mg.used : null;
-        notes.push(DOSE.alk.product + " supplies all three in one bottle, so it's dosed to hold alkalinity. At " + plan.alk.ml.toFixed(1) + " mL a day it also adds about " + addCa.toFixed(1) + " ppm calcium" + (cu ? " (you use " + cu + ")" : "") + " and " + addMg.toFixed(2) + " ppm magnesium" + (mu ? " (you use " + mu + ")" : "") + " a day." +
+        if (mgInOne()) notes.push(DOSE.alk.product + " supplies all three in one bottle, so it's dosed to hold alkalinity. At " + plan.alk.ml.toFixed(1) + " mL a day it also adds about " + addCa.toFixed(1) + " ppm calcium" + (cu ? " (you use " + cu + ")" : "") + " and " + addMg.toFixed(2) + " ppm magnesium" + (mu ? " (you use " + mu + ")" : "") + " a day." +
           (cu && Math.abs(addCa - cu) / cu > 0.3 ? " Calcium is off by more than 30%, so a separate calcium supplement or a lower dose may be needed; watch the calcium trend." : "") +
           (mu && addMg < mu * 0.5 ? " It won't keep up with your magnesium use on its own; add a magnesium supplement." : ""));
+        else notes.push(DOSE.alk.product + " supplies calcium and alkalinity together, so it's dosed to hold alkalinity. At " + plan.alk.ml.toFixed(1) + " mL a day it also adds about " + addCa.toFixed(1) + " ppm calcium" + (cu ? " (you use " + cu + ")" : "") + " a day." +
+          (cu && Math.abs(addCa - cu) / cu > 0.3 ? " Calcium is off by more than 30%, so a separate calcium supplement or a lower dose may be needed; watch the calcium trend." : ""));
+        if (isKalk()) {
+          const gal = plan.alk.ml / 3785.41;
+          notes.push("Kalkwasser goes in as top-off water, so this only works if the system evaporates at least " + fmtVol(gal, 2) + " a day. If it evaporates less, dose what evaporation allows and cover the rest with a two-part. Saturated kalkwasser raises pH, so add it slowly (a top-off pump or doser, ideally overnight) and keep it covered, since air slowly weakens it.");
+        }
       }
+      if (!mgInOne() && plan.mg) line("mg", plan.mg.ml, m.mode === "auto" ? 2 : 0);
     } else {
       let head = 0;
       ["alk","ca","mg"].forEach(k => { if (plan[k]) line(k, plan[k].ml, m.mode === "auto" ? ++head : 0); });
@@ -1981,16 +2064,16 @@ details.backup summary { cursor: pointer; list-style: revert; }
       if (m.mode === "manual" && plan.alk && plan.ca) notes.push("Dose the alkalinity and calcium parts at different times or in different spots with good flow, and never mix the concentrates together.");
     }
     $("maint-out").innerHTML = items.length ? '<ul class="result-list">' + items.join("") + '</ul>' + notes.map(n => '<div class="callout">' + esc(n) + '</div>').join("") +
-      '<p class="hint">For ' + V.toFixed(1) + ' gal. If you are new to dosing, begin at about 75% of these numbers and test alkalinity daily for a week before raising them.</p>'
+      '<p class="hint">For ' + fmtVol(V) + '. If you are new to dosing, begin at about 75% of these numbers and test alkalinity daily for a week before raising them.</p>'
       : '<p class="hint">Log a few tests a day or more apart (and save your current doses above) and the daily use fills in here.</p>';
   }
   $("dm-save").addEventListener("click", () => saveDosing("dm-status"));
   $("dm-sched").addEventListener("click", async () => {
     if (!db) { setStatus("dm-status", "Saving isn't available in this view.", true); return; }
     const m = readMethod(), plan = maintPlan();
-    const keys = (isAllInOne() ? ["alk"] : ["alk","ca","mg"]).filter(k => plan[k]);
+    const keys = doseHeads().filter(k => plan[k]);
     if (!keys.length) { setStatus("dm-status", "Nothing to schedule yet; the daily use numbers are empty.", true); return; }
-    const amounts = keys.map(k => DOSE[k].product + " " + plan[k].ml.toFixed(1) + " mL").join(", ");
+    const amounts = keys.map(k => DOSE[k].product + " " + plan[k].ml.toFixed(1) + " " + du(k)).join(", ");
     const find = re => tasks.find(t => re.test(t.name || ""));
     const upsert = async (hit, rec) => hit ? db.collection("tasks").doc(hit.id).set({ ...rec, lastDone: hit.lastDone || "", history: hit.history || [] }) : db.collection("tasks").add({ ...rec, lastDone: "", history: [] });
     const done = [];
@@ -2011,8 +2094,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
       setStatus("dm-status", "Updated your schedule with " + done.join(" and ") + ". Download a fresh calendar file on the Maintenance tab if you use one.");
     } catch (e) { setStatus("dm-status", "Couldn't update the schedule (" + (e && e.code || "error") + ").", true); }
   });
-  function getSalt(){ return { preset: $("s-preset").value, alk: num($("s-alk").value), ca: num($("s-ca").value), mg: num($("s-mg").value), k: num($("s-k").value), sg: num($("s-sg").value), gpg: num($("s-gpg").value) }; }
-  function setSalt(s){ $("s-preset").value = SALTS[s.preset] ? s.preset : "custom"; ["alk","ca","mg","k","sg","gpg"].forEach(k => { $("s-" + k).value = s[k] ?? ""; }); }
+  function getSalt(){ return { preset: $("s-preset").value, alk: num($("s-alk").value), ca: num($("s-ca").value), mg: num($("s-mg").value), k: num($("s-k").value), sg: num($("s-sg").value), gpg: getU("s-gpg", "gpg") }; }
+  function setSalt(s){ $("s-preset").value = SALTS[s.preset] ? s.preset : "custom"; ["alk","ca","mg","k","sg"].forEach(k => { $("s-" + k).value = s[k] ?? ""; }); setU("s-gpg", "gpg", s.gpg ?? ""); }
   // ---------- water change plan ----------
   const WC_PLANS = {
     weekly10:  { label: "10% weekly", pct: 10,  every: 7 },
@@ -2024,7 +2107,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const plan = WC_PLANS[$("w-plan").value] ? $("w-plan").value : "custom";
     const base = WC_PLANS[plan];
     return { plan, pct: base ? base.pct : Math.max(0.1, Math.min(100, num($("w-pct").value) || 10)), every: base ? base.every : Math.max(1, Math.round(num($("w-every").value) || 7)),
-      res: Math.max(0.5, num($("w-res").value) || 5), auto: base ? !!base.auto : (Math.max(1, Math.round(num($("w-every").value) || 7)) === 1 && (num($("w-pct").value) || 10) <= 5) };
+      res: Math.max(0.1, getU("w-res", "vol") || 5), auto: base ? !!base.auto : (Math.max(1, Math.round(num($("w-every").value) || 7)) === 1 && (num($("w-pct").value) || 10) <= 5) };
   }
   function setWcPlan(w){
     let plan = "weekly10", pct = 10, every = 7, res = 5;
@@ -2033,7 +2116,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       const V = volume().net || 1; plan = "custom"; pct = Math.round(w.gal / V * 1000) / 10; every = w.freq || 7;
     }
     if (WC_PLANS[plan]) { pct = WC_PLANS[plan].pct; every = WC_PLANS[plan].every; }
-    $("w-plan").value = plan; $("w-pct").value = pct; $("w-every").value = every; $("w-res").value = res;
+    $("w-plan").value = plan; $("w-pct").value = pct; $("w-every").value = every; setU("w-res", "vol", res);
     $("w-res-wrap").hidden = !(WC_PLANS[plan] && WC_PLANS[plan].auto) && !(plan === "custom" && every === 1);
   }
   $("w-plan").addEventListener("change", () => { const b = WC_PLANS[$("w-plan").value]; if (b) { $("w-pct").value = b.pct; $("w-every").value = b.every; } $("w-res-wrap").hidden = !(b && b.auto) && !($("w-plan").value === "custom" && Number($("w-every").value) === 1); renderWC(); });
@@ -2043,7 +2126,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     return { p, gal, perMonth, galMonth: gal * perMonth, saltChange: gpg * gal, saltMonth: gpg * gal * perMonth,
       replacedMonth: 1 - Math.pow(1 - p, perMonth) };
   }
-  const kgLb = g => (g / 1000).toFixed(2) + " kg (" + (g / 453.6).toFixed(1) + " lb)";
+  const kgLb = g => (g / 1000).toFixed(2) + " kg" + (isMetric() ? "" : " (" + (g / 453.6).toFixed(1) + " lb)");
   function renderWC(){
     const V = volume().net, s = getSalt(), w = readWcPlan(), gpg = s.gpg || 0;
     const m = planMath(w.pct, w.every, V, gpg);
@@ -2059,15 +2142,15 @@ details.backup summary { cursor: pointer; list-style: revert; }
       const perDay = alkRes.d / w.every; // average dKH per day the plan adds or removes
       if (perDay < -0.005) {
         const ml = -perDay * V / (DOSE.alk.potency || 2.22);
-        notes.push("This plan lowers alkalinity by about " + (-perDay).toFixed(3) + " dKH a day on average, because the salt mixes below your current level. That's roughly " + ml.toFixed(1) + " mL a day of " + DOSE.alk.product + " to make up, on top of what your corals use.");
+        notes.push("This plan lowers alkalinity by about " + (-perDay).toFixed(3) + " dKH a day on average, because the salt mixes below your current level. That's roughly " + ml.toFixed(1) + " " + du("alk") + " a day of " + DOSE.alk.product + " to make up, on top of what your corals use.");
       } else if (perDay > 0.005) notes.push("This plan raises alkalinity by about " + perDay.toFixed(3) + " dKH a day on average, which offsets part of what your corals use, so you'll dose a little less.");
     }
     if (w.every >= 21 && alkRes && s.alk != null && Math.abs(alkRes.d) >= 0.2) notes.push("A change this large moves alkalinity " + Math.abs(alkRes.d).toFixed(2) + " dKH in one step. Match the new water's alkalinity to the tank, or split the change over a couple of days, to keep the swing small.");
-    if (w.auto || w.every === 1) notes.push("An auto water change takes out and adds back " + m.gal.toFixed(2) + " gal a day. Your " + w.res + " gal reservoir lasts about " + Math.max(1, Math.floor(w.res / m.gal)) + " days. Check the pump's daily volume against a measuring cup now and then, since small dosing pumps drift.");
+    if (w.auto || w.every === 1) notes.push("An auto water change takes out and adds back " + fmtVol(m.gal, 2) + " a day. Your " + fmtVol(w.res) + " reservoir lasts about " + Math.max(1, Math.floor(w.res / m.gal)) + " days. Check the pump's daily volume against a measuring cup now and then, since small dosing pumps drift.");
     $("wc-out").innerHTML = '<ul class="result-list">' +
-      '<li><span>Change size</span><span><b>' + w.pct + '%</b> = <b>' + m.gal.toFixed(m.gal < 5 ? 2 : 1) + ' gal</b> ' + (w.every === 1 ? "every day" : "every " + w.every + " days") + '</span></li>' +
+      '<li><span>Change size</span><span><b>' + w.pct + '%</b> = <b>' + fmtVol(m.gal, m.gal < 5 ? 2 : 1) + '</b> ' + (w.every === 1 ? "every day" : "every " + w.every + " days") + '</span></li>' +
       '<li><span>Salt ' + perLabel + '</span><span>' + kgLb(m.saltChange) + '</span></li>' +
-      '<li><span>Per month</span><span>' + m.galMonth.toFixed(1) + ' gal of new saltwater · ' + kgLb(m.saltMonth) + ' of salt</span></li>' +
+      '<li><span>Per month</span><span>' + fmtVol(m.galMonth) + ' of new saltwater · ' + kgLb(m.saltMonth) + ' of salt</span></li>' +
       '<li><span>Old water replaced per month</span><span><b>' + Math.round(m.replacedMonth * 100) + '%</b></span></li>' +
       '<li><span style="grid-column:1/-1" class="hint">After ' + (w.every === 1 ? "one day" : "one change") + ', from your latest readings:</span><span></span></li>' + rows.join("") + '</ul>' +
       notes.map(n => '<div class="callout">' + esc(n) + '</div>').join("") +
@@ -2077,9 +2160,9 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const cols = Object.values(WC_PLANS).map(pl => ({ pl, m: planMath(pl.pct, pl.every, V, gpg) }));
     const r = (label, f) => '<tr><td style="text-align:left">' + label + '</td>' + cols.map(c => '<td>' + f(c) + '</td>').join("") + '</tr>';
     $("wc-compare").innerHTML = '<thead><tr><th></th>' + cols.map(c => '<th' + (c.pl.pct === w.pct && c.pl.every === w.every ? ' style="color:var(--accent)"' : '') + '>' + esc(c.pl.label) + '</th>').join("") + '</tr></thead><tbody>' +
-      r("Gallons per change", c => c.m.gal.toFixed(c.m.gal < 5 ? 2 : 1)) +
+      r((isMetric() ? "Liters" : "Gallons") + " per change", c => toDisp("vol", c.m.gal).toFixed(c.m.gal < 5 ? 2 : 1)) +
       r("Changes per month", c => c.m.perMonth.toFixed(c.m.perMonth < 10 ? 1 : 0)) +
-      r("New water per month", c => c.m.galMonth.toFixed(0) + " gal") +
+      r("New water per month", c => fmtVol(c.m.galMonth, 0)) +
       r("Salt per month", c => (c.m.saltMonth / 1000).toFixed(1) + " kg") +
       r("Old water replaced / month", c => Math.round(c.m.replacedMonth * 100) + "%") +
       (alkT && s.alk != null ? r("Alk step per change", c => { const d = (s.alk - alkT.alk) * c.m.p; return (d >= 0 ? "+" : "−") + Math.abs(d).toFixed(2) + " dKH"; }) : "") +
@@ -2098,15 +2181,15 @@ details.backup summary { cursor: pointer; list-style: revert; }
       if (w.auto || w.every === 1) {
         const every = Math.max(1, Math.floor(w.res / m.gal));
         const rec = { name: "Refill AWC saltwater reservoir", kind: "upkeep", every, marker: "", params: [], lastDone: awcTask ? awcTask.lastDone || "" : "",
-          notes: w.res + " gal of new saltwater, " + kgLb(s.gpg * w.res) + " of salt. The AWC uses about " + m.gal.toFixed(2) + " gal a day.", history: awcTask ? awcTask.history || [] : [] };
+          notes: fmtVol(w.res) + " of new saltwater, " + kgLb(s.gpg * w.res) + " of salt. The AWC uses about " + fmtVol(m.gal, 2) + " a day.", history: awcTask ? awcTask.history || [] : [] };
         if (awcTask) await db.collection("tasks").doc(awcTask.id).set(rec); else await db.collection("tasks").add(rec);
         done.push((awcTask ? "Updated" : "Added") + " \"Refill AWC saltwater reservoir\" every " + every + " days");
         if (manualTask) { await db.collection("tasks").doc(manualTask.id).delete(); done.push("removed the manual water change task"); }
       } else {
-        const rec = { name: "Water change (" + w.pct + "%, " + m.gal.toFixed(1) + " gal)", kind: "upkeep", every: w.every, marker: "Water change", params: [], lastDone: manualTask ? manualTask.lastDone || "" : "",
-          notes: "Mix " + m.gal.toFixed(1) + " gal with " + kgLb(m.saltChange) + " of salt.", history: manualTask ? manualTask.history || [] : [] };
+        const rec = { name: "Water change (" + w.pct + "%, " + fmtVol(m.gal) + ")", kind: "upkeep", every: w.every, marker: "Water change", params: [], lastDone: manualTask ? manualTask.lastDone || "" : "",
+          notes: "Mix " + fmtVol(m.gal) + " with " + kgLb(m.saltChange) + " of salt.", history: manualTask ? manualTask.history || [] : [] };
         if (manualTask) await db.collection("tasks").doc(manualTask.id).set(rec); else await db.collection("tasks").add(rec);
-        done.push((manualTask ? "Updated" : "Added") + " the water change task: " + m.gal.toFixed(1) + " gal every " + w.every + " days");
+        done.push((manualTask ? "Updated" : "Added") + " the water change task: " + fmtVol(m.gal) + " every " + w.every + " days");
         if (awcTask) { await db.collection("tasks").doc(awcTask.id).delete(); done.push("removed the AWC refill task"); }
       }
       setStatus("w-status", done.join("; ") + ". Download a fresh calendar file on the Maintenance tab if you use one.");
@@ -2171,7 +2254,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function renderDoseHist(){
     CONS_KEYS.forEach(k => { $("cd-lbl-" + k).textContent = DOSE[k].product; const inp = $("cd-" + k); if (!inp.dataset.dirty) { const v = doseAt(k, Date.now()); inp.value = v ? v : ""; } });
     $("cd-hist").innerHTML = doseHist.length ? '<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Since</th>' + CONS_KEYS.map(k => '<th>' + esc(DOSE[k].name) + '</th>').join("") + (canWrite ? '<th></th>' : '') + '</tr></thead><tbody>' +
-      [...doseHist].reverse().map(e => '<tr><td>' + dstr(toTs(e.from, "12:00")) + '</td>' + CONS_KEYS.map(k => '<td>' + (Number(e[k]) || 0) + ' mL' + (e.product && e.product[k] ? '<br><span class="hint">' + esc(e.product[k]) + '</span>' : '') + '</td>').join("") + (canWrite ? '<td class="act"><button type="button" class="danger" data-cddel="' + esc(e.from) + '">Delete</button></td>' : '') + '</tr>').join("") + '</tbody></table></div>'
+      [...doseHist].reverse().map(e => '<tr><td>' + dstr(toTs(e.from, "12:00")) + '</td>' + CONS_KEYS.map(k => '<td>' + (Number(e[k]) || 0) + ' ' + duOf(k, e.product && e.product[k] || DOSE[k].product) + (e.product && e.product[k] ? '<br><span class="hint">' + esc(e.product[k]) + '</span>' : '') + '</td>').join("") + (canWrite ? '<td class="act"><button type="button" class="danger" data-cddel="' + esc(e.from) + '">Delete</button></td>' : '') + '</tr>').join("") + '</tbody></table></div>'
       : '<p class="hint">No doses saved yet. Enter what you dose each day (0 if nothing) and save; change it here whenever you adjust your doser.</p>';
   }
   function renderConsumption(){
@@ -2184,7 +2267,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       if (r.slope == null) return '<tr><td style="text-align:left">' + DOSE[k].name + '</td><td>' + r.n + '</td><td colspan="5" class="note">' + (r.short ? "Tests need to span at least a day" : "Needs at least 2 tests in this window") + '</td></tr>';
       const chg = r.hold - r.current;
       return '<tr><td style="text-align:left">' + DOSE[k].name + '</td><td>' + r.n + '</td><td>' + f(r.slope) + '</td><td>+' + r.dose.toFixed(dp(k)) + '</td><td>' + f(r.wc) + '</td><td><b>' + f(r.cons) + ' ' + u + '</b></td>' +
-        '<td class="note">' + r.hold.toFixed(1) + ' mL/day' + (Math.abs(chg) >= 0.5 ? ' <span class="hint">(' + (chg > 0 ? "+" : "−") + Math.abs(chg).toFixed(1) + ' vs now)</span>' : ' <span class="hint">(about what you dose)</span>') + '</td></tr>';
+        '<td class="note">' + r.hold.toFixed(1) + ' ' + du(k) + '/day' + (Math.abs(chg) >= 0.5 ? ' <span class="hint">(' + (chg > 0 ? "+" : "−") + Math.abs(chg).toFixed(1) + ' vs now)</span>' : ' <span class="hint">(about what you dose)</span>') + '</td></tr>';
     }).join("");
     const notes = [];
     if (noDoses) notes.push("No doses are saved, so this treats you as not dosing. If you dose, enter your mL per day above and consumption will include it.");
@@ -2224,7 +2307,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     CONS_KEYS.forEach(k => { delete $("cd-" + k).dataset.dirty; });
     try {
       await saveDosing("cd-status");
-      if ($("cd-mark").checked) await db.collection("tests").add({ ts: toTs(from, nowTime()), events: ["Dosing change"], note: "Doses: " + CONS_KEYS.map(k => DOSE[k].product + " " + entry[k] + " mL/day").join(", "), ...Object.fromEntries(PARAMS.map(p => [p.key, null])) });
+      if ($("cd-mark").checked) await db.collection("tests").add({ ts: toTs(from, nowTime()), events: ["Dosing change"], note: "Doses: " + CONS_KEYS.map(k => DOSE[k].product + " " + entry[k] + " " + du(k) + "/day").join(", "), ...Object.fromEntries(PARAMS.map(p => [p.key, null])) });
       setStatus("cd-status", "Doses saved from " + dstr(toTs(from, "12:00")) + ".");
     } catch (e) { setStatus("cd-status", "Couldn't save the doses.", true); }
   });
@@ -2286,10 +2369,11 @@ details.backup summary { cursor: pointer; list-style: revert; }
 
   function renderVol(){
     const r = volume();
-    $("vol-out").innerHTML = '<div><span class="label">Display</span><span class="big">' + r.gross.toFixed(1) + '</span><small>gal gross</small></div>' +
-      '<div><span class="label">Sand + rock</span><span class="big">−' + (r.sand + r.rock).toFixed(1) + '</span><small>gal displaced</small></div>' +
-      '<div><span class="label">Sump</span><span class="big">+' + r.sump.toFixed(1) + '</span><small>gal at running level</small></div>' +
-      '<div class="net"><span class="label">Net system</span><span class="big">' + r.net.toFixed(1) + '</span><small>gal · ' + (r.net * 3.785).toFixed(0) + ' L</small></div>';
+    const u = uLabel("vol"), n = v => toDisp("vol", v).toFixed(1);
+    $("vol-out").innerHTML = '<div><span class="label">Display</span><span class="big">' + n(r.gross) + '</span><small>' + u + ' gross</small></div>' +
+      '<div><span class="label">Sand + rock</span><span class="big">−' + n(r.sand + r.rock) + '</span><small>' + u + ' displaced</small></div>' +
+      '<div><span class="label">Sump</span><span class="big">+' + n(r.sump) + '</span><small>' + u + ' at running level</small></div>' +
+      '<div class="net"><span class="label">Net system</span><span class="big">' + n(r.net) + '</span><small>' + (isMetric() ? 'L · ' + r.net.toFixed(1) + ' US gal' : 'gal · ' + (r.net * L_GAL).toFixed(0) + ' L') + '</small></div>';
   }
   function renderDosing(){ renderVol(); if (!$("corr").innerHTML) renderCorrection(); else updateCorrection(); renderConsumption(); renderMaint(); renderWC(); }
   function refillCurrents(){ Object.keys(DOSE).forEach(k => { const inp = $("c-" + k); if (inp && !inp.dataset.dirty) { const t = latestVal(k); inp.value = t ? t[k] : ""; } }); }
@@ -2604,14 +2688,14 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const f = fixtureById($("ll-fixture").value);
     return { ts: Date.now(), fixture: f.id, fixtureName: f.name, count: Math.max(1, Math.round(num($("ll-count").value) || 1)), program: $("ll-program").value.trim(),
       channels: readLlValues(), on: $("ll-on").value, peakStart: $("ll-ps").value, peakEnd: $("ll-pe").value, off: $("ll-off").value,
-      height: num($("ll-height").value), master: num($("ll-master").value), notes: $("ll-notes").value.trim() };
+      height: getU("ll-height", "len"), master: num($("ll-master").value), notes: $("ll-notes").value.trim() };
   }
   function fillLlForm(e){
     $("ll-fixture").value = fixtureById(e.fixture).id; $("ll-count").value = e.count || 1; $("ll-program").value = e.program || "";
     const f = fixtureById(e.fixture); $("ll-custom").value = f.custom ? Object.keys(e.channels || {}).join(", ") : "";
     renderLlChannels(e.channels || {});
     $("ll-on").value = e.on || ""; $("ll-ps").value = e.peakStart || ""; $("ll-pe").value = e.peakEnd || ""; $("ll-off").value = e.off || "";
-    $("ll-height").value = e.height ?? ""; $("ll-master").value = e.master ?? ""; $("ll-notes").value = "";
+    setU("ll-height", "len", e.height ?? ""); $("ll-master").value = e.master ?? ""; $("ll-notes").value = "";
   }
   function k7AsLogEntry(p){ // show saved K7 programs in the same log
     const g = p.grid || [], lit = g.filter(r => r.some(v => v > 0)).length, peak = g.reduce((a, r) => r.reduce((s, v) => s + v, 0) > a.reduce((s, v) => s + v, 0) ? r : a, g[0] || []);
@@ -2630,7 +2714,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
         return '<span class="llc">' + esc(n) + ' <b>' + v + '%</b>' + (d ? ' <span class="' + (d > 0 ? "up" : "down") + '">' + (d > 0 ? "+" : "−") + Math.abs(d) + '</span>' : '') + '</span>'; }).join("");
       const photo = e.litHours != null ? e.litHours : hours(e.on, e.off);
       const meta = [dstr(e.ts), e.k7 ? "K7 program" : "", e.count > 1 ? "×" + e.count : "", e.on && e.off ? e.on + "–" + e.off + (photo != null ? " (" + (+photo.toFixed(1)) + " h)" : "") : "",
-        e.peakStart && e.peakEnd ? "peak " + e.peakStart + "–" + e.peakEnd : "", e.height != null ? e.height + " in above water" : "", e.master != null ? "master " + e.master + "%" : ""].filter(Boolean);
+        e.peakStart && e.peakEnd ? "peak " + e.peakStart + "–" + e.peakEnd : "", e.height != null ? fmtLen(e.height, isMetric() ? 0 : 1) + " above water" : "", e.master != null ? "master " + e.master + "%" : ""].filter(Boolean);
       return '<div class="lp-item"><div style="min-width:0"><b>' + esc(e.fixtureName || "Light") + (e.program ? ' · ' + esc(e.program) : '') + '</b>' + (idx === 0 ? ' <span class="pill ok">Current</span>' : '') +
         '<div class="d">' + meta.map(esc).join(" · ") + '</div>' + (chHtml ? '<div class="llcs">' + chHtml + '</div>' : '') + (e.notes ? '<div class="hint">' + esc(e.notes) + '</div>' : '') + '</div>' +
         '<div class="btns">' + (e.k7 ? '<button type="button" data-lpload="' + esc(e.id.slice(3)) + '">Open in programmer</button>' : (canWrite ? '<button type="button" data-llcopy="' + esc(e.id) + '">Copy</button><button type="button" class="danger" data-lldel="' + esc(e.id) + '">Delete</button>' : '')) + '</div></div>';
@@ -2688,45 +2772,74 @@ details.backup summary { cursor: pointer; list-style: revert; }
     salt:"af35", alk:{ name:"Brightwell Reef Code B", potency:2.22 }, ca:{ name:"Brightwell Reef Code A", potency:16 }, mg:{ name:"Brightwell Magnesion", potency:26 }, light:"", lightCount:1 };
   let profileSeen = false;
   const pfNum = (id, d) => { const v = num($(id).value); return v == null || v < 0 ? d : v; };
+  const pfU = (id, t, d) => { const v = getU(id, t); return v == null || v < 0 ? d : v; };
   $("pf-salt").innerHTML = Object.entries(SALTS).map(([k, v]) => '<option value="' + k + '">' + esc(v.label) + '</option>').join("");
   $("pf-products").innerHTML = ["alk","ca","mg"].map(k => { const d = DOSE[k];
     return '<div class="fields three"><div class="field" style="grid-column:span 2"><label for="pf-' + k + '-name"><b>' + d.name + ' product</b></label><input id="pf-' + k + '-name" type="text" list="pf-' + k + '-list" maxlength="60">' +
-      '<datalist id="pf-' + k + '-list">' + PRODUCTS[k].map(x => '<option value="' + esc(x.name) + '" label="' + esc(x.potency + " " + d.unit + " per mL per gal (" + x.basis + ")") + '">').join("") + '</datalist></div>' +
-      '<div class="field"><label for="pf-' + k + '-pot"><b>Strength</b> ' + d.unit + ' per mL per gal</label><input id="pf-' + k + '-pot" type="number" step="any" min="0"></div></div>'; }).join("") +
-    '<p class="hint">Strength is how much 1 mL raises 1 US gallon. Picking a listed product fills it in (label means the maker states it; calc means it is worked out from the maker\'s stated concentration or mix). For anything else, enter the label strength. Picking Tropic Marin All-For-Reef for alkalinity sets calcium and magnesium to it too.</p>';
+      '<datalist id="pf-' + k + '-list"></datalist></div>' +
+      '<div class="field"><label for="pf-' + k + '-pot"><b>Strength</b> ' + d.unit + ' per mL (or g) <span data-ul="pot">per gal</span></label><input id="pf-' + k + '-pot" type="number" step="any" min="0"></div></div>'; }).join("") +
+    '<p class="hint">Strength is how much 1 mL (or 1 g of a powder) raises 1 US gallon, or 100 L with metric units. Picking a listed product fills it in (label means the maker states it; calc means it is worked out from the maker\'s stated concentration or mix). For anything else, enter the label strength. Picking Tropic Marin All-For-Reef for alkalinity sets calcium and magnesium to it too; picking kalkwasser sets calcium to it. Seachem Reef Builder is a powder, so its doses show in grams.</p>';
+  function renderPfDatalists(){
+    ["alk","ca","mg"].forEach(k => { const d = DOSE[k];
+      $("pf-" + k + "-list").innerHTML = PRODUCTS[k].map(x => '<option value="' + esc(x.name) + '" label="' + esc(+toDisp("pot", x.potency).toPrecision(3) + " " + d.unit + " per " + (x.du || "mL") + " " + uLabel("pot") + " (" + x.basis + ")") + '">').join(""); });
+  }
+  renderPfDatalists();
   ["alk","ca","mg"].forEach(k => $("pf-" + k + "-name").addEventListener("change", () => {
     const hit = PRODUCTS[k].find(x => x.name === $("pf-" + k + "-name").value.trim()); if (!hit) return;
-    $("pf-" + k + "-pot").value = hit.potency;
-    if (hit.allInOne && k === "alk") ["ca","mg"].forEach(j => { const h = productInfo(j, hit.name); if (h) { $("pf-" + j + "-name").value = h.name; $("pf-" + j + "-pot").value = h.potency; } });
+    withUnits(pfUnitsShown, () => {
+      setU("pf-" + k + "-pot", "pot", hit.potency);
+      if (hit.allInOne && k === "alk") ["ca","mg"].forEach(j => { const h = productInfo(j, hit.name); if (h) { $("pf-" + j + "-name").value = h.name; setU("pf-" + j + "-pot", "pot", h.potency); } });
+    });
   }));
+  // switching units inside the dialog re-shows the numbers already typed
+  let pfUnitsShown = UNITS;
+  const withUnits = (u, f) => { const prev = UNITS; UNITS = u; try { return f(); } finally { UNITS = prev; } };
+  const pfLabels = () => { document.querySelectorAll("#pf [data-ul]").forEach(el => { el.textContent = uLabel(el.dataset.ul); }); renderPfDatalists(); };
+  $("pf-units").addEventListener("change", () => {
+    const canon = withUnits(pfUnitsShown, readProfileForm), nu = $("pf-units").value;
+    withUnits(nu, () => { fillProfileForm(canon); pfLabels(); });
+    pfUnitsShown = nu;
+  });
   $("pf-hassump").addEventListener("change", () => { $("pf-sump").hidden = !$("pf-hassump").checked; });
 
   function fillProfileForm(p){
     $("pf-name").value = p.name || ""; $("pf-display").value = p.display || "";
-    ["dl","dw","dd","sand","rock","sl","sw","sd"].forEach(k => { $("pf-" + k).value = p[k] ?? ""; });
+    ["dl","dw","dd","sand","rock","sl","sw","sd"].forEach(k => setU("pf-" + k, k === "rock" ? "wt" : "len", p[k] ?? ""));
     $("pf-hassump").checked = p.hasSump !== false; $("pf-sump").hidden = p.hasSump === false; $("pf-sumpmodel").value = p.sumpModel || "";
     $("pf-salt").value = SALTS[p.salt] ? p.salt : "af35";
-    ["alk","ca","mg"].forEach(k => { $("pf-" + k + "-name").value = (p[k] && p[k].name) || ""; $("pf-" + k + "-pot").value = (p[k] && p[k].potency) ?? ""; });
+    ["alk","ca","mg"].forEach(k => { $("pf-" + k + "-name").value = (p[k] && p[k].name) || ""; setU("pf-" + k + "-pot", "pot", (p[k] && p[k].potency) ?? ""); });
+    $("pf-units").value = p.units === "metric" ? "metric" : "us";
     $("pf-light").value = p.light || ""; $("pf-lightcount").value = p.lightCount || 1;
   }
   function readProfileForm(){
     const hasSump = $("pf-hassump").checked;
-    const prod = k => ({ name: $("pf-" + k + "-name").value.trim() || DOSE[k].product, potency: pfNum("pf-" + k + "-pot", DOSE[k].potency) });
+    const prod = k => ({ name: $("pf-" + k + "-name").value.trim() || DOSE[k].product, potency: pfU("pf-" + k + "-pot", "pot", DOSE[k].potency) });
     return { name: $("pf-name").value.trim() || "My Reef", display: $("pf-display").value.trim(),
-      dl: pfNum("pf-dl", 0), dw: pfNum("pf-dw", 0), dd: pfNum("pf-dd", 0), sand: pfNum("pf-sand", 0), rock: pfNum("pf-rock", 0),
-      hasSump, sumpModel: hasSump ? $("pf-sumpmodel").value.trim() : "", sl: hasSump ? pfNum("pf-sl", 0) : 0, sw: hasSump ? pfNum("pf-sw", 0) : 0, sd: hasSump ? pfNum("pf-sd", 0) : 0,
+      dl: pfU("pf-dl", "len", 0), dw: pfU("pf-dw", "len", 0), dd: pfU("pf-dd", "len", 0), sand: pfU("pf-sand", "len", 0), rock: pfU("pf-rock", "wt", 0),
+      hasSump, sumpModel: hasSump ? $("pf-sumpmodel").value.trim() : "", sl: hasSump ? pfU("pf-sl", "len", 0) : 0, sw: hasSump ? pfU("pf-sw", "len", 0) : 0, sd: hasSump ? pfU("pf-sd", "len", 0) : 0,
       salt: $("pf-salt").value, alk: prod("alk"), ca: prod("ca"), mg: prod("mg"),
-      light: $("pf-light").value.trim(), lightCount: Math.max(1, Math.round(pfNum("pf-lightcount", 1))) };
+      light: $("pf-light").value.trim(), lightCount: Math.max(1, Math.round(pfNum("pf-lightcount", 1))), units: $("pf-units").value === "metric" ? "metric" : "us" };
+  }
+  function applyUnits(u){
+    u = u === "metric" ? "metric" : "us";
+    try { localStorage.setItem("reef-units", u); } catch (e) {}
+    if (u === UNITS) return false;
+    UNITS = u; applyParamUnits(); renderUnitLabels(); renderPfDatalists();
+    tests = testsRaw.map(convTest); targets = targetsFrom(targetsRaw);
+    renderTargets(); renderAll(); $("corr").innerHTML = "";
+    return true;
   }
   function applyProfile(p){
     profile = p;
+    if (p) applyUnits(p.units);
     const q = p || PROFILE_BLANK;
     if (p) {
       const title = (p.name || "My Reef") + " Log";
       $("hdr-title").textContent = title; document.title = title;
       $("hdr-sub").textContent = "Water chemistry log" + (p.hasSump && p.sumpModel ? " · " + p.sumpModel + (/sump/i.test(p.sumpModel) ? "" : " sump") : "");
-      $("vol-hint").textContent = (p.display || "Display") + " (inside " + p.dl + " × " + p.dw + " in, " + p.dd + " in of water)" +
-        (p.hasSump ? " plus " + (p.sumpModel || "sump") + " (" + p.sl + " × " + p.sw + " in at " + p.sd + " in running depth)" : "") + ", from your tank profile. Measure your actual water depths and adjust; everything below uses the net figure.";
+      const L = v => +toDisp("len", v).toFixed(isMetric() ? 1 : 2), lu = uLabel("len");
+      $("vol-hint").textContent = (p.display || "Display") + " (inside " + L(p.dl) + " × " + L(p.dw) + " " + lu + ", " + L(p.dd) + " " + lu + " of water)" +
+        (p.hasSump ? " plus " + (p.sumpModel || "sump") + " (" + L(p.sl) + " × " + L(p.sw) + " " + lu + " at " + L(p.sd) + " " + lu + " running depth)" : "") + ", from your tank profile. Measure your actual water depths and adjust; everything below uses the net figure.";
       $("spec-fixture").textContent = (p.light || "Not set") + (p.light ? " ×" + (p.lightCount || 1) : "");
       $("spec-note").hidden = !p.light || /k7/i.test(p.light);
     }
@@ -2740,17 +2853,17 @@ details.backup summary { cursor: pointer; list-style: revert; }
     if (p) { initLlForm(); renderLightLog(); }
   }
   function openProfile(first){
-    fillProfileForm(profile || PROFILE_BLANK);
+    pfUnitsShown = UNITS; fillProfileForm({ ...(profile || PROFILE_BLANK), units: UNITS }); pfLabels();
     $("pf-title").textContent = first ? "Set up your tank" : "Tank profile";
     $("pf-second").hidden = !first; $("pf-cancel").textContent = first ? "Skip for now" : "Cancel";
     setStatus("pf-status", ""); $("pf").hidden = false; $("pf-name").focus();
   }
   $("btn-profile").addEventListener("click", () => openProfile(false));
-  $("pf-cancel").addEventListener("click", () => { $("pf").hidden = true; try { sessionStorage.setItem("reef-pf-skip", "1"); } catch (e) {} });
+  $("pf-cancel").addEventListener("click", () => { $("pf").hidden = true; renderUnitLabels(); renderPfDatalists(); try { sessionStorage.setItem("reef-pf-skip", "1"); } catch (e) {} });
   $("pf").addEventListener("keydown", ev => { if (ev.key === "Escape") $("pf").hidden = true; });
   $("pf-form").addEventListener("submit", async ev => {
     ev.preventDefault();
-    const p = readProfileForm();
+    const p = withUnits(pfUnitsShown, readProfileForm);
     if (!(p.dl > 0 && p.dw > 0 && p.dd > 0)) { setStatus("pf-status", "Enter the display's inside length, width and water depth.", true); return; }
     if (!db) { applyProfile(p); $("pf").hidden = true; return; }
     $("pf-save").disabled = true;
@@ -2811,6 +2924,9 @@ details.backup summary { cursor: pointer; list-style: revert; }
 
   // ---------- boot ----------
   buildForm(); renderTargets(); renderAll();
+  if (!window.__standalone) $("priv-claude").hidden = false;
+  (function(){ const c = window.REEF_CONFIG || {}; if (c.feedbackUrl) { $("fb-link").href = c.feedbackUrl; $("fb-hint").textContent = c.feedbackNote || "Opens the Reef Log feedback form."; } })();
+  renderUnitLabels();
   showTab((location.hash || "").slice(1) || (() => { try { return localStorage.getItem("reef-tab"); } catch (e) { return null; } })() || "chemistry");
   document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => { try { localStorage.setItem("reef-tab", b.dataset.tab); } catch (e) {} }));
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (!$("tab-chemistry").hidden) renderCards(data()); if (!$("tab-lighting").hidden) renderLighting(); }, 150); });
@@ -2842,12 +2958,11 @@ details.backup summary { cursor: pointer; list-style: revert; }
     db.doc("settings/dosing").onSnapshot(snap => { applyDosingDoc(snap.exists ? snap.data() : null); }, () => {});
     claude.use("assets").then(a => { assets = a; if (!a) { $("ph-label").hidden = true; setStatus("ph-status", canWrite ? "Photo uploads aren't available in this view." : ""); } });
     db.collection("tests").orderBy("ts", "asc").limit(1000).onSnapshot(snap => {
-      tests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      testsRaw = snap.docs.map(d => ({ id: d.id, ...d.data() })); tests = testsRaw.map(convTest);
       usingExamples = tests.length === 0; renderAll();
     }, () => {});
     db.doc("settings/targets").onSnapshot(snap => {
-      if (snap.exists) { const d = snap.data(); PARAMS.forEach(p => { if (d[p.key]) targets[p.key] = d[p.key].t != null ? {lo: d[p.key].lo, hi: d[p.key].hi, t: d[p.key].t} : {lo: d[p.key].lo, hi: d[p.key].hi}; }); }
-      else targets = JSON.parse(JSON.stringify(DEFAULTS));
+      targetsRaw = snap.exists ? snap.data() : null; targets = targetsFrom(targetsRaw);
       renderTargets(); renderAll();
       renderCorrection(); renderMaint(); renderWC(); // dosing goals and water-change notes follow the targets
     }, () => {});

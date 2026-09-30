@@ -5,5 +5,7 @@
  */
 window.REEF_CONFIG = {
   supabaseUrl: "",   // e.g. "https://abcdefghijkl.supabase.co"
-  supabaseKey: ""    // the Publishable key, starts with "sb_publishable_"
+  supabaseKey: "",   // the Publishable key, starts with "sb_publishable_"
+  feedbackUrl: "",   // optional: a Google Form or other link for feedback; blank uses GitHub Issues
+  feedbackNote: ""   // optional: the line shown under the feedback button, e.g. "Opens a short Google Form."
 };
