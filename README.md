@@ -3,6 +3,7 @@
 A reef aquarium log that runs in any browser and installs to a phone's home screen:
 
 - **Chemistry**: log water tests and chart alkalinity, calcium, magnesium, nitrate, phosphate, salinity, temperature and pH against target ranges, with maintenance-event markers and per-day change.
+- **Livestock**: fish, corals (by group) and invertebrates with photo, date added, source, placement, status (in tank, lost, rehomed) and days in the tank.
 - **Equipment**: list of everything on the system, by category and status.
 - **Photos**: dated tank photos, grouped by month.
 - **Dosing & salt**: system water volume, correction and daily maintenance doses, and a water-change planner using salt-mix values (Aquaforest Reef Salt presets).

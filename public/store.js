@@ -276,7 +276,7 @@
     },
     photoAssetIds: function () {
       var ids = [];
-      docs.forEach(function (v, k) { if (k.indexOf("photos/") === 0 && v && v.asset) ids.push(v.asset); });
+      docs.forEach(function (v) { if (v && typeof v.asset === "string" && v.asset && ids.indexOf(v.asset) < 0) ids.push(v.asset); });
       return ids;
     },
     blobsToUpload: function () {

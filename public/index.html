@@ -201,6 +201,28 @@ table.calc td.res { font-weight: 500; color: var(--ink); }
 .qr-out { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .qr-out canvas { background: #fff; padding: 10px; border-radius: 6px; max-width: 100%; height: auto; image-rendering: pixelated; }
 .qr-out code { word-break: break-all; font-size: 0.7rem; max-width: 100%; }
+.ls-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.ls-summary div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.ls-summary .big { font-family: var(--f-mono); font-size: 1.4rem; font-weight: 500; }
+.ls-summary small { color: var(--muted); font-size: 0.78rem; }
+.ls-filter { flex-wrap: wrap; max-width: 100%; }
+.ls-filter button { white-space: nowrap; }
+.ls-photo-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ls-photo-row img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
+.ls-group h3 { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 14px 0 4px; }
+.ls-item { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); align-items: start; }
+.ls-item .thumbbox { width: 64px; height: 64px; border-radius: 6px; background: var(--grid); overflow: hidden; display: grid; place-items: center; color: var(--muted); font: 600 0.7rem var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
+.ls-item .thumbbox img { width: 100%; height: 100%; object-fit: cover; }
+.ls-item .name { font-weight: 600; }
+.ls-item .sci { font-style: italic; color: var(--muted); font-size: 0.86rem; }
+.ls-item .meta { font-family: var(--f-mono); font-size: 0.76rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.ls-item .notes { color: var(--muted); font-size: 0.86rem; }
+.ls-item .side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.ls-item .side .btns { display: flex; gap: 6px; }
+.ls-item .side button { padding: 3px 8px; font-size: 0.75rem; }
+.pill.lost { background: var(--bad-bg); color: var(--bad); }
+.pill.rehomed { background: var(--grid); color: var(--muted); }
+@media (max-width: 420px) { .ls-item { grid-template-columns: 56px minmax(0, 1fr); } .ls-item .side { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; } }
 details.backup summary { cursor: pointer; list-style: revert; }
 .lp-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 8px 0; border-bottom: 1px solid var(--grid); }
 .lp-item .btns { display: flex; gap: 6px; align-items: center; }
@@ -231,6 +253,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
 
   <nav class="tabs" role="tablist" aria-label="Log sections">
     <button type="button" role="tab" id="tb-chemistry" data-tab="chemistry" aria-selected="true">Chemistry</button>
+    <button type="button" role="tab" id="tb-livestock" data-tab="livestock" aria-selected="false">Livestock<span class="count" id="c-ls"></span></button>
     <button type="button" role="tab" id="tb-equipment" data-tab="equipment" aria-selected="false">Equipment<span class="count" id="c-eq"></span></button>
     <button type="button" role="tab" id="tb-photos" data-tab="photos" aria-selected="false">Photos<span class="count" id="c-ph"></span></button>
     <button type="button" role="tab" id="tb-dosing" data-tab="dosing" aria-selected="false">Dosing &amp; salt</button>
@@ -332,6 +355,57 @@ details.backup summary { cursor: pointer; list-style: revert; }
           <span class="hint" id="eq-summary"></span>
         </div>
         <div class="eq-groups" id="eq-list"><div class="skeleton">Loading equipment…</div></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-livestock" role="tabpanel" aria-labelledby="tb-livestock" hidden>
+    <div class="ls-summary" id="ls-summary"></div>
+    <div class="cols">
+      <section class="panel" id="ls-entry">
+        <h2 id="ls-title">Add livestock</h2>
+        <form id="lf" novalidate>
+          <div class="fields">
+            <div class="field"><label for="l-type"><b>Type</b></label><select id="l-type"><option value="fish">Fish</option><option value="coral">Coral</option><option value="invert">Invertebrate</option></select></div>
+            <div class="field" id="l-kind-wrap"><label for="l-kind"><b>Coral group</b></label><select id="l-kind"><option>LPS</option><option>SPS</option><option>Soft</option><option>Zoanthid / Palythoa</option><option>Mushroom</option><option>Other</option></select></div>
+            <div class="field" style="grid-column:1/-1"><label for="l-name"><b>Common name</b></label><input id="l-name" type="text" maxlength="80" placeholder="e.g. Hammer coral"></div>
+            <div class="field" style="grid-column:1/-1"><label for="l-sci"><b>Scientific name</b> (optional)</label><input id="l-sci" type="text" maxlength="80" placeholder="e.g. Fimbriaphyllia ancora"></div>
+            <div class="field"><label for="l-qty"><b>Quantity</b></label><input id="l-qty" type="number" min="1" step="1" value="1"></div>
+            <div class="field"><label for="l-added"><b>Date added</b></label><input id="l-added" type="date"></div>
+            <div class="field"><label for="l-source"><b>Source</b></label><input id="l-source" type="text" maxlength="80" placeholder="Store, online, frag swap"></div>
+            <div class="field"><label for="l-status"><b>Status</b></label><select id="l-status"><option value="alive">In the tank</option><option value="lost">Lost</option><option value="rehomed">Rehomed / sold</option></select></div>
+            <div class="field" id="l-sdate-wrap" hidden><label for="l-sdate"><b>Date</b></label><input id="l-sdate" type="date"></div>
+            <div class="field" style="grid-column:1/-1"><label for="l-place"><b>Placement</b> (corals and inverts)</label><input id="l-place" type="text" maxlength="80" placeholder="e.g. Mid rock, left side, moderate flow"></div>
+          </div>
+          <div class="field" style="margin-top:10px"><label for="l-notes"><b>Notes</b> · behavior, feeding, growth, cause of loss</label><textarea id="l-notes"></textarea></div>
+          <div class="field" style="margin-top:10px">
+            <span class="label">Photo</span>
+            <div class="ls-photo-row">
+              <img id="l-preview" alt="" hidden>
+              <label class="btn" for="l-photo" id="l-photo-label">Choose photo</label><input type="file" id="l-photo" accept="image/*" hidden>
+              <button type="button" id="l-photo-clear" hidden>Remove photo</button>
+            </div>
+          </div>
+          <label class="chip" style="margin-top:10px" id="l-mark-wrap"><input type="checkbox" id="l-mark" checked>Add a New livestock marker to the chemistry charts</label>
+          <div class="form-actions" style="margin-top:12px">
+            <button class="primary" type="submit" id="l-save">Add to livestock</button>
+            <button type="button" id="l-cancel" hidden>Cancel edit</button>
+            <span class="status" id="l-status-msg" role="status"></span>
+          </div>
+        </form>
+      </section>
+      <section class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+          <h2>Livestock</h2>
+          <div class="seg ls-filter" role="group" aria-label="Show">
+            <button type="button" data-lsf="alive" aria-pressed="true">In tank</button>
+            <button type="button" data-lsf="fish" aria-pressed="false">Fish</button>
+            <button type="button" data-lsf="coral" aria-pressed="false">Corals</button>
+            <button type="button" data-lsf="invert" aria-pressed="false">Inverts</button>
+            <button type="button" data-lsf="gone" aria-pressed="false">Lost / rehomed</button>
+          </div>
+        </div>
+        <div id="ls-list"><div class="skeleton">Loading livestock…</div></div>
       </section>
     </div>
   </div>
@@ -870,7 +944,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
 
   // ---------- tabs ----------
-  const TABS = ["chemistry","equipment","photos","dosing","lighting"];
+  const TABS = ["chemistry","livestock","equipment","photos","dosing","lighting"];
   function showTab(name, push){
     if (!TABS.includes(name)) name = "chemistry";
     TABS.forEach(t => { $("tab-" + t).hidden = t !== name; $("tb-" + t).setAttribute("aria-selected", String(t === name)); });
@@ -878,6 +952,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     if (name === "chemistry") renderCards(data());
     if (name === "dosing") renderDosing();
     if (name === "lighting") renderLighting();
+    if (name === "livestock") renderLivestock();
     if (push) { try { history.replaceState(null, "", "#" + name); } catch (e) {} }
   }
   document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab, true)));
@@ -1002,6 +1077,127 @@ details.backup summary { cursor: pointer; list-style: revert; }
     try { await db.collection("photos").doc(lbId).delete(); if (assets && p) { try { await assets.delete(p.asset); } catch (e) {} } closeLb(); }
     catch (e) { setStatus("lb-status", "Couldn't delete.", true); }
   });
+
+  // ---------- livestock ----------
+  const LS_TYPES = { fish: "Fish", coral: "Corals", invert: "Invertebrates" };
+  const LS_STATUS = { alive: "In the tank", lost: "Lost", rehomed: "Rehomed" };
+  let livestock = [], lsLoaded = false, lsEditing = null, lsFilter = "alive", lsNewPhoto = null, lsClearPhoto = false;
+  const daysBetween = (a, b) => Math.max(0, Math.round((b - a) / DAY));
+  function lsSyncFields(){
+    $("l-kind-wrap").hidden = $("l-type").value !== "coral";
+    $("l-sdate-wrap").hidden = $("l-status").value === "alive";
+  }
+  $("l-type").addEventListener("change", lsSyncFields);
+  $("l-status").addEventListener("change", () => { lsSyncFields(); if ($("l-status").value !== "alive" && !$("l-sdate").value) $("l-sdate").value = today(); });
+  function lsShowPreview(src){
+    $("l-preview").hidden = !src; if (src) $("l-preview").src = src; else $("l-preview").removeAttribute("src");
+    $("l-photo-clear").hidden = !src; $("l-photo-label").textContent = src ? "Change photo" : "Choose photo";
+  }
+  function lsReset(){
+    lsEditing = null; lsNewPhoto = null; lsClearPhoto = false; $("lf").reset(); $("l-added").value = today(); $("l-qty").value = 1;
+    $("ls-title").textContent = "Add livestock"; $("l-save").textContent = "Add to livestock"; $("l-cancel").hidden = true; $("l-mark-wrap").hidden = false;
+    lsShowPreview(null); lsSyncFields();
+  }
+  $("l-photo").addEventListener("change", ev => {
+    const f = ev.target.files[0]; ev.target.value = ""; if (!f) return;
+    lsNewPhoto = f; lsClearPhoto = false; lsShowPreview(URL.createObjectURL(f));
+  });
+  $("l-photo-clear").addEventListener("click", () => { lsNewPhoto = null; lsClearPhoto = true; lsShowPreview(null); });
+
+  function renderLivestock(){
+    const alive = livestock.filter(l => (l.status || "alive") === "alive");
+    const count = t => alive.filter(l => l.type === t).reduce((n, l) => n + (Number(l.qty) || 1), 0);
+    $("c-ls").textContent = alive.length ? String(alive.length) : "";
+    if (!lsLoaded) return;
+    const coralKinds = {}; alive.filter(l => l.type === "coral").forEach(l => { const k = l.kind || "Other"; coralKinds[k] = (coralKinds[k] || 0) + 1; });
+    const gone = livestock.filter(l => (l.status || "alive") !== "alive");
+    $("ls-summary").innerHTML =
+      '<div><span class="label">Fish</span><span class="big">' + count("fish") + '</span><small>in the tank</small></div>' +
+      '<div><span class="label">Corals</span><span class="big">' + count("coral") + '</span><small>' + (Object.entries(coralKinds).map(([k, n]) => n + " " + esc(k)).join(" · ") || "in the tank") + '</small></div>' +
+      '<div><span class="label">Inverts</span><span class="big">' + count("invert") + '</span><small>in the tank</small></div>' +
+      '<div><span class="label">Lost / rehomed</span><span class="big">' + gone.length + '</span><small>' + (gone.filter(l => l.status === "lost").length) + ' lost</small></div>';
+    let list = livestock;
+    if (lsFilter === "alive") list = alive;
+    else if (lsFilter === "gone") list = gone;
+    else list = livestock.filter(l => l.type === lsFilter);
+    const host = $("ls-list");
+    if (!livestock.length) { host.innerHTML = '<div class="skeleton">Nothing listed yet. Add your fish, corals and cleanup crew with the form; a photo and the date added make losses and growth easier to track.</div>'; return; }
+    if (!list.length) { host.innerHTML = '<div class="skeleton">Nothing in this view.</div>'; return; }
+    const nowT = Date.now();
+    host.innerHTML = Object.keys(LS_TYPES).filter(t => list.some(l => l.type === t)).map(t => {
+      const items = list.filter(l => l.type === t).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      return '<div class="ls-group"><h3>' + LS_TYPES[t] + '</h3>' + items.map(l => {
+        const st = l.status || "alive", added = l.added ? toTs(l.added) : null, end = st !== "alive" && l.statusDate ? toTs(l.statusDate) : nowT;
+        const days = added ? daysBetween(added, end) : null;
+        const meta = [
+          l.type === "coral" && l.kind ? esc(l.kind) : "",
+          (Number(l.qty) || 1) > 1 ? "×" + esc(l.qty) : "",
+          added ? "Added " + dstr(added) : "",
+          days != null ? (st === "alive" ? days + " days in tank" : "Lasted " + days + " days") : "",
+          l.source ? esc(l.source) : ""
+        ].filter(Boolean);
+        return '<div class="ls-item"><div class="thumbbox">' + (l.asset ? '<img loading="lazy" src="' + esc(blobUrl(l.asset)) + '" alt="' + esc(l.name) + '">' : ({ fish: "Fish", coral: "Coral", invert: "Invert" })[t] || "") + '</div>' +
+          '<div style="min-width:0"><div class="name">' + esc(l.name) + '</div>' + (l.sci ? '<div class="sci">' + esc(l.sci) + '</div>' : '') +
+          '<div class="meta">' + meta.map(m => '<span>' + m + '</span>').join("") + '</div>' +
+          (l.placement ? '<div class="notes">Placement: ' + esc(l.placement) + '</div>' : '') + (l.notes ? '<div class="notes">' + esc(l.notes) + '</div>' : '') + '</div>' +
+          '<div class="side"><span class="pill ' + (st === "alive" ? "ok" : st) + '">' + (st === "alive" ? "In tank" : LS_STATUS[st] + (l.statusDate ? " " + dshort(toTs(l.statusDate)) : "")) + '</span>' +
+          (canWrite ? '<div class="btns"><button type="button" data-lsedit="' + esc(l.id) + '">Edit</button><button type="button" class="danger" data-lsdel="' + esc(l.id) + '">Delete</button></div>' : '') + '</div></div>';
+      }).join("") + '</div>';
+    }).join("");
+  }
+  document.querySelectorAll("[data-lsf]").forEach(b => b.addEventListener("click", () => {
+    lsFilter = b.dataset.lsf; document.querySelectorAll("[data-lsf]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); renderLivestock();
+  }));
+  $("ls-list").addEventListener("click", async ev => {
+    const e = ev.target.closest("[data-lsedit]"), d = ev.target.closest("[data-lsdel]");
+    if (e) {
+      const l = livestock.find(x => x.id === e.dataset.lsedit); if (!l) return;
+      lsReset(); lsEditing = l.id;
+      $("l-type").value = l.type || "fish"; $("l-kind").value = l.kind || "LPS"; $("l-name").value = l.name || ""; $("l-sci").value = l.sci || "";
+      $("l-qty").value = l.qty || 1; $("l-added").value = l.added || ""; $("l-source").value = l.source || ""; $("l-status").value = l.status || "alive";
+      $("l-sdate").value = l.statusDate || ""; $("l-place").value = l.placement || ""; $("l-notes").value = l.notes || "";
+      lsShowPreview(l.asset ? blobUrl(l.asset) : null); lsSyncFields();
+      $("ls-title").textContent = "Edit " + (l.name || "livestock"); $("l-save").textContent = "Save changes"; $("l-cancel").hidden = false; $("l-mark-wrap").hidden = true;
+      $("ls-entry").scrollIntoView({ block: "start" });
+    }
+    if (d) {
+      if (d.dataset.confirm !== "1") { d.dataset.confirm = "1"; d.textContent = "Confirm"; setTimeout(() => { d.dataset.confirm = ""; d.textContent = "Delete"; }, 4000); return; }
+      const l = livestock.find(x => x.id === d.dataset.lsdel);
+      try { await db.collection("livestock").doc(d.dataset.lsdel).delete(); if (l && l.asset && assets) { try { await assets.delete(l.asset); } catch (x) {} } if (lsEditing === d.dataset.lsdel) lsReset(); }
+      catch (x) { setStatus("l-status-msg", "Couldn't delete that entry.", true); }
+    }
+  });
+  $("l-cancel").addEventListener("click", () => { lsReset(); setStatus("l-status-msg", ""); });
+  $("lf").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const name = $("l-name").value.trim();
+    if (!name) { setStatus("l-status-msg", "Give it a name.", true); return; }
+    if (!db) { setStatus("l-status-msg", "Saving isn't available in this view.", true); return; }
+    const type = $("l-type").value, status = $("l-status").value;
+    const prev = lsEditing ? livestock.find(x => x.id === lsEditing) : null;
+    const rec = { type, kind: type === "coral" ? $("l-kind").value : "", name, sci: $("l-sci").value.trim(), qty: Math.max(1, Math.round(num($("l-qty").value) || 1)),
+      added: $("l-added").value || "", source: $("l-source").value.trim(), status, statusDate: status === "alive" ? "" : ($("l-sdate").value || today()),
+      placement: $("l-place").value.trim(), notes: $("l-notes").value.trim(), asset: prev && prev.asset && !lsClearPhoto ? prev.asset : "" };
+    $("l-save").disabled = true;
+    try {
+      if (lsNewPhoto) {
+        if (!assets) throw { code: "no_assets", message: "Photo uploads aren't available in this view." };
+        setStatus("l-status-msg", "Uploading photo…");
+        const blob = await shrink(lsNewPhoto); const up = await assets.upload(blob, blob.type ? undefined : { type: "image/jpeg" });
+        if (prev && prev.asset) { try { await assets.delete(prev.asset); } catch (x) {} }
+        rec.asset = up.id;
+      } else if (lsClearPhoto && prev && prev.asset && assets) { try { await assets.delete(prev.asset); } catch (x) {} }
+      const col = db.collection("livestock");
+      if (lsEditing) await col.doc(lsEditing).set(rec);
+      else {
+        await col.add(rec);
+        if ($("l-mark").checked) await db.collection("tests").add({ ts: rec.added ? toTs(rec.added) : Date.now(), events: ["New livestock"], note: "Added " + name + ((rec.qty > 1) ? " ×" + rec.qty : ""), ...Object.fromEntries(PARAMS.map(p => [p.key, null])) });
+      }
+      setStatus("l-status-msg", lsEditing ? "Changes saved." : "Added."); lsReset();
+    } catch (e) { setStatus("l-status-msg", (e && e.message) || "Couldn't save (" + (e && e.code || "error") + ").", true); }
+    $("l-save").disabled = false;
+  });
+  lsReset();
 
   // ---------- dosing & salt ----------
   const GAL_IN3 = 231, ROCK_GAL_PER_LB = 0.0444, SAND_SOLID = 0.6;
@@ -1471,13 +1667,13 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
 
   // ---------- backup ----------
-  const BK_COLS = ["tests","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile"];
+  const BK_COLS = ["tests","livestock","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile"];
   const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
   async function buildBackup(){
     const docs = [], blobs = {};
     for (const c of BK_COLS) { const snap = await db.collection(c).limit(1000).get(); snap.docs.forEach(d => docs.push({ path: c + "/" + d.id, data: d.data() })); }
     for (const path of BK_DOCS) { const d = await db.doc(path).get(); if (d.exists) docs.push({ path, data: d.data() }); }
-    const assetIds = docs.filter(d => d.path.startsWith("photos/") && d.data.asset).map(d => d.data.asset);
+    const assetIds = [...new Set(docs.filter(d => d.data && typeof d.data.asset === "string" && d.data.asset).map(d => d.data.asset))];
     let n = 0;
     for (const id of assetIds) {
       n++; setStatus("bk-status", "Packing photo " + n + " of " + assetIds.length + "…");
@@ -1492,7 +1688,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       const b = await buildBackup(); const text = JSON.stringify(b);
       const dl = await claude.use("downloads"); if (!dl) throw { code: "unavailable" };
       await dl.save({ filename: "reef-log-backup-" + today() + ".json", data: text });
-      const missing = b.docs.filter(d => d.path.startsWith("photos/")).length - Object.keys(b.blobs).length;
+      const missing = new Set(b.docs.filter(d => d.data && d.data.asset).map(d => d.data.asset)).size - Object.keys(b.blobs).length;
       setStatus("bk-status", "Backup ready: " + b.docs.length + " records, " + Object.keys(b.blobs).length + " photos" + (missing > 0 ? " (" + missing + " photos couldn't be packed)" : "") + ".", missing > 0);
     } catch (e) { setStatus("bk-status", e && e.code === "declined" ? "Backup cancelled." : "Couldn't build the backup (" + (e && (e.code || e.message) || "error") + ").", e && e.code !== "declined"); }
     $("bk-export").disabled = false;
@@ -1522,11 +1718,12 @@ details.backup summary { cursor: pointer; list-style: revert; }
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (!$("tab-chemistry").hidden) renderCards(data()); if (!$("tab-lighting").hidden) renderLighting(); }, 150); });
 
   (async () => {
-    if (!window.claude || !claude.use) { eqLoaded = phLoaded = true; renderEquipment(); renderPhotos(); renderPrograms(); return; }
+    if (!window.claude || !claude.use) { eqLoaded = phLoaded = lsLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderPrograms(); return; }
     db = await claude.use("db");
     const user = await claude.use("user");
     if (user) { const c = await user.can("data.write"); if (c === false) { canWrite = false; $("ro-notice").hidden = false; $("f-save").disabled = true; $("imp").disabled = true; $("e-save").disabled = true; $("drop").hidden = true; renderAll(); } }
-    if (!db) { eqLoaded = phLoaded = true; renderEquipment(); renderPhotos(); renderPrograms(); return; }
+    if (!db) { eqLoaded = phLoaded = lsLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderPrograms(); return; }
+    db.collection("livestock").limit(1000).onSnapshot(snap => { livestock = snap.docs.map(d => ({ id: d.id, ...d.data() })); lsLoaded = true; renderLivestock(); }, () => { lsLoaded = true; renderLivestock(); });
     db.collection("equipment").limit(500).onSnapshot(snap => { equipment = snap.docs.map(d => ({ id: d.id, ...d.data() })); eqLoaded = true; renderEquipment(); }, () => { eqLoaded = true; renderEquipment(); });
     db.collection("photos").orderBy("ts", "desc").limit(1000).onSnapshot(snap => { photos = snap.docs.map(d => ({ id: d.id, ...d.data() })); phLoaded = true; renderPhotos(); }, () => { phLoaded = true; renderPhotos(); });
     db.doc("settings/k7").onSnapshot(snap => { if (snap.exists) { const d = snap.data(); if (Array.isArray(d.order) && d.order.length === 6) k7 = { order: d.order, confirmed: !!d.confirmed }; renderOrder(); } }, () => {});
