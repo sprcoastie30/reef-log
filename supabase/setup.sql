@@ -1,4 +1,4 @@
--- Reef Log: one-time Supabase setup.
+-- Holdfast: one-time Supabase setup.
 -- Paste this whole file into Supabase > SQL Editor > New query, then click Run.
 -- Safe to run more than once.
 

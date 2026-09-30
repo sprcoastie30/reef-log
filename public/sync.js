@@ -1,5 +1,5 @@
 /*
- * Reef Log sync: keeps the on-device log the same across a user's phone and computer.
+ * Holdfast sync: keeps the on-device log the same across a user's phone and computer.
  * Works offline first; when signed in, it sends local changes and pulls changes from other devices.
  * Newest edit wins per record. Photos sync as files.
  * Cloud backend: Supabase (auth, a "docs" table, a private "photos" storage bucket). See supabase/setup.sql.
@@ -100,7 +100,7 @@
       })
       .then(function () { var del = store.blobsToDelete(); return del.length ? backend.removeBlobs(del).then(function () { return Promise.all(del.map(store.markBlobDeleted)); }) : null; })
       .then(function () { lastSync = Date.now(); lastError = ""; })
-      .catch(function (e) { lastError = (e && (e.message || e.error_description)) || "Sync failed"; console.warn("Reef Log sync:", e); })
+      .catch(function (e) { lastError = (e && (e.message || e.error_description)) || "Sync failed"; console.warn("Holdfast sync:", e); })
       .then(function () { syncing = false; setStatus(); if (again) schedule(500); });
   }
   function schedule(ms) { clearTimeout(timer); timer = setTimeout(syncOnce, ms == null ? 2500 : ms); }

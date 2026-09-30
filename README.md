@@ -1,4 +1,4 @@
-# Reef Log
+# Holdfast: Reef Log & Dosing
 
 A reef aquarium log that runs in any browser and installs to a phone's home screen:
 

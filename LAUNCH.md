@@ -1,6 +1,6 @@
-# Reef Log launch checklist
+# Holdfast launch checklist
 
-Steps to take Reef Log from Carl's own tank to a free beta, then Reef2Reef and the Facebook groups. Anything marked **Decide** is the owner's call.
+Steps to take Holdfast: Reef Log & Dosing from Carl's own tank to a free beta, then Reef2Reef and the Facebook groups. Anything marked **Decide** is the owner's call.
 
 ## 1. Before anyone else uses it
 
@@ -9,6 +9,7 @@ Steps to take Reef Log from Carl's own tank to a free beta, then Reef2Reef and t
 - [ ] **Read the privacy note** (`PRIVACY.md` and the in-app **About, privacy & feedback** panel). It makes promises in the owner's name: no selling or sharing data, and no looking at it except to fix a reported problem. Edit anything you aren't willing to stand behind.
 - [ ] **Decide: feedback channel.** The default link opens GitHub Issues, which needs a GitHub account; most reefers won't have one. A free Google Form (name, email optional, device, what happened) is easier. Put its link in `feedbackUrl` in `public/config.js`.
 - [ ] **Decide: public or private code.** The GitHub repo is currently **public**, so anyone can read the source. The LICENSE (all rights reserved) keeps the legal rights with you, but it doesn't hide the code. If you plan to sell, consider making the repo private; Cloudflare can still build from a private repo it has access to. Check the build still deploys after the change.
+- [ ] **Clear the name.** The app is now **Holdfast: Reef Log & Dosing**. A quick web and App Store search on 2026-09-30 found no reef or aquarium app called Holdfast, but other companies outside the hobby use the word. Before selling, search the USPTO trademark database (tmsearch.uspto.gov) in software classes 9 and 42, check the domain you want (for example holdfastreef.com or holdfast.app), and reserve matching Facebook and Reef2Reef handles. The website address (reef-log.sprcoastie30.workers.dev) and the GitHub repo name can stay as they are until you buy a domain.
 - [ ] **Test on real phones:** iPhone Safari and Android Chrome. Add to Home Screen, log a test, add a photo, close and reopen, then sign in on a second device and confirm it syncs.
 - [ ] **Test backup and restore:** download a full backup on one device and restore it on a fresh browser.
 - [ ] **Account deletion process.** In the Supabase dashboard, first delete the user's folder (named with their user ID) in **Storage → photos**. Then **Authentication → Users → delete user**, which also removes their synced records because the `docs` table cascades. Photos first, because Supabase may refuse to delete a user who still owns stored files.

@@ -1,10 +1,10 @@
-# Reef Log privacy note
+# Holdfast privacy note
 
 _Draft for the owner to review before public launch. It describes how the app is built today; if anything below stops being true (for example, analytics are added), update this note and the matching text in the app's **About, privacy & feedback** panel._
 
 **On your device.** Your log, photos and settings are saved in your browser's storage (IndexedDB) on the device you're using. Nothing leaves the device unless you sign in to sync.
 
-**If you sign in to sync.** Your records and photos are copied to the Reef Log database, hosted by Supabase, so your other devices can load them. Database rules (row-level security) let each account read and change only its own records, and photos are kept in a private storage bucket with one folder per account. The app's owner administers that database and can technically reach it. It is used only to run sync, is never sold or shared, and isn't looked at except to fix a problem you report.
+**If you sign in to sync.** Your records and photos are copied to the Holdfast database, hosted by Supabase, so your other devices can load them. Database rules (row-level security) let each account read and change only its own records, and photos are kept in a private storage bucket with one folder per account. The app's owner administers that database and can technically reach it. It is used only to run sync, is never sold or shared, and isn't looked at except to fix a problem you report.
 
 **What the app does not do.** No ads, no analytics, and no tracking cookies.
 

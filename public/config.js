@@ -1,5 +1,5 @@
 /*
- * Reef Log settings for this deployment.
+ * Holdfast settings for this deployment.
  * Fill in the two Supabase values to turn on sync between devices (see README, "Turning on sync").
  * The publishable key is designed to be public; Row Level Security in supabase/setup.sql keeps each account's data private.
  */

@@ -1,9 +1,9 @@
-<title>75-Gallon Reef Log</title>
+<title>Holdfast: Reef Log &amp; Dosing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: engineer's logbook. Header strip, summary row, small-multiple charts grid, entry form + history below. */
+/* Layout: reef logbook. Header strip, summary row, small-multiple charts grid, entry form + history below. */
 :root {
   --bg: #eef3f4;
   --panel: #fbfdfd;
@@ -270,8 +270,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
 <div class="wrap">
   <header class="top">
     <div>
-      <div class="label" id="hdr-sub">Water chemistry log · Eshopps RS-75 sump</div>
-      <h1 id="hdr-title">75-Gallon Reef Log</h1>
+      <div class="label" id="hdr-sub">Holdfast · Reef log &amp; dosing · Eshopps RS-75 sump</div>
+      <h1 id="hdr-title">75-Gallon Reef</h1>
       <div class="meta">
         <span id="m-last">No tests logged yet</span>
         <span id="m-count"></span>
@@ -821,17 +821,17 @@ details.backup summary { cursor: pointer; list-style: revert; }
   <details class="panel backup" id="about">
     <summary><span class="label" style="font-size:.8rem">About, privacy &amp; feedback</span></summary>
     <div class="about" style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
-      <div class="form-actions"><a class="btn primary" id="fb-link" href="https://github.com/sprcoastie30/reef-log/issues/new" target="_blank" rel="noopener">Send feedback or report a problem</a><span class="hint" id="fb-hint">Opens the Reef Log issue tracker on GitHub (free account needed).</span></div>
+      <div class="form-actions"><a class="btn primary" id="fb-link" href="https://github.com/sprcoastie30/reef-log/issues/new" target="_blank" rel="noopener">Send feedback or report a problem</a><span class="hint" id="fb-hint">Opens the Holdfast issue tracker on GitHub (free account needed).</span></div>
       <h3 class="label">Privacy</h3>
-      <p class="hint" id="priv-claude" hidden>This copy runs inside Claude, and its log is stored with this Claude artifact under your account. The notes below describe the standalone Reef Log website.</p>
+      <p class="hint" id="priv-claude" hidden>This copy runs inside Claude, and its log is stored with this Claude artifact under your account. The notes below describe the standalone Holdfast website.</p>
       <p class="hint"><b>On this device.</b> Your log, photos and settings are saved in this browser's storage on this device. Nothing leaves the device unless you sign in to sync.</p>
-      <p class="hint"><b>If you sign in to sync.</b> Your records and photos are copied to the Reef Log database (hosted by Supabase) so your other devices can load them. The database only lets each account read and change its own records. The app's owner runs that database and can technically reach it; it is used only to run sync, is never sold or shared, and isn't looked at except to fix a problem you report.</p>
+      <p class="hint"><b>If you sign in to sync.</b> Your records and photos are copied to the Holdfast database (hosted by Supabase) so your other devices can load them. The database only lets each account read and change its own records. The app's owner runs that database and can technically reach it; it is used only to run sync, is never sold or shared, and isn't looked at except to fix a problem you report.</p>
       <p class="hint"><b>No ads, analytics or tracking cookies.</b> Loading the app does contact a few services that see your connection (like any website): Cloudflare hosts the app, jsDelivr serves code libraries, Google Fonts serves the typefaces, and Supabase handles sign-in and sync if you use them.</p>
       <p class="hint"><b>Your data stays yours.</b> Download a full backup any time under Data &amp; backup. To have your synced account and everything in it deleted, ask through the feedback link.</p>
       <h3 class="label">About the numbers</h3>
       <p class="hint">Dosing, consumption and water change figures are estimates built from product labels (or strengths worked out from the maker's stated concentration) and your own test results. Check them against the product label, change doses gradually, and retest before and after any big change. Light and equipment details are starting points; your fixture's app and manual have the final word.</p>
-      <p class="hint">Product, brand and fixture names (Noopsyche, K7, Brightwell, Red Sea, Tropic Marin, Seachem, ESV, Aquaforest, Bulk Reef Supply, AI, EcoTech, Kessil, NICREW, Hanna and others) are trademarks of their owners and are used only to identify the products the app works with. Reef Log is not affiliated with, sponsored by or endorsed by any of them.</p>
-      <p class="hint">Reef Log © Carl Peterson. All rights reserved. Uses open-source components under their own licenses: qrcode-generator (MIT), jsQR (Apache-2.0), supabase-js (MIT) and IBM Plex fonts (SIL Open Font License).</p>
+      <p class="hint">Product, brand and fixture names (Noopsyche, K7, Brightwell, Red Sea, Tropic Marin, Seachem, ESV, Aquaforest, Bulk Reef Supply, AI, EcoTech, Kessil, NICREW, Hanna and others) are trademarks of their owners and are used only to identify the products the app works with. Holdfast is not affiliated with, sponsored by or endorsed by any of them.</p>
+      <p class="hint">Holdfast: Reef Log &amp; Dosing © Carl Peterson. All rights reserved. Uses open-source components under their own licenses: qrcode-generator (MIT), jsQR (Apache-2.0), supabase-js (MIT) and IBM Plex fonts (SIL Open Font License).</p>
     </div>
   </details>
 </div>
@@ -1775,14 +1775,14 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const time = ($("mt-time").value || "18:00").replace(":", "") + "00";
     const stampNow = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
     const tankName = (profile && profile.name) || "Reef";
-    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Reef Log//Maintenance//EN", "CALSCALE:GREGORIAN", "X-WR-CALNAME:" + icsEsc(tankName + " maintenance")];
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Holdfast//Maintenance//EN", "CALSCALE:GREGORIAN", "X-WR-CALNAME:" + icsEsc(tankName + " maintenance")];
     let n = 0;
     allReminders().forEach(r => {
       if (r.kind === "expiry" || r.kind === "now") return;
       const start = r.due.d < 0 ? ymdToday() : r.due.next;
       lines.push("BEGIN:VEVENT", "UID:" + r.id + "@reef-log", "DTSTAMP:" + stampNow, "DTSTART:" + start.replace(/-/g, "") + "T" + time, "DURATION:PT15M",
         "RRULE:FREQ=DAILY;INTERVAL=" + Math.max(1, r.every || 1), "SUMMARY:" + icsEsc("Reef: " + r.name),
-        "DESCRIPTION:" + icsEsc((r.notes ? r.notes + "\n" : "") + "Every " + r.every + " days. Mark it done in Reef Log."),
+        "DESCRIPTION:" + icsEsc((r.notes ? r.notes + "\n" : "") + "Every " + r.every + " days. Mark it done in Holdfast."),
         "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(r.name), "TRIGGER:PT0M", "END:VALARM", "END:VEVENT"); n++;
     });
     gear.filter(g => g.expires).forEach(g => {
@@ -2703,7 +2703,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function controllerPreset(){
     const name = ($("lp-name").value.trim() || "Reef log program").slice(0, 64);
     return { kind: "k7_community_preset", schema: 1, lamp: "k7pro", name,
-      use_case: $("esp-use").value.trim(), notes: ($("lp-note").value.trim() || "Exported from 75-Gallon Reef Log").slice(0, 500),
+      use_case: $("esp-use").value.trim(), notes: ($("lp-note").value.trim() || "Exported from Holdfast").slice(0, 500),
       manual: peakRowOf(grid).map(clampPct), schedule: grid.map((r, h) => [h, 0, ...r.map(clampPct)]) };
   }
   $("esp-export").addEventListener("click", async () => {
@@ -2924,9 +2924,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
     if (p) applyUnits(p.units);
     const q = p || PROFILE_BLANK;
     if (p) {
-      const title = (p.name || "My Reef") + " Log";
-      $("hdr-title").textContent = title; document.title = title;
-      $("hdr-sub").textContent = "Water chemistry log" + (p.hasSump && p.sumpModel ? " · " + p.sumpModel + (/sump/i.test(p.sumpModel) ? "" : " sump") : "");
+      $("hdr-title").textContent = p.name || "My Reef"; document.title = (p.name || "My Reef") + " · Holdfast";
+      $("hdr-sub").textContent = "Holdfast · Reef log & dosing" + (p.hasSump && p.sumpModel ? " · " + p.sumpModel + (/sump/i.test(p.sumpModel) ? "" : " sump") : "");
       const L = v => +toDisp("len", v).toFixed(isMetric() ? 1 : 2), lu = uLabel("len");
       $("vol-hint").textContent = (p.display || "Display") + " (inside " + L(p.dl) + " × " + L(p.dw) + " " + lu + ", " + L(p.dd) + " " + lu + " of water)" +
         (p.hasSump ? " plus " + (p.sumpModel || "sump") + " (" + L(p.sl) + " × " + L(p.sw) + " " + lu + " at " + L(p.sd) + " " + lu + " running depth)" : "") + ", from your tank profile. Measure your actual water depths and adjust; everything below uses the net figure.";
@@ -2999,7 +2998,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     $("bk-restore-label").hidden = false;
     $("bk-restore").addEventListener("change", async ev => {
       const f = ev.target.files[0]; ev.target.value = ""; if (!f) return;
-      try { const b = JSON.parse(await f.text()); if (!b || b.app !== "reef-log" || !Array.isArray(b.docs)) throw new Error("That file isn't a Reef Log backup.");
+      try { const b = JSON.parse(await f.text()); if (!b || b.app !== "reef-log" || !Array.isArray(b.docs)) throw new Error("That file isn't a Holdfast backup.");
         pendingRestore = b; $("bk-confirm").hidden = false; setStatus("bk-status", "Backup from " + (b.exportedAt ? dstr(Date.parse(b.exportedAt)) : "unknown date") + ": " + b.docs.length + " records, " + Object.keys(b.blobs || {}).length + " photos.");
       } catch (e) { setStatus("bk-status", e.message || "Couldn't read that file.", true); }
     });
@@ -3015,7 +3014,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   // ---------- boot ----------
   buildForm(); renderTargets(); renderAll();
   if (!window.__standalone) $("priv-claude").hidden = false;
-  (function(){ const c = window.REEF_CONFIG || {}; if (c.feedbackUrl) { $("fb-link").href = c.feedbackUrl; $("fb-hint").textContent = c.feedbackNote || "Opens the Reef Log feedback form."; } })();
+  (function(){ const c = window.REEF_CONFIG || {}; if (c.feedbackUrl) { $("fb-link").href = c.feedbackUrl; $("fb-hint").textContent = c.feedbackNote || "Opens the Holdfast feedback form."; } })();
   renderUnitLabels();
   showTab((location.hash || "").slice(1) || (() => { try { return localStorage.getItem("reef-tab"); } catch (e) { return null; } })() || "chemistry");
   document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => { try { localStorage.setItem("reef-tab", b.dataset.tab); } catch (e) {} }));

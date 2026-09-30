@@ -36,7 +36,7 @@ def main() -> int:
     if not title_m:
         print("No <title> in source", file=sys.stderr)
         return 1
-    title = "<title>Reef Log</title>"  # the app sets the full name from the tank profile at run time
+    title = "<title>Holdfast: Reef Log &amp; Dosing</title>"  # the app sets the full name from the tank profile at run time
     src = src[: title_m.start()] + src[title_m.end():]
     links = re.findall(r'<link rel="(?:preconnect|stylesheet)"[^>]*>\s*', src)
     for l in links:
@@ -67,7 +67,7 @@ def main() -> int:
         '<link rel="apple-touch-icon" href="icons/icon-180.png">',
         '<meta name="apple-mobile-web-app-capable" content="yes">',
         '<meta name="mobile-web-app-capable" content="yes">',
-        '<meta name="apple-mobile-web-app-title" content="Reef Log">',
+        '<meta name="apple-mobile-web-app-title" content="Holdfast">',
         *[l.strip() for l in links],
         f"<style>{RESET}</style>",
         "</head>",

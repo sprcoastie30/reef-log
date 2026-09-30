@@ -1,5 +1,5 @@
 /*
- * Reef Log local store.
+ * Holdfast local store.
  * Provides the same small storage interface the app uses (window.claude.use("db" | "assets" | "downloads" | "user")),
  * backed by the browser's IndexedDB so the app runs on its own, on the user's device, with no server.
  * It also records what changed locally, so sync.js can send changes to the cloud and apply changes from other devices.
@@ -75,7 +75,7 @@
 
   var ready = loadAll().catch(function (e) {
     memoryOnly = true;
-    console.warn("Reef Log: on-device storage unavailable, running in memory only.", e);
+    console.warn("Holdfast: on-device storage unavailable, running in memory only.", e);
     document.addEventListener("DOMContentLoaded", function () {
       var n = document.createElement("div");
       n.className = "notice";
@@ -326,7 +326,7 @@
     return new Blob([bytes], { type: m[1] || "application/octet-stream" });
   }
   window.__reefRestore = function (backup) {
-    if (!backup || backup.app !== "reef-log" || !Array.isArray(backup.docs)) return Promise.reject(new Error("Not a Reef Log backup"));
+    if (!backup || backup.app !== "reef-log" || !Array.isArray(backup.docs)) return Promise.reject(new Error("Not a Holdfast backup"));
     var newDocs = new Map(), newBlobs = new Map();
     backup.docs.forEach(function (d) { checkDocPath(d.path); newDocs.set(d.path, clone(d.data)); });
     Object.keys(backup.blobs || {}).forEach(function (id) { newBlobs.set(id, dataUrlToBlob(backup.blobs[id])); });

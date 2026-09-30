@@ -1,6 +1,6 @@
 {
-  "name": "Reef Log",
-  "short_name": "Reef Log",
+  "name": "Holdfast: Reef Log & Dosing",
+  "short_name": "Holdfast",
   "description": "Reef aquarium log: water tests with charts, equipment, photos, dosing and salt calculator, and LED light programs.",
   "start_url": "./",
   "scope": "./",
