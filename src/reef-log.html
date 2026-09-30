@@ -178,6 +178,12 @@ table.calc td.res { font-weight: 500; color: var(--ink); }
 .result-list li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--grid); padding: 6px 0; flex-wrap: wrap; }
 .result-list li span:last-child { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
 .callout { border-left: 3px solid var(--event); padding: 6px 10px; font-size: 0.86rem; background: var(--warn-bg); border-radius: 0 6px 6px 0; margin-top: 8px; }
+.callout.warn { border-left-color: var(--warn); }
+.callout.good { border-left-color: var(--ok); background: var(--ok-bg); }
+.callout.plain { border-left-color: var(--line); background: transparent; }
+.callout button { margin-left: 4px; padding: 3px 10px; font-size: 0.8rem; }
+.supply-alerts:empty { display: none; }
+.supply-alerts { margin-bottom: 12px; }
 :root[data-theme="blue"] { --bg: #06142b; --panel: #0b1f3d; --ink: #d7e6ff; --muted: #8fa8cf; --line: #1c3560; --grid: #132a4d; --accent: #4f8dff; --accent-ink: #04112a; --band: rgba(79,141,255,0.16); --event: #f2b35c; --ok: #6fd6b0; --ok-bg: #0f3a3a; --warn: #f2b35c; --warn-bg: #3a2c14; --bad: #ff8f8f; --bad-bg: #3d1a24; color-scheme: dark; }
 :root { --ch-w: #7d8a90; --ch-lb: #2f95d6; --ch-db: #2c46c4; --ch-uv: #7a3fcf; --ch-red: #d2463c; --ch-gb: #1f9a73; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ch-w: #d5dde0; --ch-lb: #5cb8f0; --ch-db: #7b91ff; --ch-uv: #b58cff; --ch-red: #ff7d72; --ch-gb: #4fd1a2; } }
@@ -292,6 +298,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   </nav>
 
   <div class="tabpanel" id="tab-chemistry" role="tabpanel" aria-labelledby="tb-chemistry">
+  <div id="supply-alerts" class="supply-alerts"></div>
   <div class="notice" id="example-notice" hidden>
     <strong>Example data.</strong> The charts below show made-up readings so you can see how the log works. They disappear as soon as you save your first test.
   </div>
@@ -554,6 +561,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   </div>
 
   <div class="tabpanel" id="tab-dosing" role="tabpanel" aria-labelledby="tb-dosing" hidden>
+    <div id="dose-advice" class="supply-alerts"></div>
     <div class="dose-grid">
       <section class="panel">
         <div><h2>System water volume</h2><p class="hint" id="vol-hint">Aqueon 75 display (48.5 × 18.5 × 21.2 in outside) plus Eshopps RS-75 sump (20 × 10 × 16 in, 12 gal to the rim). Measure your actual water depths and adjust; everything below uses the net figure.</p></div>
@@ -835,6 +843,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
         <div class="fields">
           <div class="field"><label for="pf-name"><b>Name</b></label><input id="pf-name" type="text" placeholder="e.g. 75-Gallon Reef" maxlength="40"></div>
           <div class="field"><label for="pf-display"><b>Display tank model</b></label><input id="pf-display" type="text" placeholder="e.g. Aqueon 75" maxlength="60"></div>
+          <div class="field"><label for="pf-started"><b>Tank set up</b> (month)</label><input id="pf-started" type="month"></div>
+          <label class="chip" style="align-self:end"><input type="checkbox" id="pf-tips" checked>Show new-reefer tips</label>
         </div>
         <div class="trio" style="margin-top:8px">
           <div class="field"><label for="pf-dl">Inside length (<span data-ul="len">in</span>)</label><input id="pf-dl" type="number" step="0.25" min="0"></div>
@@ -998,7 +1008,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     $("m-count").textContent = real.length ? real.length + (real.length === 1 ? " entry" : " entries") : "";
     const lastN = [...real].reverse().find(t => t.no3 != null && t.po4 != null);
     $("m-np").textContent = lastN && lastN.po4 > 0 ? "NO₃:PO₄ ≈ " + Math.round(lastN.no3 / lastN.po4) + ":1 (" + dshort(lastN.ts) + ")" : "";
-    renderCards(list); renderHistory(real);
+    renderCards(list); renderHistory(real); renderSupplyAlerts();
     if (typeof refillCurrents === "function" && $("corr").innerHTML) { refillCurrents(); updateCorrection(); renderConsumption(); renderMaint(); renderWC(); }
   }
 
@@ -1584,6 +1594,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
         ? { ...r, due: { next: r.expires, d: r.d, cls: r.d < 0 ? "over" : r.d <= 7 ? "due" : "soon", label: r.d < 0 ? "Expired " + (-r.d) + " days ago" : r.d === 0 ? "Expires today" : "Expires in " + r.d + " days" } }
         : { ...r, due: taskDue(r) }))
       .concat(rodiReminders().map(r => r.kind === "now" ? { ...r, due: { next: today(), d: 0, cls: "over", label: "Replace now" } } : { ...r, due: taskDue(r) }))
+      .concat((typeof supplyReminders === "function" ? supplyReminders() : []).map(r => ({ ...r, due: { next: today(), d: 0, cls: "over", label: "Start dosing" } })))
       .sort((a, b) => a.due.d - b.due.d || String(a.name).localeCompare(String(b.name)));
   }
   function renderDueChip(){
@@ -1608,15 +1619,16 @@ details.backup summary { cursor: pointer; list-style: revert; }
     host.innerHTML = list.map(r => {
       const meta = [];
       if (r.kind === "expiry") meta.push("Reagent expiry " + dstr(toTs(r.expires, "12:00")));
+      else if (r.kind === "now" && r.supply) meta.push("From your test trend, water change plan and salt mix");
       else if (r.kind === "now") meta.push("From your latest RO/DI reading (Bulk Reef Supply's replacement guidance)");
       else { meta.push("Every " + r.every + (r.every === 1 ? " day" : " days")); meta.push(r.lastDone ? "Last " + dstr(toTs(r.lastDone, "12:00")) : "Never logged"); if (r.due.d !== 0 || r.lastDone) meta.push("Next " + dshort(toTs(r.due.next, "12:00"))); }
       if (r.kind === "test" && r.params && r.params.length) meta.push("Logs " + r.params.map(k => (PARAMS.find(p => p.key === k) || {}).name || k).join(", "));
       if (r.marker) meta.push("Marks " + r.marker);
-      const btns = !canWrite ? "" : r.rodi ? '<button type="button" data-rodiopen="1">Open RO/DI</button>' : r.virtual
+      const btns = !canWrite ? "" : r.supply ? '<button type="button" data-supplyopen="1">Open dosing</button>' : r.rodi ? '<button type="button" data-rodiopen="1">Open RO/DI</button>' : r.virtual
         ? '<button type="button" data-gearopen="' + esc(r.gearId) + '">' + (r.kind === "expiry" ? "Update" : "Log check") + '</button>'
         : (r.kind === "test" ? '<button type="button" data-mtlog="' + esc(r.id) + '">Log test</button>' : '') +
           '<button type="button" class="primary" data-mtdone="' + esc(r.id) + '">Done</button><button type="button" data-mtedit="' + esc(r.id) + '">Edit</button><button type="button" class="danger" data-mtdel="' + esc(r.id) + '">Delete</button>';
-      return '<div class="mt-item ' + r.due.cls + '"><span class="bar"></span><div style="min-width:0"><div class="name">' + esc(r.name) + (r.virtual ? ' <span class="hint">· ' + (r.rodi ? "RO/DI" : "test gear") + '</span>' : '') + '</div>' +
+      return '<div class="mt-item ' + r.due.cls + '"><span class="bar"></span><div style="min-width:0"><div class="name">' + esc(r.name) + (r.virtual ? ' <span class="hint">· ' + (r.supply ? "chemistry" : r.rodi ? "RO/DI" : "test gear") + '</span>' : '') + '</div>' +
         '<div class="meta">' + meta.map(m => '<span>' + esc(m) + '</span>').join("") + '</div>' + (r.notes ? '<div class="notes">' + esc(r.notes) + '</div>' : '') + '</div>' +
         '<div class="side"><span class="pill ' + r.due.cls + '">' + esc(r.due.label) + '</span><div class="btns">' + btns + '</div></div></div>';
     }).join("");
@@ -2246,6 +2258,77 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const hold = Math.max(0, (cons - wcPerDay(k, level)) * V / pot);
     return { ...tr, dose, wc, cons, hold, current: doseAt(k, Date.now()) };
   }
+  // ---------- can water changes alone keep up? ----------
+  // With no dosing, a water change plan holds a parameter where what the tank uses per day equals what the changes
+  // put back: level = salt mix − consumption ÷ (fraction changed per day). When that level falls below the low limit,
+  // water changes alone can no longer keep up and dosing is needed.
+  // Needs a real trend: at least 4 tests over a week, and a drop bigger than hobby test kits can resolve
+  // (about 0.2 dKH, 10 ppm calcium, 20 ppm magnesium); smaller trends are treated as too small to measure yet.
+  const SUPPLY_MIN_TESTS = 4, SUPPLY_MIN_DAYS = 7, SUPPLY_RES = { alk: 0.2, ca: 10, mg: 20 };
+  function supplyCheck(){
+    const out = [];
+    try {
+      const V = volume().net, s = getSalt(), w = readWcPlan(), f = (w.pct / 100) / Math.max(1, w.every);
+      if (!V || !(f > 0)) return out;
+      CONS_KEYS.forEach(k => {
+        const mix = s[k], t = targets[k], p = PARAMS.find(x => x.key === k);
+        if (mix == null || !t || !tests.some(x => x[k] != null)) return;
+        const dosing = doseAt(k, Date.now()) > 0;
+        const T = t.t != null ? t.t : (t.lo + t.hi) / 2, dp = k === "alk" ? 2 : 0, u = DOSE[k].unit;
+        const r = consumption(k, consWin), enough = r.cons != null && r.n >= SUPPLY_MIN_TESTS && r.span >= SUPPLY_MIN_DAYS;
+        const tiny = enough && Math.max(0, r.cons) * r.span < SUPPLY_RES[k];
+        const cons = enough ? (tiny ? 0 : Math.max(0, r.cons)) : null; // consumption already adds back what is being dosed
+        const eq = cons != null ? mix - cons / f : null;
+        let state = null;
+        if (dosing) { if (eq != null && eq >= t.lo && mix >= t.lo) state = "notneeded"; else return; } // dosing, though water changes alone would hold it in range
+        else if (mix < t.lo) state = "salt";
+        else if (eq != null && eq < t.lo) state = "need";
+        else if (eq != null && eq < T) state = "near";
+        else if (eq != null) state = "ok";
+        else state = "wait";
+        const perDay = Math.max(0, (cons || 0) + (T - mix) * f); // what dosing must add each day to hold the target
+        const amt = perDay * V / DOSE[k].potency;
+        const pctNeeded = cons != null && mix > T ? cons / (mix - T) * w.every * 100 : null;
+        out.push({ k, p, state, mix, T, lo: t.lo, hi: t.hi, cons, eq, perDay, amt, u, dp, pctNeeded, n: r.n, span: r.span, w, dose: doseAt(k, Date.now()), tiny });
+      });
+    } catch (e) {}
+    return out;
+  }
+  function supplyText(a){
+    const n = DOSE[a.k].name, f = v => Number(v).toFixed(a.dp), plan = a.w.pct + "% " + (a.w.every === 1 ? "daily" : "every " + a.w.every + " days");
+    const dose = a.perDay > 0 ? "Dosing about " + Number(a.perDay).toFixed(a.dp === 2 ? 2 : 1) + " " + a.u + " a day (roughly " + a.amt.toFixed(1) + " " + du(a.k) + " of " + DOSE[a.k].product + ") would hold " + f(a.T) + "." : "";
+    const basis = a.cons != null ? " Based on " + a.n + " tests over " + Math.round(a.span) + " days; more tests make this firmer." : "";
+    const c1 = v => Number(v).toFixed(a.dp === 2 ? 2 : 1);
+    if (a.state === "salt") return tipsOn()
+      ? { title: n + ": your target is above your salt mix", body: "Your salt mixes at " + f(a.mix) + " " + a.u + ", below your " + f(a.lo) + " low limit, so every water change moves " + n.toLowerCase() + " toward " + f(a.mix) + ". While water changes still cover what the tank uses, the simpler fix is to set your " + n.toLowerCase() + " range around the salt's level (Chemistry tab, Target ranges) rather than start dosing just to hold a higher number. Stable matters more than a particular value." + basis }
+      : { title: n + ": water changes pull it down", body: "Your salt mixes at " + f(a.mix) + " " + a.u + ", below your " + f(a.lo) + " low limit, so every water change moves " + n.toLowerCase() + " toward " + f(a.mix) + ". Water changes alone can't hold your " + f(a.T) + " target" + (a.cons != null ? " (the tank also uses about " + c1(a.cons) + " " + a.u + " a day)" : "") + ". " + dose + (a.k === "alk" ? " Mixing salt to a higher salinity, or setting your range around the salt's level, also works." : "") + basis };
+    if (a.state === "notneeded") return { title: n + ": water changes may be enough without dosing", body: "You dose " + a.dose + " " + du(a.k) + " a day of " + DOSE[a.k].product + ", but " + (a.tiny ? "the tank's own use is too small to measure after allowing for that dose" : "the tank's use works out to about " + c1(a.cons) + " " + a.u + " a day") + ", and your " + plan + " changes with salt at " + f(a.mix) + " would hold it near " + f(a.eq) + " " + a.u + " on their own, inside your " + f(a.lo) + "–" + f(a.hi) + " range. Common advice, especially for newer tanks, is not to dose until water changes stop keeping up; extra dosing can push levels high and cause swings. Consider stopping this dose and testing a few times a week; the app will flag it when dosing is needed." + basis };
+    if (a.state === "ok") return { title: n + ": water changes are keeping up", body: (a.tiny ? "What the tank uses is still too small to measure with a test kit" : "The tank uses about " + c1(a.cons) + " " + a.u + " a day") + ", and your " + plan + " changes would hold it near " + f(a.eq) + " " + a.u + ". No dosing needed yet." + basis };
+    if (a.state === "wait") return { title: n + ": not enough tests yet", body: "Log at least " + SUPPLY_MIN_TESTS + " tests over " + SUPPLY_MIN_DAYS + " or more days (same time of day) and the app will work out whether water changes are keeping up." };
+    if (a.state === "need") return { title: n + ": water changes no longer keep up. Dosing is needed", body: "The tank uses about " + c1(a.cons) + " " + a.u + " a day. With " + plan + " changes and salt at " + f(a.mix) + ", water changes alone would let it settle near " + f(Math.max(0, a.eq)) + " " + a.u + ", below your " + f(a.lo) + " low limit. " + dose +
+      (tipsOn() ? " Start at about three quarters of that, test alkalinity daily for the first week, and raise it in small steps." : "") +
+      (a.pctNeeded != null ? (a.pctNeeded <= 50 ? " Without dosing, it would take changes of about " + Math.ceil(a.pctNeeded) + "% " + (a.w.every === 1 ? "a day" : "every " + a.w.every + " days") + "." : " Water changes big enough to cover this without dosing aren't practical.") : "") + basis };
+    return { title: n + ": water changes are near their limit", body: "The tank uses about " + c1(a.cons) + " " + a.u + " a day. Your " + plan + " changes would hold it near " + f(a.eq) + " " + a.u + ": still inside your range, but under your " + f(a.T) + " target. Keep testing; if it keeps drifting down, start dosing. " + dose + basis };
+  }
+  const tipsOn = () => !profile || profile.tips !== false;
+  const ACTION = ["need", "salt", "near", "notneeded"];
+  const box = (a, btn) => { const t = supplyText(a); return '<div class="callout ' + (a.state === "ok" ? "good" : a.state === "wait" ? "plain" : a.state === "need" || (a.state === "salt" && !tipsOn()) || a.state === "notneeded" ? "warn" : "") + '"><b>' + esc(t.title) + '.</b> ' + esc(t.body) + (btn && canWrite ? ' <button type="button" data-supplyopen="1">Open dosing</button>' : '') + '</div>'; };
+  function renderSupplyAlerts(){
+    const host = $("supply-alerts"), list = usingExamples ? [] : supplyCheck();
+    if (host) host.innerHTML = list.filter(a => ACTION.includes(a.state)).map(a => box(a, true)).join("");
+    const adv = $("dose-advice");
+    if (adv) {
+      const anyDose = CONS_KEYS.some(k => doseAt(k, Date.now()) > 0), needs = list.some(a => a.state === "need" || (a.state === "salt" && !tipsOn()));
+      const tip = tipsOn() && !anyDose && !needs ? '<div class="callout"><b>New-reefer tip: hold off on dosing for now.</b> In most newer reefs, regular water changes replace the alkalinity, calcium and magnesium the tank uses. Dosing before it\'s needed tends to push levels too high and cause swings, which stress corals more than a slightly lower, steady number. Keep up your water changes, test alkalinity two or three times a week and calcium and magnesium weekly, at the same time of day. This app compares that use with your water change plan and will flag it here, on the Chemistry tab and in Maintenance when water changes stop keeping up. <span class="hint">(Turn these tips off in Tank profile.)</span></div>' : "";
+      adv.innerHTML = tip + list.map(a => box(a, false)).join("");
+    }
+    if (typeof renderDueChip === "function") renderDueChip();
+  }
+  function supplyReminders(){
+    return supplyCheck().filter(a => a.state === "need" || (a.state === "salt" && !tipsOn())).map(a => { const t = supplyText(a); return { id: "supply-" + a.k, virtual: true, supply: true, kind: "now", name: t.title, notes: t.body }; });
+  }
+  document.addEventListener("click", ev => { if (ev.target.closest("[data-supplyopen]")) { showTab("dosing", true); const el = $("cons-out"); if (el) el.scrollIntoView({ block: "start" }); } });
+
   function consIntervals(k){ // consumption between each pair of consecutive tests, last 60 days
     const V = volume().net, pot = DOSE[k].potency, cutoff = Date.now() - 60 * DAY;
     const pts = tests.filter(t => t[k] != null && t.ts >= cutoff), out = [];
@@ -2379,7 +2462,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       '<div><span class="label">Sump</span><span class="big">+' + n(r.sump) + '</span><small>' + u + ' at running level</small></div>' +
       '<div class="net"><span class="label">Net system</span><span class="big">' + n(r.net) + '</span><small>' + (isMetric() ? 'L · ' + r.net.toFixed(1) + ' US gal' : 'gal · ' + (r.net * L_GAL).toFixed(0) + ' L') + '</small></div>';
   }
-  function renderDosing(){ renderVol(); if (!$("corr").innerHTML) renderCorrection(); else updateCorrection(); renderConsumption(); renderMaint(); renderWC(); }
+  function renderDosing(){ renderVol(); if (!$("corr").innerHTML) renderCorrection(); else updateCorrection(); renderConsumption(); renderMaint(); renderWC(); renderSupplyAlerts(); }
   function refillCurrents(){ Object.keys(DOSE).forEach(k => { const inp = $("c-" + k); if (inp && !inp.dataset.dirty) { const t = latestVal(k); inp.value = t ? t[k] : ""; } }); }
   $("tab-dosing").addEventListener("input", ev => {
     const id = ev.target.id || "";
@@ -2808,6 +2891,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
 
   function fillProfileForm(p){
     $("pf-name").value = p.name || ""; $("pf-display").value = p.display || "";
+    $("pf-started").value = p.started || ""; $("pf-tips").checked = p.tips !== false;
     ["dl","dw","dd","sand","rock","sl","sw","sd"].forEach(k => setU("pf-" + k, k === "rock" ? "wt" : "len", p[k] ?? ""));
     $("pf-hassump").checked = p.hasSump !== false; $("pf-sump").hidden = p.hasSump === false; $("pf-sumpmodel").value = p.sumpModel || "";
     $("pf-salt").value = SALTS[p.salt] ? p.salt : "af35";
@@ -2822,7 +2906,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
       dl: pfU("pf-dl", "len", 0), dw: pfU("pf-dw", "len", 0), dd: pfU("pf-dd", "len", 0), sand: pfU("pf-sand", "len", 0), rock: pfU("pf-rock", "wt", 0),
       hasSump, sumpModel: hasSump ? $("pf-sumpmodel").value.trim() : "", sl: hasSump ? pfU("pf-sl", "len", 0) : 0, sw: hasSump ? pfU("pf-sw", "len", 0) : 0, sd: hasSump ? pfU("pf-sd", "len", 0) : 0,
       salt: $("pf-salt").value, alk: prod("alk"), ca: prod("ca"), mg: prod("mg"),
-      light: $("pf-light").value.trim(), lightCount: Math.max(1, Math.round(pfNum("pf-lightcount", 1))), units: $("pf-units").value === "metric" ? "metric" : "us" };
+      light: $("pf-light").value.trim(), lightCount: Math.max(1, Math.round(pfNum("pf-lightcount", 1))), units: $("pf-units").value === "metric" ? "metric" : "us",
+      started: $("pf-started").value || "", tips: $("pf-tips").checked };
   }
   function applyUnits(u){
     u = u === "metric" ? "metric" : "us";
