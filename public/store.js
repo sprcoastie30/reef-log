@@ -222,7 +222,7 @@
   var DOWNLOADS = Object.freeze({
     save: function (req) {
       var name = String(req.filename || "download");
-      var type = /\.json$/i.test(name) ? "application/json" : /\.csv$/i.test(name) ? "text/csv" : /\.png$/i.test(name) ? "image/png" : "application/octet-stream";
+      var type = /\.json$/i.test(name) ? "application/json" : /\.csv$/i.test(name) ? "text/csv" : /\.png$/i.test(name) ? "image/png" : /\.ics$/i.test(name) ? "text/calendar" : "application/octet-stream";
       var b = req.data instanceof Blob ? req.data : new Blob([req.data], { type: type });
       var a = document.createElement("a");
       a.href = URL.createObjectURL(b); a.download = name; a.rel = "noopener";

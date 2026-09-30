@@ -201,6 +201,33 @@ table.calc td.res { font-weight: 500; color: var(--ink); }
 .qr-out { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .qr-out canvas { background: #fff; padding: 10px; border-radius: 6px; max-width: 100%; height: auto; image-rendering: pixelated; }
 .qr-out code { word-break: break-all; font-size: 0.7rem; max-width: 100%; }
+.mt-item { display: grid; grid-template-columns: 6px minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); align-items: start; }
+.mt-item .bar { width: 6px; align-self: stretch; border-radius: 3px; background: var(--ok); }
+.mt-item.due .bar { background: var(--warn); }
+.mt-item.over .bar { background: var(--bad); }
+.mt-item .name { font-weight: 600; }
+.mt-item .meta { font-family: var(--f-mono); font-size: 0.76rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.mt-item .notes { color: var(--muted); font-size: 0.86rem; }
+.mt-item .side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.mt-item .side .btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.mt-item .side button { padding: 3px 8px; font-size: 0.75rem; }
+.pill.over { background: var(--bad-bg); color: var(--bad); }
+.pill.due { background: var(--warn-bg); color: var(--warn); }
+.pill.soon { background: var(--ok-bg); color: var(--ok); }
+#m-due { cursor: pointer; font-weight: 600; color: var(--warn); background: none; border: 0; padding: 0; font: inherit; font-weight: 600; letter-spacing: 0; }
+@media (max-width: 420px) { .mt-item { grid-template-columns: 6px minmax(0, 1fr); } .mt-item .side { grid-column: 2; flex-direction: row; justify-content: space-between; align-items: center; } }
+.gear-item { padding: 12px 0; border-bottom: 1px solid var(--grid); display: flex; flex-direction: column; gap: 6px; }
+.gear-item .top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; }
+.gear-item .name { font-weight: 600; }
+.gear-item .meta { font-family: var(--f-mono); font-size: 0.76rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.gear-item .side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.gear-item .btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.gear-item .btns button { padding: 3px 8px; font-size: 0.75rem; }
+.gear-log { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.gear-log table td, .gear-log table th { font-size: 0.78rem; }
+.gear-log .fields { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.pill.pass { background: var(--ok-bg); color: var(--ok); }
+.pill.fail { background: var(--bad-bg); color: var(--bad); }
 .ls-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
 .ls-summary div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .ls-summary .big { font-family: var(--f-mono); font-size: 1.4rem; font-weight: 500; }
@@ -253,6 +280,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
 
   <nav class="tabs" role="tablist" aria-label="Log sections">
     <button type="button" role="tab" id="tb-chemistry" data-tab="chemistry" aria-selected="true">Chemistry</button>
+    <button type="button" role="tab" id="tb-maintenance" data-tab="maintenance" aria-selected="false">Maintenance<span class="count" id="c-mt"></span></button>
     <button type="button" role="tab" id="tb-livestock" data-tab="livestock" aria-selected="false">Livestock<span class="count" id="c-ls"></span></button>
     <button type="button" role="tab" id="tb-equipment" data-tab="equipment" aria-selected="false">Equipment<span class="count" id="c-eq"></span></button>
     <button type="button" role="tab" id="tb-photos" data-tab="photos" aria-selected="false">Photos<span class="count" id="c-ph"></span></button>
@@ -355,6 +383,74 @@ details.backup summary { cursor: pointer; list-style: revert; }
           <span class="hint" id="eq-summary"></span>
         </div>
         <div class="eq-groups" id="eq-list"><div class="skeleton">Loading equipment…</div></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-maintenance" role="tabpanel" aria-labelledby="tb-maintenance" hidden>
+    <div class="cols">
+      <section class="panel" id="mt-entry">
+        <h2 id="mt-title">Add a task</h2>
+        <form id="mf" novalidate>
+          <div class="fields">
+            <div class="field" style="grid-column:1/-1"><label for="m-name"><b>Task</b></label><input id="m-name" type="text" maxlength="80" placeholder="e.g. Test alkalinity"></div>
+            <div class="field"><label for="m-kind"><b>Kind</b></label><select id="m-kind"><option value="test">Water test</option><option value="upkeep">Maintenance</option></select></div>
+            <div class="field"><label for="m-every"><b>Repeat every</b> (days)</label><input id="m-every" type="number" min="1" max="365" step="1" value="7"></div>
+            <div class="field"><label for="m-last"><b>Last done</b></label><input id="m-last" type="date"></div>
+            <div class="field" id="m-marker-wrap"><label for="m-marker"><b>Chemistry marker when done</b></label><select id="m-marker"></select></div>
+          </div>
+          <div class="field" id="m-params-wrap" style="margin-top:10px">
+            <span class="label">Completed automatically when you log</span>
+            <div class="chips" id="m-params"></div>
+          </div>
+          <div class="field" style="margin-top:10px"><label for="m-notes"><b>Notes</b></label><input id="m-notes" type="text" maxlength="160" placeholder="Kit, amount, steps"></div>
+          <div class="form-actions" style="margin-top:12px">
+            <button class="primary" type="submit" id="m-save">Add task</button>
+            <button type="button" id="m-cancel" hidden>Cancel edit</button>
+            <span class="status" id="m-status" role="status"></span>
+          </div>
+        </form>
+      </section>
+      <section class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><h2>Schedule</h2><span class="hint" id="mt-summary"></span></div>
+        <div id="mt-list"><div class="skeleton">Loading tasks…</div></div>
+        <div style="border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px">
+          <h3 style="font-size:1rem;margin:0">Reminders on your phone</h3>
+          <p class="hint">Download the schedule as a calendar file and open it on your phone. Each task becomes a repeating event with an alert, so iPhone Calendar or Google Calendar reminds you even when this app is closed. Google Calendar can also email you. Download a fresh file after you change the schedule, and delete the old Reef events first.</p>
+          <div class="form-actions">
+            <div class="field" style="flex-direction:row;align-items:center;gap:8px"><label for="mt-time" style="white-space:nowrap"><b>Alert time</b></label><input id="mt-time" type="time" value="18:00" style="width:auto"></div>
+            <button type="button" id="mt-ics">Download calendar file</button>
+            <span class="status" id="mt-ics-status"></span>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="cols">
+      <section class="panel" id="gear-entry">
+        <h2 id="g-title">Add test gear</h2>
+        <form id="gf" novalidate>
+          <div class="fields">
+            <div class="field"><label for="g-kind"><b>Type</b></label><select id="g-kind"></select></div>
+            <div class="field"><label for="g-brand"><b>Brand</b></label><input id="g-brand" type="text" list="g-brand-list" maxlength="60"><datalist id="g-brand-list"></datalist></div>
+            <div class="field" style="grid-column:1/-1"><label for="g-model"><b>Model or kit</b></label><input id="g-model" type="text" list="g-model-list" maxlength="80" placeholder="e.g. HI772 Alkalinity Checker"><datalist id="g-model-list"></datalist></div>
+            <div class="field"><label for="g-opened"><b>Opened / installed</b></label><input id="g-opened" type="date"></div>
+            <div class="field"><label for="g-expires"><b>Reagent expiry</b></label><input id="g-expires" type="date"></div>
+            <div class="field"><label for="g-lot"><b>Lot number</b></label><input id="g-lot" type="text" maxlength="40"></div>
+            <div class="field"><label for="g-every"><b>Calibrate / verify every</b> (days)</label><input id="g-every" type="number" min="0" max="730" step="1" placeholder="Leave blank for none"></div>
+          </div>
+          <p class="callout" id="g-advice" hidden></p>
+          <div class="field" style="margin-top:10px"><span class="label">Measures</span><div class="chips" id="g-params"></div></div>
+          <div class="field" style="margin-top:10px"><label for="g-notes"><b>Notes</b></label><input id="g-notes" type="text" maxlength="160" placeholder="Where it's stored, reference solution you use"></div>
+          <div class="form-actions" style="margin-top:12px">
+            <button class="primary" type="submit" id="g-save">Add to test gear</button>
+            <button type="button" id="g-cancel" hidden>Cancel edit</button>
+            <span class="status" id="g-status" role="status"></span>
+          </div>
+        </form>
+      </section>
+      <section class="panel">
+        <h2>Test gear &amp; calibration log</h2>
+        <div id="gear-list"><div class="skeleton">Loading test gear…</div></div>
       </section>
     </div>
   </div>
@@ -853,6 +949,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       const col = db.collection("tests");
       if (editingId) await col.doc(editingId).set(rec); else await col.add(rec);
       setStatus("f-status", editingId ? "Changes saved." : "Test saved."); resetForm();
+      completeFromTest(rec);
     } catch (e) { setStatus("f-status", e && e.code === "invalid_argument" ? "You don't have permission to save to this log." : "Couldn't save (" + (e && e.code || "error") + "). Try again.", true); }
     $("f-save").disabled = false;
   });
@@ -944,7 +1041,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
 
   // ---------- tabs ----------
-  const TABS = ["chemistry","livestock","equipment","photos","dosing","lighting"];
+  const TABS = ["chemistry","maintenance","livestock","equipment","photos","dosing","lighting"];
   function showTab(name, push){
     if (!TABS.includes(name)) name = "chemistry";
     TABS.forEach(t => { $("tab-" + t).hidden = t !== name; $("tb-" + t).setAttribute("aria-selected", String(t === name)); });
@@ -953,6 +1050,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     if (name === "dosing") renderDosing();
     if (name === "lighting") renderLighting();
     if (name === "livestock") renderLivestock();
+    if (name === "maintenance") { renderMaintenance(); renderGear(); }
     if (push) { try { history.replaceState(null, "", "#" + name); } catch (e) {} }
   }
   document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab, true)));
@@ -1198,6 +1296,300 @@ details.backup summary { cursor: pointer; list-style: revert; }
     $("l-save").disabled = false;
   });
   lsReset();
+
+  // ---------- maintenance: schedule, test gear, calibration log, calendar ----------
+  const MT_MARKERS = ["", "Water change", "Dosing change", "Equipment", "Filter media", "Lighting", "Treatment"];
+  const SUGGESTED_TASKS = [
+    { name:"Test alkalinity", kind:"test", every:3, params:["alk"] },
+    { name:"Test calcium and magnesium", kind:"test", every:7, params:["ca","mg"] },
+    { name:"Test nitrate and phosphate", kind:"test", every:7, params:["no3","po4"] },
+    { name:"Check salinity", kind:"test", every:7, params:["sal"] },
+    { name:"Water change", kind:"upkeep", every:7, marker:"Water change" },
+    { name:"Empty and rinse skimmer cup", kind:"upkeep", every:3 },
+    { name:"Clean glass", kind:"upkeep", every:3 },
+    { name:"Refill dosing containers", kind:"upkeep", every:14 },
+    { name:"Check RO/DI output (TDS)", kind:"upkeep", every:30 },
+    { name:"Clean pumps and wavemakers", kind:"upkeep", every:90, marker:"Equipment" }
+  ];
+  // Test gear catalog. Intervals are only filled in where a maker or major retailer states one; the rest are left for the user.
+  const GEAR = {
+    kit: { label:"Test kit (titration / color)", brands:["Salifert","Red Sea","API","Nyos","Fauna Marin","Tropic Marin","Aquaforest","Seachem","Elos","Instant Ocean"],
+      advice:"Write the reagent expiry and lot from the box. To check a kit's accuracy, test a reference solution (for example Tropic Marin, Fauna Marin or Aquaforest AF Reference Solution) and log the result.", every:null },
+    checker: { label:"Hanna Checker (handheld photometer)", brands:["Hanna"],
+      models:[["HI772 Marine Alkalinity (dKH) Checker",["alk"]],["HI758 Marine Calcium Checker",["ca"]],["HI783 Marine Magnesium Checker",["mg"]],["HI774 Marine Phosphate ULR Checker",["po4"]],["HI736 Phosphorus ULR Checker",["po4"]]],
+      advice:"Hanna sells CAL Check standard sets for its Checkers (for example HI772-11 for the alkalinity Checker) to calibrate the meter and confirm it reads correctly. Hanna doesn't state a frequency; many hobbyists check monthly or when readings look off. Reagent packets have their own expiry.", every:null },
+    refractometer: { label:"Refractometer", brands:["Milwaukee","Hanna","BRS","Vee Gee","Other"], params:["sal"],
+      advice:"Calibrate with 35 ppt (1.026 SG) calibration fluid, not RO water, so it's accurate at reef salinity. Bulk Reef Supply's guide says calibration is usually needed about every couple of months; more often is fine.", every:60 },
+    salmeter: { label:"Digital salinity meter", brands:["Hanna","Milwaukee","Other"], params:["sal"],
+      advice:"Calibrate with the maker's salinity standard and log the reading before and after. The maker's manual gives the interval.", every:null },
+    ph: { label:"pH probe / meter", brands:["Neptune Systems","GHL","Milwaukee","Hanna","Other"], params:["ph"],
+      advice:"Two-point calibration with fresh pH 7.00 and 10.00 fluid. Neptune recommends calibrating standard pH probes every 3 months or as needed; double-junction probes can go up to 6 months.", every:90 },
+    auto: { label:"Automatic tester / controller", brands:["Neptune Systems","Focustronic","GHL","Reef Factory","Other"],
+      models:[["Neptune Trident",["alk","ca","mg"]],["Neptune Trident NP",["no3","po4"]],["Focustronic Alkatronic",["alk"]],["Focustronic Mastertronic",[]],["GHL KH Director",["alk"]],["Reef Factory KH Keeper",["alk"]]],
+      advice:"Log reagent changes and seawater or reference checks. For the Neptune Trident at its default schedule, Neptune's 2-month kit has the alkalinity reagent changed monthly and calcium and magnesium every 2 months. For other testers, use the maker's app or manual.", every:null },
+    icp: { label:"ICP lab test", brands:["Triton","ATI","Fauna Marin","Oceamo","Other"], params:[],
+      advice:"Set how often you want to send a sample, and log each result's date and anything flagged.", every:null },
+    other: { label:"Other", brands:[], advice:"", every:null }
+  };
+  let tasks = [], mtLoaded = false, mtEditing = null, gear = [], gearLoaded = false, gEditing = null, gearOpen = null;
+  const ymdToday = () => today();
+  const addDays = (ymdStr, n) => ymd(toTs(ymdStr, "12:00") + n * DAY);
+  const dayDiff = (a, b) => Math.round((toTs(b, "12:00") - toTs(a, "12:00")) / DAY);
+
+  // form setup
+  $("m-marker").innerHTML = MT_MARKERS.map(m => '<option value="' + esc(m) + '">' + (m ? esc(m) : "None") + '</option>').join("");
+  $("m-params").innerHTML = PARAMS.map(p => '<label class="chip"><input type="checkbox" value="' + p.key + '" id="mp-' + p.key + '">' + esc(p.name) + '</label>').join("");
+  $("g-params").innerHTML = PARAMS.map(p => '<label class="chip"><input type="checkbox" value="' + p.key + '" id="gp-' + p.key + '">' + esc(p.name) + '</label>').join("");
+  $("g-kind").innerHTML = Object.entries(GEAR).map(([k, g]) => '<option value="' + k + '">' + esc(g.label) + '</option>').join("");
+  function mtSyncFields(){ const t = $("m-kind").value === "test"; $("m-params-wrap").hidden = !t; $("m-marker-wrap").hidden = t; }
+  $("m-kind").addEventListener("change", mtSyncFields);
+  function gSyncKind(fillDefaults){
+    const g = GEAR[$("g-kind").value];
+    $("g-brand-list").innerHTML = g.brands.map(b => '<option value="' + esc(b) + '">').join("");
+    $("g-model-list").innerHTML = (g.models || []).map(m => '<option value="' + esc(m[0]) + '">').join("");
+    $("g-advice").hidden = !g.advice; $("g-advice").textContent = g.advice;
+    if (fillDefaults) {
+      if (g.brands.length === 1) $("g-brand").value = g.brands[0];
+      $("g-every").value = g.every || "";
+      PARAMS.forEach(p => { $("gp-" + p.key).checked = (g.params || []).includes(p.key); });
+    }
+  }
+  $("g-kind").addEventListener("change", () => gSyncKind(true));
+  $("g-model").addEventListener("change", () => {
+    const g = GEAR[$("g-kind").value]; const hit = (g.models || []).find(m => m[0] === $("g-model").value.trim());
+    if (hit) { PARAMS.forEach(p => { $("gp-" + p.key).checked = hit[1].includes(p.key); }); if (/trident/i.test(hit[0]) && !$("g-every").value) $("g-every").value = 30; if (/^HI/.test(hit[0])) $("g-brand").value = "Hanna"; }
+  });
+
+  // due status
+  function taskDue(t){
+    const next = t.lastDone ? addDays(t.lastDone, Math.max(1, t.every || 1)) : ymdToday();
+    const d = dayDiff(ymdToday(), next);
+    return { next, d, cls: d < 0 ? "over" : d === 0 ? "due" : "soon", label: d < 0 ? "Overdue " + (-d) + (d === -1 ? " day" : " days") : d === 0 ? (t.lastDone ? "Due today" : "Not done yet") : "Due in " + d + (d === 1 ? " day" : " days") };
+  }
+  function gearReminders(){
+    const out = [];
+    gear.forEach(g => {
+      const name = [g.brand, g.model].filter(Boolean).join(" ") || GEAR[g.kind]?.label || "Test gear";
+      if (g.every > 0) {
+        const lastCal = (g.log || []).filter(e => e.type !== "note").map(e => e.date).sort().pop() || g.opened || "";
+        out.push({ id: "gcal-" + g.id, gearId: g.id, virtual: true, name: "Calibrate / verify " + name, kind: "gear", every: g.every, lastDone: lastCal });
+      }
+      if (g.expires) {
+        const d = dayDiff(ymdToday(), g.expires);
+        if (d <= 30) out.push({ id: "gexp-" + g.id, gearId: g.id, virtual: true, name: "Replace " + name, kind: "expiry", expires: g.expires, d });
+      }
+    });
+    return out;
+  }
+  function allReminders(){
+    return tasks.map(t => ({ ...t, due: taskDue(t) }))
+      .concat(gearReminders().map(r => r.kind === "expiry"
+        ? { ...r, due: { next: r.expires, d: r.d, cls: r.d < 0 ? "over" : r.d <= 7 ? "due" : "soon", label: r.d < 0 ? "Expired " + (-r.d) + " days ago" : r.d === 0 ? "Expires today" : "Expires in " + r.d + " days" } }
+        : { ...r, due: taskDue(r) }))
+      .sort((a, b) => a.due.d - b.due.d || String(a.name).localeCompare(String(b.name)));
+  }
+  function renderDueChip(){
+    let chip = $("m-due");
+    if (!chip) { const meta = document.querySelector("header.top .meta"); if (!meta) return; chip = document.createElement("button"); chip.type = "button"; chip.id = "m-due"; chip.addEventListener("click", () => showTab("maintenance", true)); meta.appendChild(chip); }
+    const n = allReminders().filter(r => r.due.d <= 0).length;
+    chip.hidden = !n; chip.textContent = n + (n === 1 ? " task due" : " tasks due");
+    $("c-mt").textContent = n ? String(n) : "";
+  }
+  function renderMaintenance(){
+    renderDueChip();
+    if (!mtLoaded || !gearLoaded) return;
+    const list = allReminders(), host = $("mt-list");
+    const over = list.filter(r => r.due.d < 0).length, dueNow = list.filter(r => r.due.d === 0).length;
+    $("mt-summary").textContent = list.length ? (over ? over + " overdue · " : "") + (dueNow ? dueNow + " due today · " : "") + list.length + " scheduled" : "";
+    if (!list.length) {
+      host.innerHTML = '<div class="skeleton">No tasks yet. Add your own with the form, or start from a suggested set of common reef tasks and adjust the intervals to your tank.</div>' +
+        (canWrite ? '<button type="button" id="mt-suggest">Add suggested reef tasks</button>' : '');
+      const b = $("mt-suggest"); if (b) b.addEventListener("click", addSuggested);
+      return;
+    }
+    host.innerHTML = list.map(r => {
+      const meta = [];
+      if (r.kind === "expiry") meta.push("Reagent expiry " + dstr(toTs(r.expires, "12:00")));
+      else { meta.push("Every " + r.every + (r.every === 1 ? " day" : " days")); meta.push(r.lastDone ? "Last " + dstr(toTs(r.lastDone, "12:00")) : "Never logged"); if (r.due.d !== 0 || r.lastDone) meta.push("Next " + dshort(toTs(r.due.next, "12:00"))); }
+      if (r.kind === "test" && r.params && r.params.length) meta.push("Logs " + r.params.map(k => (PARAMS.find(p => p.key === k) || {}).name || k).join(", "));
+      if (r.marker) meta.push("Marks " + r.marker);
+      const btns = !canWrite ? "" : r.virtual
+        ? '<button type="button" data-gearopen="' + esc(r.gearId) + '">' + (r.kind === "expiry" ? "Update" : "Log check") + '</button>'
+        : (r.kind === "test" ? '<button type="button" data-mtlog="' + esc(r.id) + '">Log test</button>' : '') +
+          '<button type="button" class="primary" data-mtdone="' + esc(r.id) + '">Done</button><button type="button" data-mtedit="' + esc(r.id) + '">Edit</button><button type="button" class="danger" data-mtdel="' + esc(r.id) + '">Delete</button>';
+      return '<div class="mt-item ' + r.due.cls + '"><span class="bar"></span><div style="min-width:0"><div class="name">' + esc(r.name) + (r.virtual ? ' <span class="hint">· test gear</span>' : '') + '</div>' +
+        '<div class="meta">' + meta.map(m => '<span>' + esc(m) + '</span>').join("") + '</div>' + (r.notes ? '<div class="notes">' + esc(r.notes) + '</div>' : '') + '</div>' +
+        '<div class="side"><span class="pill ' + r.due.cls + '">' + esc(r.due.label) + '</span><div class="btns">' + btns + '</div></div></div>';
+    }).join("");
+  }
+  async function addSuggested(){
+    if (!db) return;
+    for (const t of SUGGESTED_TASKS) await db.collection("tasks").add({ name: t.name, kind: t.kind, every: t.every, params: t.params || [], marker: t.marker || "", lastDone: "", notes: "", history: [] });
+    setStatus("m-status", "Added " + SUGGESTED_TASKS.length + " suggested tasks. Adjust the intervals to suit your tank.");
+  }
+  async function markTaskDone(t, dateStr, addMarker){
+    if (t.lastDone && t.lastDone >= dateStr) return;
+    const history = (t.history || []).concat([dateStr]).slice(-50);
+    await db.collection("tasks").doc(t.id).update({ lastDone: dateStr, history });
+    if (addMarker && t.marker) await db.collection("tests").add({ ts: toTs(dateStr, nowTime()), events: [t.marker], note: t.name, ...Object.fromEntries(PARAMS.map(p => [p.key, null])) });
+  }
+  // A saved test completes matching test tasks; a saved event completes upkeep tasks that use that marker.
+  async function completeFromTest(rec){
+    if (!db || !tasks.length) return;
+    const d = ymd(rec.ts);
+    for (const t of tasks) {
+      const hitParam = t.kind === "test" && (t.params || []).some(k => rec[k] != null);
+      const hitEvent = t.kind === "upkeep" && t.marker && (rec.events || []).includes(t.marker);
+      if (hitParam || hitEvent) { try { await markTaskDone(t, d, false); } catch (e) {} }
+    }
+  }
+  function mtReset(){
+    mtEditing = null; $("mf").reset(); $("m-every").value = 7; $("mt-title").textContent = "Add a task"; $("m-save").textContent = "Add task"; $("m-cancel").hidden = true; mtSyncFields();
+  }
+  $("mt-list").addEventListener("click", async ev => {
+    const done = ev.target.closest("[data-mtdone]"), ed = ev.target.closest("[data-mtedit]"), del = ev.target.closest("[data-mtdel]"), lg = ev.target.closest("[data-mtlog]"), go = ev.target.closest("[data-gearopen]");
+    if (done) { const t = tasks.find(x => x.id === done.dataset.mtdone); if (t) { try { await markTaskDone(t, ymdToday(), true); } catch (e) { setStatus("m-status", "Couldn't update that task.", true); } } }
+    if (lg) { const t = tasks.find(x => x.id === lg.dataset.mtlog); showTab("chemistry", true); $("entry").scrollIntoView({ block: "start" }); const k = t && t.params && t.params[0]; if (k) $("f-" + k).focus({ preventScroll: true }); }
+    if (go) { gearOpen = go.dataset.gearopen; renderGear(); const el = document.getElementById("gi-" + gearOpen); if (el) el.scrollIntoView({ block: "center" }); }
+    if (ed) {
+      const t = tasks.find(x => x.id === ed.dataset.mtedit); if (!t) return;
+      mtEditing = t.id; $("m-name").value = t.name || ""; $("m-kind").value = t.kind || "upkeep"; $("m-every").value = t.every || 7; $("m-last").value = t.lastDone || ""; $("m-marker").value = t.marker || ""; $("m-notes").value = t.notes || "";
+      PARAMS.forEach(p => { $("mp-" + p.key).checked = (t.params || []).includes(p.key); }); mtSyncFields();
+      $("mt-title").textContent = "Edit task"; $("m-save").textContent = "Save changes"; $("m-cancel").hidden = false; $("mt-entry").scrollIntoView({ block: "start" });
+    }
+    if (del) {
+      if (del.dataset.confirm !== "1") { del.dataset.confirm = "1"; del.textContent = "Confirm"; setTimeout(() => { del.dataset.confirm = ""; del.textContent = "Delete"; }, 4000); return; }
+      try { await db.collection("tasks").doc(del.dataset.mtdel).delete(); if (mtEditing === del.dataset.mtdel) mtReset(); } catch (e) { setStatus("m-status", "Couldn't delete that task.", true); }
+    }
+  });
+  $("m-cancel").addEventListener("click", () => { mtReset(); setStatus("m-status", ""); });
+  $("mf").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const name = $("m-name").value.trim(); if (!name) { setStatus("m-status", "Name the task.", true); return; }
+    if (!db) { setStatus("m-status", "Saving isn't available in this view.", true); return; }
+    const kind = $("m-kind").value, prev = mtEditing ? tasks.find(x => x.id === mtEditing) : null;
+    const rec = { name, kind, every: Math.max(1, Math.round(num($("m-every").value) || 7)), lastDone: $("m-last").value || "",
+      params: kind === "test" ? PARAMS.filter(p => $("mp-" + p.key).checked).map(p => p.key) : [], marker: kind === "upkeep" ? $("m-marker").value : "",
+      notes: $("m-notes").value.trim(), history: prev ? (prev.history || []) : [] };
+    try { if (mtEditing) await db.collection("tasks").doc(mtEditing).set(rec); else await db.collection("tasks").add(rec); setStatus("m-status", mtEditing ? "Changes saved." : "Task added."); mtReset(); }
+    catch (e) { setStatus("m-status", "Couldn't save (" + (e && e.code || "error") + ").", true); }
+  });
+
+  // ---------- test gear ----------
+  function renderGear(){
+    if (!gearLoaded) return;
+    const host = $("gear-list");
+    if (!gear.length) { host.innerHTML = '<div class="skeleton">No test gear listed yet. Add your kits, Checkers, refractometer and probes to track reagent expiry and calibration, with reminders in the schedule above.</div>'; return; }
+    host.innerHTML = [...gear].sort((a, b) => (GEAR[a.kind]?.label || "").localeCompare(GEAR[b.kind]?.label || "") || String(a.model).localeCompare(String(b.model))).map(g => {
+      const name = [g.brand, g.model].filter(Boolean).join(" ") || GEAR[g.kind]?.label || "Test gear";
+      const log = (g.log || []).slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      const last = log.find(e => e.type !== "note");
+      const meta = [GEAR[g.kind]?.label || "", (g.params || []).map(k => (PARAMS.find(p => p.key === k) || {}).name || k).join(", "),
+        g.opened ? "Opened " + dstr(toTs(g.opened, "12:00")) : "", g.lot ? "Lot " + g.lot : "",
+        g.every > 0 ? "Check every " + g.every + " days" : "", last ? "Last " + last.type.toLowerCase() + " " + dstr(toTs(last.date, "12:00")) : "No calibration logged"].filter(Boolean);
+      let exp = "";
+      if (g.expires) { const d = dayDiff(ymdToday(), g.expires); exp = '<span class="pill ' + (d < 0 ? "over" : d <= 30 ? "due" : "soon") + '">' + (d < 0 ? "Expired" : "Expires " + dshort(toTs(g.expires, "12:00"))) + '</span>'; }
+      const open = gearOpen === g.id;
+      const logHtml = !open ? "" : '<div class="gear-log">' +
+        (canWrite ? '<div class="fields">' +
+          '<div class="field"><label for="gl-date-' + esc(g.id) + '"><b>Date</b></label><input id="gl-date-' + esc(g.id) + '" type="date" value="' + ymdToday() + '"></div>' +
+          '<div class="field"><label for="gl-type-' + esc(g.id) + '"><b>Entry</b></label><select id="gl-type-' + esc(g.id) + '"><option>Calibration</option><option>Reference check</option><option>Reagent change</option><option>Probe cleaning</option><option>ICP result</option></select></div>' +
+          '<div class="field"><label for="gl-std-' + esc(g.id) + '"><b>Standard used</b></label><input id="gl-std-' + esc(g.id) + '" type="text" maxlength="60" placeholder="e.g. 35 ppt fluid"></div>' +
+          '<div class="field"><label for="gl-exp-' + esc(g.id) + '"><b>Expected</b></label><input id="gl-exp-' + esc(g.id) + '" type="number" step="any"></div>' +
+          '<div class="field"><label for="gl-read-' + esc(g.id) + '"><b>Reading</b></label><input id="gl-read-' + esc(g.id) + '" type="number" step="any"></div>' +
+          '<div class="field"><label for="gl-res-' + esc(g.id) + '"><b>Result</b></label><select id="gl-res-' + esc(g.id) + '"><option value="">—</option><option value="pass">Pass</option><option value="fail">Needs attention</option></select></div>' +
+          '</div><div class="field"><label for="gl-notes-' + esc(g.id) + '"><b>Notes</b></label><input id="gl-notes-' + esc(g.id) + '" type="text" maxlength="160"></div>' +
+          '<div class="form-actions"><button type="button" class="primary" data-glsave="' + esc(g.id) + '">Add to log</button><span class="status" id="gl-status-' + esc(g.id) + '"></span></div>' : '') +
+        (log.length ? '<div class="tablewrap"><table><thead><tr><th>Date</th><th class="note">Entry</th><th class="note">Standard</th><th>Expected</th><th>Reading</th><th>Diff</th><th>Result</th><th class="note">Notes</th>' + (canWrite ? '<th></th>' : '') + '</tr></thead><tbody>' +
+          log.map(e => { const diff = e.expected != null && e.reading != null ? (e.reading - e.expected) : null;
+            return '<tr><td>' + dstr(toTs(e.date, "12:00")) + '</td><td class="note">' + esc(e.type) + '</td><td class="note">' + esc(e.standard) + '</td><td>' + (e.expected ?? "—") + '</td><td>' + (e.reading ?? "—") + '</td><td>' + (diff == null ? "—" : (diff > 0 ? "+" : "") + (+diff.toFixed(3))) + '</td><td>' +
+              (e.result ? '<span class="pill ' + esc(e.result) + '">' + (e.result === "pass" ? "Pass" : "Attention") + '</span>' : "—") + '</td><td class="note">' + esc(e.notes) + '</td>' +
+              (canWrite ? '<td class="act"><button type="button" class="danger" data-gldel="' + esc(g.id) + '" data-glid="' + esc(e.id) + '">Delete</button></td>' : '') + '</tr>'; }).join("") + '</tbody></table></div>'
+          : '<p class="hint">No entries yet.</p>') + '</div>';
+      return '<div class="gear-item" id="gi-' + esc(g.id) + '"><div class="top"><div style="min-width:0"><div class="name">' + esc(name) + '</div><div class="meta">' + meta.map(m => '<span>' + esc(m) + '</span>').join("") + '</div>' + (g.notes ? '<div class="hint">' + esc(g.notes) + '</div>' : '') + '</div>' +
+        '<div class="side">' + exp + '<div class="btns"><button type="button" data-gtoggle="' + esc(g.id) + '">' + (open ? "Hide log" : "Log (" + log.length + ")") + '</button>' +
+        (canWrite ? '<button type="button" data-gedit="' + esc(g.id) + '">Edit</button><button type="button" class="danger" data-gdel="' + esc(g.id) + '">Delete</button>' : '') + '</div></div></div>' + logHtml + '</div>';
+    }).join("");
+  }
+  function gReset(){
+    gEditing = null; $("gf").reset(); $("g-title").textContent = "Add test gear"; $("g-save").textContent = "Add to test gear"; $("g-cancel").hidden = true; gSyncKind(true);
+  }
+  $("gear-list").addEventListener("click", async ev => {
+    const tg = ev.target.closest("[data-gtoggle]"), ed = ev.target.closest("[data-gedit]"), del = ev.target.closest("[data-gdel]"), ls = ev.target.closest("[data-glsave]"), ld = ev.target.closest("[data-gldel]");
+    if (tg) { gearOpen = gearOpen === tg.dataset.gtoggle ? null : tg.dataset.gtoggle; renderGear(); }
+    if (ed) {
+      const g = gear.find(x => x.id === ed.dataset.gedit); if (!g) return;
+      gEditing = g.id; $("g-kind").value = GEAR[g.kind] ? g.kind : "other"; gSyncKind(false);
+      $("g-brand").value = g.brand || ""; $("g-model").value = g.model || ""; $("g-opened").value = g.opened || ""; $("g-expires").value = g.expires || ""; $("g-lot").value = g.lot || ""; $("g-every").value = g.every || ""; $("g-notes").value = g.notes || "";
+      PARAMS.forEach(p => { $("gp-" + p.key).checked = (g.params || []).includes(p.key); });
+      $("g-title").textContent = "Edit test gear"; $("g-save").textContent = "Save changes"; $("g-cancel").hidden = false; $("gear-entry").scrollIntoView({ block: "start" });
+    }
+    if (del) {
+      if (del.dataset.confirm !== "1") { del.dataset.confirm = "1"; del.textContent = "Confirm"; setTimeout(() => { del.dataset.confirm = ""; del.textContent = "Delete"; }, 4000); return; }
+      try { await db.collection("gear").doc(del.dataset.gdel).delete(); if (gEditing === del.dataset.gdel) gReset(); } catch (e) { setStatus("g-status", "Couldn't delete that item.", true); }
+    }
+    if (ls) {
+      const id = ls.dataset.glsave, g = gear.find(x => x.id === id); if (!g) return;
+      const v = k => $("gl-" + k + "-" + id).value;
+      const entry = { id: Math.random().toString(36).slice(2, 10), date: v("date") || ymdToday(), type: v("type"), standard: v("std").trim(), expected: num(v("exp")), reading: num(v("read")), result: v("res"), notes: v("notes").trim() };
+      const log = (g.log || []).concat([entry]).slice(-200);
+      const upd = { log }; if (entry.type === "Reagent change" && !g.opened) upd.opened = entry.date;
+      try { await db.collection("gear").doc(id).update(upd); } catch (e) { setStatus("gl-status-" + id, "Couldn't save the entry.", true); }
+    }
+    if (ld) {
+      if (ld.dataset.confirm !== "1") { ld.dataset.confirm = "1"; ld.textContent = "Confirm"; return; }
+      const g = gear.find(x => x.id === ld.dataset.gldel); if (!g) return;
+      try { await db.collection("gear").doc(g.id).update({ log: (g.log || []).filter(e => e.id !== ld.dataset.glid) }); } catch (e) {}
+    }
+  });
+  $("g-cancel").addEventListener("click", () => { gReset(); setStatus("g-status", ""); });
+  $("gf").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    if (!db) { setStatus("g-status", "Saving isn't available in this view.", true); return; }
+    const kind = $("g-kind").value, brand = $("g-brand").value.trim(), model = $("g-model").value.trim();
+    if (!brand && !model) { setStatus("g-status", "Enter a brand or model.", true); return; }
+    const prev = gEditing ? gear.find(x => x.id === gEditing) : null;
+    const rec = { kind, brand, model, opened: $("g-opened").value || "", expires: $("g-expires").value || "", lot: $("g-lot").value.trim(),
+      every: Math.max(0, Math.round(num($("g-every").value) || 0)), params: PARAMS.filter(p => $("gp-" + p.key).checked).map(p => p.key), notes: $("g-notes").value.trim(), log: prev ? (prev.log || []) : [] };
+    try { if (gEditing) await db.collection("gear").doc(gEditing).set(rec); else await db.collection("gear").add(rec); setStatus("g-status", gEditing ? "Changes saved." : "Added."); gReset(); }
+    catch (e) { setStatus("g-status", "Couldn't save (" + (e && e.code || "error") + ").", true); }
+  });
+
+  // ---------- calendar export (.ics) ----------
+  function icsEsc(s){ return String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
+  function icsFold(line){ const out = []; while (line.length > 74) { out.push(line.slice(0, 74)); line = " " + line.slice(74); } out.push(line); return out.join("\r\n"); }
+  function buildIcs(){
+    const time = ($("mt-time").value || "18:00").replace(":", "") + "00";
+    const stampNow = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+    const tankName = (profile && profile.name) || "Reef";
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Reef Log//Maintenance//EN", "CALSCALE:GREGORIAN", "X-WR-CALNAME:" + icsEsc(tankName + " maintenance")];
+    let n = 0;
+    allReminders().forEach(r => {
+      if (r.kind === "expiry") return;
+      const start = r.due.d < 0 ? ymdToday() : r.due.next;
+      lines.push("BEGIN:VEVENT", "UID:" + r.id + "@reef-log", "DTSTAMP:" + stampNow, "DTSTART:" + start.replace(/-/g, "") + "T" + time, "DURATION:PT15M",
+        "RRULE:FREQ=DAILY;INTERVAL=" + Math.max(1, r.every || 1), "SUMMARY:" + icsEsc("Reef: " + r.name),
+        "DESCRIPTION:" + icsEsc((r.notes ? r.notes + "\n" : "") + "Every " + r.every + " days. Mark it done in Reef Log."),
+        "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(r.name), "TRIGGER:PT0M", "END:VALARM", "END:VEVENT"); n++;
+    });
+    gear.filter(g => g.expires).forEach(g => {
+      const name = [g.brand, g.model].filter(Boolean).join(" ");
+      lines.push("BEGIN:VEVENT", "UID:gexp-" + g.id + "@reef-log", "DTSTAMP:" + stampNow, "DTSTART;VALUE=DATE:" + g.expires.replace(/-/g, ""), "SUMMARY:" + icsEsc("Reef: " + name + " reagent expires"),
+        "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(name + " reagent expires in 2 weeks"), "TRIGGER:-P14D", "END:VALARM", "END:VEVENT"); n++;
+    });
+    lines.push("END:VCALENDAR");
+    return { text: lines.map(icsFold).join("\r\n") + "\r\n", n };
+  }
+  $("mt-ics").addEventListener("click", async () => {
+    const { text, n } = buildIcs();
+    if (!n) { setStatus("mt-ics-status", "Add some tasks or test gear first.", true); return; }
+    try { const dl = await claude.use("downloads"); if (!dl) throw { code: "unavailable" };
+      await dl.save({ filename: "reef-maintenance.ics", data: text }); setStatus("mt-ics-status", n + " reminders in the file. Open it on your phone to add them to your calendar.");
+    } catch (e) { setStatus("mt-ics-status", e && e.code === "declined" ? "Download cancelled." : "Downloading isn't available in this view.", e && e.code !== "declined"); }
+  });
+  try { const t = localStorage.getItem("reef-mt-time"); if (t) $("mt-time").value = t; } catch (e) {}
+  $("mt-time").addEventListener("change", () => { try { localStorage.setItem("reef-mt-time", $("mt-time").value); } catch (e) {} });
+  mtReset(); gReset();
 
   // ---------- dosing & salt ----------
   const GAL_IN3 = 231, ROCK_GAL_PER_LB = 0.0444, SAND_SOLID = 0.6;
@@ -1667,7 +2059,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
 
   // ---------- backup ----------
-  const BK_COLS = ["tests","livestock","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile"];
+  const BK_COLS = ["tests","tasks","gear","livestock","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile"];
   const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
   async function buildBackup(){
     const docs = [], blobs = {};
@@ -1718,11 +2110,14 @@ details.backup summary { cursor: pointer; list-style: revert; }
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (!$("tab-chemistry").hidden) renderCards(data()); if (!$("tab-lighting").hidden) renderLighting(); }, 150); });
 
   (async () => {
-    if (!window.claude || !claude.use) { eqLoaded = phLoaded = lsLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderPrograms(); return; }
+    if (!window.claude || !claude.use) { eqLoaded = phLoaded = lsLoaded = mtLoaded = gearLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderMaintenance(); renderGear(); renderPrograms(); return; }
     db = await claude.use("db");
     const user = await claude.use("user");
     if (user) { const c = await user.can("data.write"); if (c === false) { canWrite = false; $("ro-notice").hidden = false; $("f-save").disabled = true; $("imp").disabled = true; $("e-save").disabled = true; $("drop").hidden = true; renderAll(); } }
-    if (!db) { eqLoaded = phLoaded = lsLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderPrograms(); return; }
+    if (!db) { eqLoaded = phLoaded = lsLoaded = mtLoaded = gearLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderMaintenance(); renderGear(); renderPrograms(); return; }
+    db.collection("tasks").limit(500).onSnapshot(snap => { tasks = snap.docs.map(d => ({ id: d.id, ...d.data() })); mtLoaded = true; renderMaintenance(); }, () => { mtLoaded = true; renderMaintenance(); });
+    db.collection("gear").limit(500).onSnapshot(snap => { gear = snap.docs.map(d => ({ id: d.id, ...d.data() })); gearLoaded = true; renderGear(); renderMaintenance(); }, () => { gearLoaded = true; renderGear(); renderMaintenance(); });
+    setInterval(renderDueChip, 10 * 60 * 1000);
     db.collection("livestock").limit(1000).onSnapshot(snap => { livestock = snap.docs.map(d => ({ id: d.id, ...d.data() })); lsLoaded = true; renderLivestock(); }, () => { lsLoaded = true; renderLivestock(); });
     db.collection("equipment").limit(500).onSnapshot(snap => { equipment = snap.docs.map(d => ({ id: d.id, ...d.data() })); eqLoaded = true; renderEquipment(); }, () => { eqLoaded = true; renderEquipment(); });
     db.collection("photos").orderBy("ts", "desc").limit(1000).onSnapshot(snap => { photos = snap.docs.map(d => ({ id: d.id, ...d.data() })); phLoaded = true; renderPhotos(); }, () => { phLoaded = true; renderPhotos(); });

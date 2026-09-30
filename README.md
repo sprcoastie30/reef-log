@@ -3,6 +3,7 @@
 A reef aquarium log that runs in any browser and installs to a phone's home screen:
 
 - **Chemistry**: log water tests and chart alkalinity, calcium, magnesium, nitrate, phosphate, salinity, temperature and pH against target ranges, with maintenance-event markers and per-day change.
+- **Maintenance**: recurring water tests and upkeep with due and overdue status; tests complete automatically when you log them; test gear (kits, Hanna Checkers, refractometers, salinity meters, pH probes, auto-testers, ICP services) with reagent expiry, calibration and reference-check log; the whole schedule exports to a phone calendar (.ics) for alerts.
 - **Livestock**: fish, corals (by group) and invertebrates with photo, date added, source, placement, status (in tank, lost, rehomed) and days in the tank.
 - **Equipment**: list of everything on the system, by category and status.
 - **Photos**: dated tank photos, grouped by month.

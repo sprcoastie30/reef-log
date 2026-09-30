@@ -4,7 +4,7 @@
  * Libraries and fonts from CDNs: saved copy first, refreshed in the background.
  * Bump VERSION whenever you deploy changes to force a clean cache.
  */
-const VERSION = "reeflog-v3";
+const VERSION = "reeflog-v4";
 const APP_SHELL = ["./", "index.html", "config.js", "store.js", "sync.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];
 
