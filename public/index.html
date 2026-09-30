@@ -239,6 +239,10 @@ table.calc td.res { font-weight: 500; color: var(--ink); }
 .ro-stage .btns { display: flex; gap: 6px; }
 .ro-stage .btns button { padding: 5px 8px; font-size: 0.75rem; }
 @media (max-width: 620px) { .ro-stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .ro-stage .field:first-child { grid-column: 1 / -1; } .ro-stage .btns { grid-column: 1 / -1; } }
+.llcs { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 0.8rem; margin-top: 2px; }
+.llc b { font-weight: 600; }
+.llc .up { color: var(--ok); }
+.llc .down { color: var(--warn); }
 .ls-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
 .ls-summary div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .ls-summary .big { font-family: var(--f-mono); font-size: 1.4rem; font-weight: 500; }
@@ -755,8 +759,40 @@ details.backup summary { cursor: pointer; list-style: revert; }
         </div>
       </section>
 
+      <section class="panel" id="ll-panel">
+        <div><h2>Light settings log</h2><p class="hint">A dated record of every light setting, for any fixture. Log a change whenever you adjust the lights; K7 programs you save above show here too. Line it up with PAR, algae and coral response.</p></div>
+        <details id="ll-form-wrap"><summary class="label" style="cursor:pointer">Log current settings</summary>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+            <div class="fields">
+              <div class="field"><label for="ll-fixture"><b>Fixture</b></label><select id="ll-fixture"></select></div>
+              <div class="field"><label for="ll-count"><b>How many</b></label><input id="ll-count" type="number" min="1" max="12" step="1" value="1"></div>
+              <div class="field" style="grid-column:1/-1"><label for="ll-program"><b>Program or mode</b></label><input id="ll-program" type="text" maxlength="60" placeholder="e.g. AB+ at 60%, Week 3 acclimation"></div>
+            </div>
+            <p class="hint" id="ll-fixture-note"></p>
+            <fieldset><legend class="label">Peak brightness per channel (%)</legend>
+              <div class="fields three" id="ll-channels"></div>
+              <div class="field" id="ll-custom-wrap" hidden><label for="ll-custom"><b>Channel names</b>, separated by commas</label><input id="ll-custom" type="text" maxlength="200" placeholder="e.g. Blue, White, UV"></div>
+            </fieldset>
+            <fieldset><legend class="label">Photoperiod and placement</legend>
+              <div class="fields three">
+                <div class="field"><label for="ll-on"><b>Lights on</b></label><input id="ll-on" type="time" value="10:00"></div>
+                <div class="field"><label for="ll-ps"><b>Peak starts</b></label><input id="ll-ps" type="time" value="13:00"></div>
+                <div class="field"><label for="ll-pe"><b>Peak ends</b></label><input id="ll-pe" type="time" value="17:00"></div>
+                <div class="field"><label for="ll-off"><b>Lights off</b></label><input id="ll-off" type="time" value="20:00"></div>
+                <div class="field"><label for="ll-height"><b>Height above water</b> in</label><input id="ll-height" type="number" min="0" step="0.5"></div>
+                <div class="field"><label for="ll-master"><b>Master / overall</b> %</label><input id="ll-master" type="number" min="0" max="100" step="1"></div>
+              </div>
+            </fieldset>
+            <div class="field"><label for="ll-notes"><b>Notes</b></label><input id="ll-notes" type="text" maxlength="200" placeholder="Why you changed it, what you're watching for"></div>
+            <label class="chip" style="align-self:flex-start"><input type="checkbox" id="ll-mark" checked>Add a Lighting marker to the chemistry charts</label>
+            <div class="form-actions"><button type="button" class="primary" id="ll-save">Save to log</button><button type="button" id="ll-copy">Copy last entry</button><span class="status" id="ll-status" role="status"></span></div>
+          </div>
+        </details>
+        <div id="ll-list"><div class="skeleton">Loading light settings…</div></div>
+      </section>
+
       <section class="panel">
-        <h2>Saved programs</h2>
+        <h2>Saved K7 programs</h2>
         <div id="lp-list"><div class="skeleton">Loading programs…</div></div>
       </section>
 
@@ -2541,6 +2577,103 @@ details.backup summary { cursor: pointer; list-style: revert; }
     catch (e) { const r = document.createRange(); r.selectNodeContents($("esp-host")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); setStatus("esp-status", "Address selected; copy it with your keyboard or long-press."); }
   });
 
+  // ---------- light fixtures and settings log ----------
+  // Channel names: K7 Pro from the open-source K7 LED Controller project; AI Hydra HD and Red Sea ReefLED from retailer listings.
+  // Radion and Kessil channel groupings depend on their apps, so they are starting points the user can rename.
+  const FIXTURES = [
+    { id: "k7pro4", name: "Noopsyche K7 Pro IV", channels: ["White","Royal Blue","Green","UV","Cyan","Red"], note: "Full programmer, QR codes and controller presets above." },
+    { id: "k7pro3", name: "Noopsyche K7 Pro III", channels: ["White","Royal Blue","Green","UV","Cyan","Red"], note: "Full programmer, QR codes and controller presets above." },
+    { id: "hydra", name: "AI Hydra 32 / 64 HD", channels: ["UV","Violet","Royal Blue","Blue","Cool White","Green","Photo Red","Moonlight"], note: "Channel names from AI's Hydra HD listing (7 colors plus moonlight)." },
+    { id: "prime", name: "AI Prime 16 HD", channels: ["UV","Violet","Royal Blue","Blue","Cool White","Green","Photo Red"], note: "Same color set as the Hydra HD; rename any channel if your app differs." },
+    { id: "radion", name: "EcoTech Radion XR15 / XR30 (G5 / G6)", channels: ["UV","Violet","Royal Blue","Blue","Cool White","Warm White","Green","Red"], custom: true, note: "Starting names from the Radion's LED colors; match them to the channels in your Mobius app." },
+    { id: "kessilx", name: "Kessil A360X / A500X / AP9X", channels: ["Intensity","Color"], custom: true, note: "Intensity and color (spectrum) are the main controls; add others your Kessil app shows." },
+    { id: "reefled", name: "Red Sea ReefLED 90 / 160S", channels: ["Blue","White","Moon"], note: "Channels from Red Sea's listing: Reef Spec Blue, 8000K White and moonlights." },
+    { id: "nicrew", name: "NICREW HyperReef", channels: ["Blue","White"], custom: true, note: "Enter the channel names your controller shows." },
+    { id: "t5", name: "T5 fixture", channels: [], custom: true, note: "List your tubes as channels (for example ATI Blue Plus, Coral Plus) and use 100% for tubes that are on." },
+    { id: "custom", name: "Other fixture", channels: [], custom: true, note: "Type your channel names, separated by commas." }
+  ];
+  let lightLog = [];
+  const fixtureById = id => FIXTURES.find(f => f.id === id) || FIXTURES[FIXTURES.length - 1];
+  function fixtureFromProfile(){ const n = (profile && profile.light || "").toLowerCase(); if (!n) return "k7pro4";
+    if (/k7.*(iv|4|v4)/.test(n)) return "k7pro4"; if (/k7/.test(n)) return "k7pro3"; if (/hydra/.test(n)) return "hydra"; if (/prime/.test(n)) return "prime";
+    if (/radion/.test(n)) return "radion"; if (/kessil|a360|a500|ap9/.test(n)) return "kessilx"; if (/reefled|red sea/.test(n)) return "reefled"; if (/nicrew|hyperreef/.test(n)) return "nicrew"; if (/t5/.test(n)) return "t5"; return "custom"; }
+  $("ll-fixture").innerHTML = FIXTURES.map(f => '<option value="' + f.id + '">' + esc(f.name) + '</option>').join("");
+  $("pf-light-list").innerHTML = FIXTURES.filter(f => f.id !== "custom").map(f => '<option value="' + esc(f.name) + '">').join("");
+  function llChannelNames(){
+    const f = fixtureById($("ll-fixture").value);
+    const custom = $("ll-custom").value.split(",").map(s => s.trim()).filter(Boolean);
+    return f.custom && custom.length ? custom : f.channels;
+  }
+  function renderLlChannels(values){
+    const f = fixtureById($("ll-fixture").value);
+    $("ll-custom-wrap").hidden = !f.custom;
+    if (f.custom && !$("ll-custom").value && f.channels.length) $("ll-custom").value = f.channels.join(", ");
+    $("ll-fixture-note").textContent = f.note;
+    const names = llChannelNames();
+    $("ll-channels").innerHTML = names.length ? names.map((n, i) => '<div class="field"><label for="llc-' + i + '"><b>' + esc(n) + '</b></label><input id="llc-' + i + '" type="number" min="0" max="100" step="1" value="' + (values && values[n] != null ? values[n] : "") + '"></div>').join("")
+      : '<p class="hint">Enter channel names above.</p>';
+  }
+  $("ll-fixture").addEventListener("change", () => { $("ll-custom").value = ""; renderLlChannels(); });
+  $("ll-custom").addEventListener("change", () => renderLlChannels(readLlValues()));
+  function readLlValues(){ const out = {}; llChannelNames().forEach((n, i) => { const el = $("llc-" + i); if (el && el.value !== "") out[n] = clampPct(el.value); }); return out; }
+  const hm = t => { if (!t) return null; const [h, m] = t.split(":").map(Number); return h + (m || 0) / 60; };
+  const hours = (a, b) => { const x = hm(a), y = hm(b); if (x == null || y == null) return null; let d = y - x; if (d < 0) d += 24; return d; };
+  function llEntryFromForm(){
+    const f = fixtureById($("ll-fixture").value);
+    return { ts: Date.now(), fixture: f.id, fixtureName: f.name, count: Math.max(1, Math.round(num($("ll-count").value) || 1)), program: $("ll-program").value.trim(),
+      channels: readLlValues(), on: $("ll-on").value, peakStart: $("ll-ps").value, peakEnd: $("ll-pe").value, off: $("ll-off").value,
+      height: num($("ll-height").value), master: num($("ll-master").value), notes: $("ll-notes").value.trim() };
+  }
+  function fillLlForm(e){
+    $("ll-fixture").value = fixtureById(e.fixture).id; $("ll-count").value = e.count || 1; $("ll-program").value = e.program || "";
+    const f = fixtureById(e.fixture); $("ll-custom").value = f.custom ? Object.keys(e.channels || {}).join(", ") : "";
+    renderLlChannels(e.channels || {});
+    $("ll-on").value = e.on || ""; $("ll-ps").value = e.peakStart || ""; $("ll-pe").value = e.peakEnd || ""; $("ll-off").value = e.off || "";
+    $("ll-height").value = e.height ?? ""; $("ll-master").value = e.master ?? ""; $("ll-notes").value = "";
+  }
+  function k7AsLogEntry(p){ // show saved K7 programs in the same log
+    const g = p.grid || [], lit = g.filter(r => r.some(v => v > 0)).length, peak = g.reduce((a, r) => r.reduce((s, v) => s + v, 0) > a.reduce((s, v) => s + v, 0) ? r : a, g[0] || []);
+    const first = g.findIndex(r => r.some(v => v > 0)), last = 23 - [...g].reverse().findIndex(r => r.some(v => v > 0));
+    return { id: "k7-" + p.id, k7: true, ts: p.ts, fixtureName: (profile && profile.light) || "Noopsyche K7 Pro", program: p.name, notes: p.note,
+      channels: Object.fromEntries(CH.map((c, i) => [c.name, peak[i] || 0])), on: first >= 0 ? String(first).padStart(2, "0") + ":00" : "", off: first >= 0 ? String((last + 1) % 24).padStart(2, "0") + ":00" : "", litHours: lit };
+  }
+  function renderLightLog(){
+    const all = lightLog.map(e => ({ ...e })).concat(programs.map(k7AsLogEntry)).sort((a, b) => b.ts - a.ts);
+    const host = $("ll-list");
+    if (!all.length) { host.innerHTML = '<div class="skeleton">No light settings logged yet. Open "Log current settings" to record what your lights run now; that becomes the baseline for every change after.</div>'; return; }
+    host.innerHTML = all.map((e, idx) => {
+      const prev = all.slice(idx + 1).find(x => x.fixtureName === e.fixtureName);
+      const ch = Object.entries(e.channels || {});
+      const chHtml = ch.map(([n, v]) => { const pv = prev && prev.channels ? prev.channels[n] : undefined; const d = pv != null ? v - pv : null;
+        return '<span class="llc">' + esc(n) + ' <b>' + v + '%</b>' + (d ? ' <span class="' + (d > 0 ? "up" : "down") + '">' + (d > 0 ? "+" : "−") + Math.abs(d) + '</span>' : '') + '</span>'; }).join("");
+      const photo = e.litHours != null ? e.litHours : hours(e.on, e.off);
+      const meta = [dstr(e.ts), e.k7 ? "K7 program" : "", e.count > 1 ? "×" + e.count : "", e.on && e.off ? e.on + "–" + e.off + (photo != null ? " (" + (+photo.toFixed(1)) + " h)" : "") : "",
+        e.peakStart && e.peakEnd ? "peak " + e.peakStart + "–" + e.peakEnd : "", e.height != null ? e.height + " in above water" : "", e.master != null ? "master " + e.master + "%" : ""].filter(Boolean);
+      return '<div class="lp-item"><div style="min-width:0"><b>' + esc(e.fixtureName || "Light") + (e.program ? ' · ' + esc(e.program) : '') + '</b>' + (idx === 0 ? ' <span class="pill ok">Current</span>' : '') +
+        '<div class="d">' + meta.map(esc).join(" · ") + '</div>' + (chHtml ? '<div class="llcs">' + chHtml + '</div>' : '') + (e.notes ? '<div class="hint">' + esc(e.notes) + '</div>' : '') + '</div>' +
+        '<div class="btns">' + (e.k7 ? '<button type="button" data-lpload="' + esc(e.id.slice(3)) + '">Open in programmer</button>' : (canWrite ? '<button type="button" data-llcopy="' + esc(e.id) + '">Copy</button><button type="button" class="danger" data-lldel="' + esc(e.id) + '">Delete</button>' : '')) + '</div></div>';
+    }).join("");
+  }
+  $("ll-list").addEventListener("click", async ev => {
+    const c = ev.target.closest("[data-llcopy]"), d = ev.target.closest("[data-lldel]"), l = ev.target.closest("[data-lpload]");
+    if (l) { const p = programs.find(x => x.id === l.dataset.lpload); if (p) { loadProgram(p); $("tab-lighting").scrollIntoView({ block: "start" }); } }
+    if (c) { const e = lightLog.find(x => x.id === c.dataset.llcopy); if (e) { fillLlForm(e); $("ll-form-wrap").open = true; $("ll-form-wrap").scrollIntoView({ block: "start" }); } }
+    if (d) { if (d.dataset.confirm !== "1") { d.dataset.confirm = "1"; d.textContent = "Confirm"; return; } try { await db.collection("lightlog").doc(d.dataset.lldel).delete(); } catch (x) {} }
+  });
+  $("ll-copy").addEventListener("click", () => { const e = [...lightLog].sort((a, b) => b.ts - a.ts)[0]; if (e) fillLlForm(e); else setStatus("ll-status", "Nothing logged yet to copy.", true); });
+  $("ll-save").addEventListener("click", async () => {
+    const e = llEntryFromForm();
+    if (!Object.keys(e.channels).length && !e.program && !e.notes) { setStatus("ll-status", "Enter at least one channel, a program name or a note.", true); return; }
+    if (!db) { setStatus("ll-status", "Saving isn't available in this view.", true); return; }
+    try {
+      await db.collection("lightlog").add(e);
+      if ($("ll-mark").checked) await db.collection("tests").add({ ts: e.ts, events: ["Lighting"], note: "Light settings: " + (e.program || e.fixtureName), ...Object.fromEntries(PARAMS.map(p => [p.key, null])) });
+      setStatus("ll-status", "Saved to the light log" + ($("ll-mark").checked ? " and marked on the chemistry charts." : ".")); $("ll-notes").value = "";
+    } catch (x) { setStatus("ll-status", "Couldn't save (" + (x && x.code || "error") + ").", true); }
+  });
+  function initLlForm(){ $("ll-fixture").value = fixtureFromProfile(); $("ll-count").value = (profile && profile.lightCount) || 1; $("ll-custom").value = ""; renderLlChannels(); }
+  initLlForm();
+
   // PAR
   $("par-date").value = today();
   function renderPar(){
@@ -2622,6 +2755,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       DOSE[k].maxDay = lim.maxDay; DOSE[k].maxNote = lim.maxNote;
     });
     applyDosingDoc(dosingDoc);
+    if (p) { initLlForm(); renderLightLog(); }
   }
   function openProfile(first){
     fillProfileForm(profile || PROFILE_BLANK);
@@ -2649,7 +2783,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
 
   // ---------- backup ----------
-  const BK_COLS = ["tests","tasks","gear","rodilog","livestock","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile","settings/rodi"];
+  const BK_COLS = ["tests","tasks","gear","rodilog","livestock","equipment","photos","lightprograms","lightlog","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile","settings/rodi"];
   const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
   async function buildBackup(){
     const docs = [], blobs = {};
@@ -2700,11 +2834,11 @@ details.backup summary { cursor: pointer; list-style: revert; }
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (!$("tab-chemistry").hidden) renderCards(data()); if (!$("tab-lighting").hidden) renderLighting(); }, 150); });
 
   (async () => {
-    if (!window.claude || !claude.use) { eqLoaded = phLoaded = lsLoaded = mtLoaded = gearLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderMaintenance(); renderGear(); renderPrograms(); return; }
+    if (!window.claude || !claude.use) { eqLoaded = phLoaded = lsLoaded = mtLoaded = gearLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderMaintenance(); renderGear(); renderPrograms(); renderLightLog(); return; }
     db = await claude.use("db");
     const user = await claude.use("user");
     if (user) { const c = await user.can("data.write"); if (c === false) { canWrite = false; $("ro-notice").hidden = false; $("f-save").disabled = true; $("imp").disabled = true; $("e-save").disabled = true; $("drop").hidden = true; renderAll(); } }
-    if (!db) { eqLoaded = phLoaded = lsLoaded = mtLoaded = gearLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderMaintenance(); renderGear(); renderPrograms(); return; }
+    if (!db) { eqLoaded = phLoaded = lsLoaded = mtLoaded = gearLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderMaintenance(); renderGear(); renderPrograms(); renderLightLog(); return; }
     db.collection("tasks").limit(500).onSnapshot(snap => { tasks = snap.docs.map(d => ({ id: d.id, ...d.data() })); mtLoaded = true; renderMaintenance(); }, () => { mtLoaded = true; renderMaintenance(); });
     db.collection("gear").limit(500).onSnapshot(snap => { gear = snap.docs.map(d => ({ id: d.id, ...d.data() })); gearLoaded = true; renderGear(); renderMaintenance(); }, () => { gearLoaded = true; renderGear(); renderMaintenance(); });
     setInterval(renderDueChip, 10 * 60 * 1000);
@@ -2715,8 +2849,9 @@ details.backup summary { cursor: pointer; list-style: revert; }
     db.collection("photos").orderBy("ts", "desc").limit(1000).onSnapshot(snap => { photos = snap.docs.map(d => ({ id: d.id, ...d.data() })); phLoaded = true; renderPhotos(); }, () => { phLoaded = true; renderPhotos(); });
     db.doc("settings/k7").onSnapshot(snap => { if (snap.exists) { const d = snap.data(); if (Array.isArray(d.order) && d.order.length === 6) k7 = { order: d.order, confirmed: !!d.confirmed }; renderOrder(); } }, () => {});
     let firstPrograms = true;
-    db.collection("lightprograms").orderBy("ts", "desc").limit(200).onSnapshot(snap => { programs = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderPrograms();
+    db.collection("lightprograms").orderBy("ts", "desc").limit(200).onSnapshot(snap => { programs = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderPrograms(); renderLightLog();
       if (firstPrograms) { firstPrograms = false; if (programs.length) loadProgram(programs[0]); } }, () => { renderPrograms(); });
+    db.collection("lightlog").orderBy("ts", "desc").limit(500).onSnapshot(snap => { lightLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderLightLog(); }, () => { renderLightLog(); });
     db.collection("par").orderBy("ts", "asc").limit(500).onSnapshot(snap => { parLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (!$("tab-lighting").hidden) renderPar(); }, () => {});
     db.doc("settings/profile").onSnapshot(snap => {
       applyProfile(snap.exists ? snap.data() : null);
