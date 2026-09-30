@@ -212,6 +212,8 @@ table.calc td.res { font-weight: 500; color: var(--ink); }
 .gear-log .fields { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 .pill.pass { background: var(--ok-bg); color: var(--ok); }
 .pill.fail { background: var(--bad-bg); color: var(--bad); }
+.cons-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.cons-guide p + p { margin-top: 4px; }
 .ls-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
 .ls-summary div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .ls-summary .big { font-family: var(--f-mono); font-size: 1.4rem; font-weight: 500; }
@@ -540,12 +542,45 @@ details.backup summary { cursor: pointer; list-style: revert; }
         <p class="hint" id="corr-note"></p>
       </section>
 
+      <section class="panel" id="cons-panel">
+        <div><h2>Daily consumption</h2><p class="hint">How much alkalinity, calcium and magnesium the tank actually uses each day. It adds back what you dose and what water changes add or remove, and uses a trend line through your tests, so one off test doesn't swing it.</p></div>
+        <div id="cc-box"></div>
+        <details class="cons-guide"><summary class="label" style="cursor:pointer">When to test for an accurate number</summary>
+          <div class="hint" style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+            <p style="margin:0"><b>Same time every day.</b> Alkalinity is used faster while the lights are on, so tests taken at different times of day look like changes that aren't real. Pick one time (first thing in the morning before the lights come on is easy to keep) and stick to it. If your doser runs several times a day, test at the same point between doses, not right after one.</p>
+            <p style="margin:0"><b>Right before a water change, not after.</b> A test just before the change shows everything the tank used since the last one, and tells you how far off target the change needs to correct. A test right after shows the new water mixed in, not the tank.</p>
+            <p style="margin:0"><b>Hold doses steady while you measure.</b> Change the dose only after the check, then test alkalinity daily for a few days to confirm the new dose holds.</p>
+            <p style="margin:0"><b>More tests beat better tests.</b> Home kits vary by a few tenths of a dKH from test to test. A trend line through a week or two of daily tests averages that out; two tests can't.</p>
+            <p style="margin:0"><b>Repeat the check</b> when you add corals, change lights or photoperiod, or once a month while the tank is growing in; consumption rises as corals grow.</p>
+          </div>
+        </details>
+        <fieldset><legend class="label">What you dose now (mL per day)</legend>
+          <div class="fields three" id="cd-fields"></div>
+          <div class="fields three" style="margin-top:8px">
+            <div class="field"><label for="cd-from"><b>Since</b></label><input id="cd-from" type="date"></div>
+          </div>
+          <label class="chip" style="margin-top:8px"><input type="checkbox" id="cd-mark" checked>Add a Dosing change marker to the chemistry charts</label>
+          <div class="form-actions" style="margin-top:8px"><button type="button" id="cd-save">Save doses</button><span class="status" id="cd-status" role="status"></span></div>
+          <div id="cd-hist"></div>
+        </fieldset>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="label">Based on tests from the last</span>
+          <div class="seg" role="group" aria-label="Consumption window">
+            <button type="button" data-cwin="7" aria-pressed="false">7 days</button>
+            <button type="button" data-cwin="14" aria-pressed="true">14 days</button>
+            <button type="button" data-cwin="30" aria-pressed="false">30 days</button>
+          </div>
+        </div>
+        <div id="cons-out"></div>
+        <div class="cons-charts" id="cons-charts"></div>
+      </section>
+
       <section class="panel">
-        <div><h2>Daily maintenance dose</h2><p class="hint">Enter how much each parameter drops per day with no dosing (test at the same time on two or more days). The log's per-day change fills in when your last two readings show a drop.</p></div>
+        <div><h2>Daily maintenance dose</h2><p class="hint">How much each product to dose per day to cover what the tank uses. The numbers fill in from Daily consumption above; you can also type your own. Doses include the effect of your water change plan.</p></div>
         <div class="fields three">
-          <div class="field"><label for="m-alk"><b>Alk drop</b> dKH/day</label><input id="m-alk" type="number" step="0.05" min="0"></div>
-          <div class="field"><label for="m-ca"><b>Ca drop</b> ppm/day</label><input id="m-ca" type="number" step="0.5" min="0"></div>
-          <div class="field"><label for="m-mg"><b>Mg drop</b> ppm/day</label><input id="m-mg" type="number" step="0.5" min="0"></div>
+          <div class="field"><label for="m-alk"><b>Alk used</b> dKH/day</label><input id="m-alk" type="number" step="0.05" min="0"></div>
+          <div class="field"><label for="m-ca"><b>Ca used</b> ppm/day</label><input id="m-ca" type="number" step="0.5" min="0"></div>
+          <div class="field"><label for="m-mg"><b>Mg used</b> ppm/day</label><input id="m-mg" type="number" step="0.5" min="0"></div>
           <div class="field"><label for="m-split"><b>Doses per day</b></label><input id="m-split" type="number" step="1" min="1" value="4"></div>
         </div>
         <div id="maint-out"></div>
@@ -820,7 +855,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const lastN = [...real].reverse().find(t => t.no3 != null && t.po4 != null);
     $("m-np").textContent = lastN && lastN.po4 > 0 ? "NO₃:PO₄ ≈ " + Math.round(lastN.no3 / lastN.po4) + ":1 (" + dshort(lastN.ts) + ")" : "";
     renderCards(list); renderHistory(real);
-    if (typeof refillCurrents === "function" && $("corr").innerHTML) { refillCurrents(); updateCorrection(); renderMaint(); renderWC(); }
+    if (typeof refillCurrents === "function" && $("corr").innerHTML) { refillCurrents(); updateCorrection(); renderConsumption(); renderMaint(); renderWC(); }
   }
 
   function renderCards(list){
@@ -1650,10 +1685,10 @@ details.backup summary { cursor: pointer; list-style: revert; }
     $("corr-note").textContent = "Based on " + v.toFixed(1) + " gal net. Dose into the sump or a high-flow area, and retest before the next day's dose. Reef Code A and B are meant to be dosed in equal volumes for routine maintenance; using one alone is for correcting a single parameter.";
   }
   function renderMaint(){
-    ["alk","ca","mg"].forEach(k => { const inp = $("m-" + k); if (!maintDirty[k] && inp.value === "") { const r = dropPerDay(k); if (r != null) inp.value = r.toFixed(k === "alk" ? 2 : 1); } });
+    ["alk","ca","mg"].forEach(k => { const inp = $("m-" + k); if (!maintDirty[k]) { const r = consumption(k, consWin); inp.value = r.cons != null && r.cons > 0 ? r.cons.toFixed(k === "alk" ? 2 : 1) : ""; } });
     const V = volume().net, split = Math.max(1, num($("m-split").value) || 1);
     const items = [];
-    const line = (k, drop) => { const d = DOSE[k]; const pot = num($("p-" + k) ? $("p-" + k).value : null) || d.potency; const ml = drop * V / pot;
+    const line = (k, drop) => { const d = DOSE[k]; const pot = num($("p-" + k) ? $("p-" + k).value : null) || d.potency; const lv = latestVal(k); const ml = Math.max(0, (drop - wcPerDay(k, lv ? lv[k] : null)) * V / pot);
       items.push('<li><span>' + esc(d.product) + '</span><span><b>' + ml.toFixed(1) + ' mL/day</b> · ' + (ml / split).toFixed(2) + ' mL × ' + split + '</span></li>'); return ml; };
     const a = num($("m-alk").value), c = num($("m-ca").value), m = num($("m-mg").value);
     let mlA = null, mlB = null;
@@ -1663,8 +1698,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
     let note = "";
     if (mlB != null && mlA == null) note = "No calcium drop entered. Brightwell pairs A and B in equal volumes, which would be " + mlB.toFixed(1) + " mL/day of Reef Code A. Confirm with a calcium trend before committing.";
     else if (mlA != null && mlB != null && Math.abs(mlA - mlB) / Math.max(mlA, mlB) > 0.3) note = "Your calcium and alkalinity use aren't in the 1:1 ratio A and B assume. Dosing to the alkalinity number and adjusting Reef Code A separately keeps both on target.";
-    $("maint-out").innerHTML = items.length ? '<ul class="result-list">' + items.join("") + '</ul>' + (note ? '<div class="callout">' + esc(note) + '</div>' : '') + '<p class="hint">For ' + V.toFixed(1) + ' gal. Start at about 75% of these numbers, retest alkalinity daily for a week, then adjust.</p>'
-      : '<p class="hint">Enter a daily drop to see doses. Two or more alkalinity tests a day or more apart with no dosing in between will give you this number in the log.</p>';
+    $("maint-out").innerHTML = items.length ? '<ul class="result-list">' + items.join("") + '</ul>' + (note ? '<div class="callout">' + esc(note) + '</div>' : '') + '<p class="hint">For ' + V.toFixed(1) + ' gal. If you are new to dosing, begin at about 75% of these numbers and test alkalinity daily for a week before raising them.</p>'
+      : '<p class="hint">Log a few tests a day or more apart (and save your current doses above) and the daily use fills in here.</p>';
   }
   function getSalt(){ return { preset: $("s-preset").value, alk: num($("s-alk").value), ca: num($("s-ca").value), mg: num($("s-mg").value), k: num($("s-k").value), sg: num($("s-sg").value), gpg: num($("s-gpg").value) }; }
   function setSalt(s){ $("s-preset").value = SALTS[s.preset] ? s.preset : "custom"; ["alk","ca","mg","k","sg","gpg"].forEach(k => { $("s-" + k).value = s[k] ?? ""; }); }
@@ -1768,6 +1803,171 @@ details.backup summary { cursor: pointer; list-style: revert; }
     } catch (e) { setStatus("w-status", "Couldn't update the schedule (" + (e && e.code || "error") + ").", true); }
   });
 
+  // ---------- daily consumption ----------
+  let doseHist = [], consWin = 14;
+  try { const w = Number(localStorage.getItem("reef-cons-win")); if ([7, 14, 30].includes(w)) consWin = w; } catch (e) {}
+  const CONS_KEYS = ["alk", "ca", "mg"];
+  $("cd-fields").innerHTML = CONS_KEYS.map(k => '<div class="field"><label for="cd-' + k + '"><b id="cd-lbl-' + k + '">' + esc(DOSE[k].product) + '</b></label><input id="cd-' + k + '" type="number" step="0.1" min="0" placeholder="0"></div>').join("");
+  $("cd-from").value = today();
+  function doseAt(k, ts){ // mL per day in effect at a moment
+    let v = 0; for (const e of doseHist) { if (toTs(e.from, "00:00") <= ts) v = Number(e[k]) || 0; else break; } return v;
+  }
+  function doseAvg(k, t0, t1){ // average mL/day over [t0, t1], following dose changes
+    if (t1 <= t0) return doseAt(k, t0);
+    const cuts = doseHist.map(e => toTs(e.from, "00:00")).filter(t => t > t0 && t < t1);
+    const edges = [t0, ...cuts, t1]; let sum = 0;
+    for (let i = 0; i < edges.length - 1; i++) sum += doseAt(k, edges[i]) * (edges[i + 1] - edges[i]);
+    return sum / (t1 - t0);
+  }
+  function wcPerDay(k, level){ // average change per day the water change plan causes at a given level
+    const s = getSalt(), w = readWcPlan(); const mix = k === "alk" ? s.alk : k === "ca" ? s.ca : s.mg;
+    if (mix == null || level == null) return 0;
+    return (mix - level) * (w.pct / 100) / Math.max(1, w.every);
+  }
+  function trend(k, days){ // least-squares slope (units/day) through tests in the window
+    const cutoff = Date.now() - days * DAY;
+    const pts = tests.filter(t => t[k] != null && t.ts >= cutoff);
+    if (pts.length < 2) return { n: pts.length };
+    const span = (pts[pts.length - 1].ts - pts[0].ts) / DAY; if (span < 1) return { n: pts.length, short: true };
+    const xs = pts.map(p => (p.ts - pts[0].ts) / DAY), ys = pts.map(p => p[k]);
+    const mx = xs.reduce((a, b) => a + b, 0) / xs.length, my = ys.reduce((a, b) => a + b, 0) / ys.length;
+    let sxy = 0, sxx = 0; xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) * (x - mx); });
+    return { n: pts.length, slope: sxx ? sxy / sxx : 0, mean: my, t0: pts[0].ts, t1: pts[pts.length - 1].ts, span };
+  }
+  function consumption(k, days){
+    const V = volume().net, pot = DOSE[k].potency, tr = trend(k, days);
+    if (tr.slope == null || !V) return { ...tr };
+    const dose = doseAvg(k, tr.t0, tr.t1) * pot / V, wc = wcPerDay(k, tr.mean);
+    const cons = -tr.slope + dose + wc;
+    const latest = latestVal(k), level = latest ? latest[k] : tr.mean;
+    const hold = Math.max(0, (cons - wcPerDay(k, level)) * V / pot);
+    return { ...tr, dose, wc, cons, hold, current: doseAt(k, Date.now()) };
+  }
+  function consIntervals(k){ // consumption between each pair of consecutive tests, last 60 days
+    const V = volume().net, pot = DOSE[k].potency, cutoff = Date.now() - 60 * DAY;
+    const pts = tests.filter(t => t[k] != null && t.ts >= cutoff), out = [];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], d = (b.ts - a.ts) / DAY; if (d < 0.5) continue;
+      out.push({ x: (a.ts + b.ts) / 2, y: (a[k] - b[k]) / d + doseAvg(k, a.ts, b.ts) * pot / V + wcPerDay(k, (a[k] + b[k]) / 2) });
+    }
+    return out;
+  }
+  function renderDoseHist(){
+    CONS_KEYS.forEach(k => { $("cd-lbl-" + k).textContent = DOSE[k].product; const inp = $("cd-" + k); if (!inp.dataset.dirty) { const v = doseAt(k, Date.now()); inp.value = v ? v : ""; } });
+    $("cd-hist").innerHTML = doseHist.length ? '<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Since</th>' + CONS_KEYS.map(k => '<th>' + esc(DOSE[k].name) + '</th>').join("") + (canWrite ? '<th></th>' : '') + '</tr></thead><tbody>' +
+      [...doseHist].reverse().map(e => '<tr><td>' + dstr(toTs(e.from, "12:00")) + '</td>' + CONS_KEYS.map(k => '<td>' + (Number(e[k]) || 0) + ' mL</td>').join("") + (canWrite ? '<td class="act"><button type="button" class="danger" data-cddel="' + esc(e.from) + '">Delete</button></td>' : '') + '</tr>').join("") + '</tbody></table></div>'
+      : '<p class="hint">No doses saved yet. Enter what you dose each day (0 if nothing) and save; change it here whenever you adjust your doser.</p>';
+  }
+  function renderConsumption(){
+    renderDoseHist();
+    const unit = k => DOSE[k].unit, dp = k => k === "alk" ? 2 : 1;
+    const res = Object.fromEntries(CONS_KEYS.map(k => [k, consumption(k, consWin)]));
+    const noDoses = !doseHist.length;
+    const rows = CONS_KEYS.map(k => {
+      const r = res[k], u = unit(k), f = v => (v >= 0 ? "" : "−") + Math.abs(v).toFixed(dp(k));
+      if (r.slope == null) return '<tr><td style="text-align:left">' + DOSE[k].name + '</td><td>' + r.n + '</td><td colspan="5" class="note">' + (r.short ? "Tests need to span at least a day" : "Needs at least 2 tests in this window") + '</td></tr>';
+      const chg = r.hold - r.current;
+      return '<tr><td style="text-align:left">' + DOSE[k].name + '</td><td>' + r.n + '</td><td>' + f(r.slope) + '</td><td>+' + r.dose.toFixed(dp(k)) + '</td><td>' + f(r.wc) + '</td><td><b>' + f(r.cons) + ' ' + u + '</b></td>' +
+        '<td class="note">' + r.hold.toFixed(1) + ' mL/day' + (Math.abs(chg) >= 0.5 ? ' <span class="hint">(' + (chg > 0 ? "+" : "−") + Math.abs(chg).toFixed(1) + ' vs now)</span>' : ' <span class="hint">(about what you dose)</span>') + '</td></tr>';
+    }).join("");
+    const notes = [];
+    if (noDoses) notes.push("No doses are saved, so this treats you as not dosing. If you dose, enter your mL per day above and consumption will include it.");
+    const a = res.alk, c = res.ca;
+    if (a.cons != null && c.cons != null && a.cons > 0.1) {
+      const ratio = c.cons / a.cons;
+      notes.push("Calcium to alkalinity use: " + ratio.toFixed(1) + " ppm Ca per dKH. Coral growth uses roughly 7 ppm of calcium for each 1 dKH of alkalinity" +
+        (ratio < 4 || ratio > 10 ? ", so a ratio this far off usually means one of the tests is reading wrong or something else is adding or removing calcium. Recheck calcium, and verify the kit against a reference solution." : ", so these two agree well."));
+    }
+    if (a.cons != null && a.cons < -0.05) notes.push("Alkalinity is rising faster than your dose explains, which usually means the dose is higher than the tank uses. Consider lowering it.");
+    $("cons-out").innerHTML = '<div class="tablewrap"><table><thead><tr><th style="text-align:left">Per day</th><th>Tests</th><th>Level trend</th><th>Dose adds</th><th>Water changes</th><th>Consumption</th><th class="note">Dose to hold steady</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      notes.map(n => '<div class="callout">' + esc(n) + '</div>').join("") +
+      '<p class="hint">Consumption = the fall in the level + what the dose adds + what water changes add (negative when the new water mixes lower than the tank). The hold-steady dose keeps the current level where it is; to move toward target, use the correction dose above.</p>';
+    const host = $("cons-charts"); host.innerHTML = "";
+    CONS_KEYS.forEach(k => {
+      const pts = consIntervals(k);
+      const box = document.createElement("div"); box.className = "card";
+      box.innerHTML = '<div class="head"><span class="label">' + esc(DOSE[k].name) + ' used per day</span><span class="hint">' + DOSE[k].unit + '</span></div><div class="chart" style="height:140px"></div>';
+      host.appendChild(box);
+      lineChart(box.querySelector(".chart"), [{ name: DOSE[k].name + " consumption", color: "var(--accent)", pts }],
+        { dots: true, xFmt: dshort, label: DOSE[k].name + " consumption over time", allowNeg: true, empty: "Needs two tests a day or more apart" });
+    });
+    renderCheck();
+  }
+  document.querySelectorAll("[data-cwin]").forEach(b => b.addEventListener("click", () => {
+    consWin = Number(b.dataset.cwin); document.querySelectorAll("[data-cwin]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    try { localStorage.setItem("reef-cons-win", String(consWin)); } catch (e) {}
+    renderConsumption(); renderMaint();
+  }));
+  document.querySelectorAll("[data-cwin]").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.cwin) === consWin)));
+  CONS_KEYS.forEach(k => $("cd-" + k).addEventListener("input", () => { $("cd-" + k).dataset.dirty = "1"; }));
+  $("cd-save").addEventListener("click", async () => {
+    if (!db) { setStatus("cd-status", "Saving isn't available in this view.", true); return; }
+    const from = $("cd-from").value || today();
+    const entry = { from }; CONS_KEYS.forEach(k => { entry[k] = Math.max(0, num($("cd-" + k).value) || 0); });
+    doseHist = doseHist.filter(e => e.from !== from).concat([entry]).sort((a, b) => a.from.localeCompare(b.from));
+    CONS_KEYS.forEach(k => { delete $("cd-" + k).dataset.dirty; });
+    try {
+      await saveDosing("cd-status");
+      if ($("cd-mark").checked) await db.collection("tests").add({ ts: toTs(from, nowTime()), events: ["Dosing change"], note: "Doses: " + CONS_KEYS.map(k => DOSE[k].product + " " + entry[k] + " mL/day").join(", "), ...Object.fromEntries(PARAMS.map(p => [p.key, null])) });
+      setStatus("cd-status", "Doses saved from " + dstr(toTs(from, "12:00")) + ".");
+    } catch (e) { setStatus("cd-status", "Couldn't save the doses.", true); }
+  });
+  $("cd-hist").addEventListener("click", async ev => {
+    const d = ev.target.closest("[data-cddel]"); if (!d) return;
+    if (d.dataset.confirm !== "1") { d.dataset.confirm = "1"; d.textContent = "Confirm"; return; }
+    doseHist = doseHist.filter(e => e.from !== d.dataset.cddel);
+    await saveDosing("cd-status");
+  });
+
+  // ---------- consumption check (guided test schedule) ----------
+  const CHECK_DAYS = 14;
+  let consCheck = null; // { start: "YYYY-MM-DD", end: "YYYY-MM-DD" } saved in settings/dosing
+  function testHourSpread(k, days){ // hours between earliest and latest test time of day in the window
+    const cutoff = Date.now() - days * DAY, hrs = tests.filter(t => t[k] != null && t.ts >= cutoff).map(t => { const d = new Date(t.ts); return d.getHours() + d.getMinutes() / 60; });
+    if (hrs.length < 3) return null;
+    return { lo: Math.min(...hrs), hi: Math.max(...hrs) };
+  }
+  const hourLabel = h => { const H = Math.floor(h), M = Math.round((h - H) * 60); const d = new Date(); d.setHours(H, M, 0, 0); return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); };
+  async function setTestTasks(alkEvery, caMgEvery, note){
+    const want = [
+      { match: t => t.kind === "test" && (t.params || []).includes("alk") && (t.params || []).length === 1, rec: { name: "Test alkalinity", kind: "test", every: alkEvery, params: ["alk"], marker: "" } },
+      { match: t => t.kind === "test" && (t.params || []).includes("ca") && (t.params || []).includes("mg"), rec: { name: "Test calcium and magnesium", kind: "test", every: caMgEvery, params: ["ca", "mg"], marker: "" } }
+    ];
+    for (const w of want) {
+      const hit = tasks.find(w.match);
+      if (hit) await db.collection("tasks").doc(hit.id).update({ every: w.rec.every, notes: note });
+      else await db.collection("tasks").add({ ...w.rec, notes: note, lastDone: "", history: [] });
+    }
+    const wcTask = tasks.find(t => t.marker === "Water change");
+    if (wcTask && !/before this change/i.test(wcTask.notes || "")) await db.collection("tasks").doc(wcTask.id).update({ notes: ((wcTask.notes || "") + " Test alkalinity, calcium and magnesium before this change.").trim() });
+  }
+  function renderCheck(){
+    const box = $("cc-box"); if (!box) return;
+    const parts = [];
+    if (consCheck && consCheck.start) {
+      const day = dayDiff(consCheck.start, today()) + 1, total = dayDiff(consCheck.start, consCheck.end) + 1;
+      const inCheck = tests.filter(t => t.alk != null && ymd(t.ts) >= consCheck.start).length;
+      const doseChanged = doseHist.some(e => e.from > consCheck.start && e.from <= today());
+      if (day <= total) {
+        parts.push('<div class="callout"><b>Consumption check: day ' + day + ' of ' + total + '.</b> Test alkalinity once a day at the same time, and calcium and magnesium every 3 days. Keep your doses as they are until ' + dstr(toTs(consCheck.end, "12:00")) + '. Alkalinity tests so far: ' + inCheck + '.' +
+          (doseChanged ? ' <b>A dose was changed during the check</b>; the numbers still account for it, but a steady dose gives the cleanest result.' : '') + '</div>');
+        if (canWrite) parts.push('<div class="form-actions"><button type="button" id="cc-stop">End check early</button></div>');
+      } else {
+        parts.push('<div class="callout"><b>Consumption check finished</b> (' + inCheck + ' alkalinity tests). Use the "Dose to hold steady" column below, and the correction dose above to reach target. Then switch to routine testing.</div>');
+        if (canWrite) parts.push('<div class="form-actions"><button type="button" class="primary" id="cc-routine">Switch to routine testing</button></div>');
+      }
+    } else if (canWrite) {
+      parts.push('<div class="form-actions"><button type="button" class="primary" id="cc-start">Start a ' + CHECK_DAYS + '-day consumption check</button><span class="hint">Sets alkalinity testing to daily and calcium and magnesium to every 3 days on your Maintenance schedule.</span></div>');
+    }
+    const sp = testHourSpread("alk", consWin);
+    if (sp && sp.hi - sp.lo > 3) parts.push('<div class="callout">Your alkalinity tests in this window were taken between ' + hourLabel(sp.lo) + ' and ' + hourLabel(sp.hi) + '. Testing at the same time each day will make the consumption number steadier.</div>');
+    box.innerHTML = parts.join("");
+    const st = $("cc-start"), sp2 = $("cc-stop"), rt = $("cc-routine");
+    if (st) st.onclick = async () => { consCheck = { start: today(), end: addDays(today(), CHECK_DAYS - 1) }; await setTestTasks(1, 3, "Consumption check until " + dstr(toTs(consCheck.end, "12:00")) + ". Same time each day."); await saveDosing("cd-status"); setStatus("cd-status", "Check started. Your Maintenance schedule now has daily alkalinity tests; download a fresh calendar file if you use one."); };
+    if (sp2) sp2.onclick = async () => { consCheck = { start: consCheck.start, end: addDays(today(), -1) }; await saveDosing("cd-status"); renderCheck(); };
+    if (rt) rt.onclick = async () => { await setTestTasks(3, 7, "Routine testing. Same time of day; test before water changes."); consCheck = null; await saveDosing("cd-status"); setStatus("cd-status", "Switched to routine testing: alkalinity every 3 days, calcium and magnesium weekly."); };
+  }
+
   function renderVol(){
     const r = volume();
     $("vol-out").innerHTML = '<div><span class="label">Display</span><span class="big">' + r.gross.toFixed(1) + '</span><small>gal gross</small></div>' +
@@ -1775,7 +1975,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       '<div><span class="label">Sump</span><span class="big">+' + r.sump.toFixed(1) + '</span><small>gal at running level</small></div>' +
       '<div class="net"><span class="label">Net system</span><span class="big">' + r.net.toFixed(1) + '</span><small>gal · ' + (r.net * 3.785).toFixed(0) + ' L</small></div>';
   }
-  function renderDosing(){ renderVol(); if (!$("corr").innerHTML) renderCorrection(); else updateCorrection(); renderMaint(); renderWC(); }
+  function renderDosing(){ renderVol(); if (!$("corr").innerHTML) renderCorrection(); else updateCorrection(); renderConsumption(); renderMaint(); renderWC(); }
   function refillCurrents(){ Object.keys(DOSE).forEach(k => { const inp = $("c-" + k); if (inp && !inp.dataset.dirty) { const t = latestVal(k); inp.value = t ? t[k] : ""; } }); }
   $("tab-dosing").addEventListener("input", ev => {
     const id = ev.target.id || "";
@@ -1787,7 +1987,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
   $("s-preset").addEventListener("change", () => { const p = SALTS[$("s-preset").value]; if (p && p.alk != null) setSalt({ preset: $("s-preset").value, ...p }); $("s-preset").title = p ? p.range : ""; setStatus("s-status", p ? p.range : ""); renderWC(); });
   function dosingPayload(){
-    return { volume: getVol(), salt: getSalt(), wc: readWcPlan(), split: num($("m-split").value) };
+    return { volume: getVol(), salt: getSalt(), wc: readWcPlan(), split: num($("m-split").value), doses: doseHist, check: consCheck };
   }
   async function saveDosing(statusId){
     if (!db) { setStatus(statusId, "Saving isn't available in this view.", true); return; }
@@ -1802,6 +2002,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const pfSalt = (profile && SALTS[profile.salt] && SALTS[profile.salt].alk != null) ? profile.salt : "af35";
     setSalt(d && d.salt ? d.salt : { preset: pfSalt, ...SALTS[pfSalt] });
     setWcPlan(d && d.wc ? d.wc : null);
+    consCheck = d && d.check && d.check.start ? d.check : null;
+    doseHist = d && Array.isArray(d.doses) ? d.doses.slice().sort((a, b) => String(a.from).localeCompare(String(b.from))) : [];
     $("m-split").value = d && d.split ? d.split : 4;
     $("corr").innerHTML = ""; renderDosing();
   }
@@ -1856,10 +2058,12 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const W = Math.max(260, el.clientWidth || 320), H = el.clientHeight || 180, m = {l:34, r:10, t:10, b:20};
     const xs = series.flatMap(s => s.pts.map(p => p.x)), ys = series.flatMap(s => s.pts.map(p => p.y));
     if (!xs.length) { el.innerHTML = '<div class="empty-chart" style="height:100%">' + esc(opt.empty || "No data yet") + '</div>'; return; }
-    const x0 = opt.x0 ?? Math.min(...xs), x1 = opt.x1 ?? Math.max(...xs, x0 + 1), y0 = 0, y1 = opt.yMax ?? Math.max(10, ...ys) * 1.12;
+    const x0 = opt.x0 ?? Math.min(...xs), x1 = opt.x1 ?? Math.max(...xs, x0 + 1);
+    let y0 = opt.allowNeg ? Math.min(0, ...ys) : 0, y1 = opt.yMax ?? (opt.allowNeg ? Math.max(0, ...ys) : Math.max(10, ...ys) * 1.12);
+    if (opt.allowNeg) { const padY = (y1 - y0 || 1) * 0.15; y1 += padY; if (y0 < 0) y0 -= padY; }
     const X = x => m.l + (x - x0) / ((x1 - x0) || 1) * (W - m.l - m.r), Y = y => m.t + (1 - (y - y0) / (y1 - y0)) * (H - m.t - m.b);
     let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(opt.label || "chart") + '">';
-    for (let i = 0; i <= 4; i++) { const v = y0 + (y1 - y0) * i / 4, y = Y(v); s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y + '" y2="' + y + '" stroke="var(--grid)"/><text x="' + (m.l - 5) + '" y="' + (y + 3) + '" text-anchor="end">' + Math.round(v) + '</text>'; }
+    for (let i = 0; i <= 4; i++) { const v = y0 + (y1 - y0) * i / 4, y = Y(v); s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y + '" y2="' + y + '" stroke="var(--grid)"/><text x="' + (m.l - 5) + '" y="' + (y + 3) + '" text-anchor="end">' + (Math.abs(y1 - y0) < 8 ? v.toFixed(2) : Math.round(v)) + '</text>'; }
     (opt.xTicks || [x0, (x0 + x1) / 2, x1]).forEach((xv, i, a) => { s += '<text x="' + X(xv) + '" y="' + (H - 4) + '" text-anchor="' + (i === 0 ? "start" : i === a.length - 1 ? "end" : "middle") + '">' + esc(opt.xFmt ? opt.xFmt(xv) : xv) + '</text>'; });
     series.forEach(se => {
       if (!se.pts.length) return;
