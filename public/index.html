@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>75-Gallon Reef Log</title>
+<title>Reef Log</title>
 <meta name="description" content="Reef aquarium log: water tests with charts, equipment, photos, dosing and salt calculator, and LED light programs.">
 <meta name="theme-color" content="#0b7480">
 <link rel="manifest" href="manifest.webmanifest">
@@ -213,8 +213,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
 <div class="wrap">
   <header class="top">
     <div>
-      <div class="label">Water chemistry log · Eshopps RS-75 sump</div>
-      <h1>75-Gallon Reef Log</h1>
+      <div class="label" id="hdr-sub">Water chemistry log · Eshopps RS-75 sump</div>
+      <h1 id="hdr-title">75-Gallon Reef Log</h1>
       <div class="meta">
         <span id="m-last">No tests logged yet</span>
         <span id="m-count"></span>
@@ -222,6 +222,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       </div>
     </div>
     <div class="actions">
+      <button type="button" id="btn-profile">Tank profile</button>
       <button class="primary" id="btn-jump" type="button">Log a test</button>
     </div>
   </header>
@@ -351,7 +352,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   <div class="tabpanel" id="tab-dosing" role="tabpanel" aria-labelledby="tb-dosing" hidden>
     <div class="dose-grid">
       <section class="panel">
-        <div><h2>System water volume</h2><p class="hint">Aqueon 75 display (48.5 × 18.5 × 21.2 in outside) plus Eshopps RS-75 sump (20 × 10 × 16 in, 12 gal to the rim). Measure your actual water depths and adjust; everything below uses the net figure.</p></div>
+        <div><h2>System water volume</h2><p class="hint" id="vol-hint">Aqueon 75 display (48.5 × 18.5 × 21.2 in outside) plus Eshopps RS-75 sump (20 × 10 × 16 in, 12 gal to the rim). Measure your actual water depths and adjust; everything below uses the net figure.</p></div>
         <div class="vol-cols">
           <fieldset><legend class="label">Display, inside dimensions (in)</legend>
             <div class="trio">
@@ -419,13 +420,14 @@ details.backup summary { cursor: pointer; list-style: revert; }
   <div class="tabpanel" id="tab-lighting" role="tabpanel" aria-labelledby="tb-lighting" hidden>
     <section class="panel spec">
       <div class="spec-row">
-        <div><span class="label">Fixture</span><b>Noopsyche K7 Pro IV ×2</b></div>
+        <div><span class="label">Fixture</span><b id="spec-fixture">Noopsyche K7 Pro IV ×2</b></div>
         <div><span class="label">Power</span><b class="num">100 W each</b></div>
         <div><span class="label">Beam</span><b class="num">~90°</b></div>
         <div><span class="label">Mounting</span><b class="num">8–12 in above water</b></div>
         <div><span class="label">Program format</span><b class="num">24 points × 6 channels, 0–100%</b></div>
       </div>
       <p class="hint">Power, beam and mounting height are from Noopsyche's K7 V4 product page; Noopsyche's manual advises starting at 50% total brightness when moving up from weaker lights, and the planner flags any channel above that. Noopsyche doesn't publish channel names or the QR layout. The channel names, their order, and the code layout here come from the open-source K7 LED Controller project, which documents the K7 Pro as White, Royal Blue, Green, UV, Cyan, Red. That project says "K7 Pro" without naming a generation, so check the order once on your Pro IV with the channel test.</p>
+          <div class="callout" id="spec-note" hidden>Your tank profile lists a different light. The planner, QR codes and controller presets here are built for Noopsyche K7 Pro fixtures; the PAR log works with any light.</div>
     </section>
 
     <div class="dose-grid">
@@ -517,6 +519,56 @@ details.backup summary { cursor: pointer; list-style: revert; }
   </details>
 </div>
 
+<div class="lightbox" id="pf" hidden role="dialog" aria-modal="true" aria-labelledby="pf-title">
+  <div class="box" style="max-width:720px">
+    <form id="pf-form" novalidate style="padding:16px;display:flex;flex-direction:column;gap:14px">
+      <div><h2 id="pf-title">Tank profile</h2><p class="hint">These settings fill in the header, the water-volume math, dosing products, the salt preset and the lighting planner. You can change any of it later with the Tank profile button.</p></div>
+      <fieldset><legend class="label">Tank</legend>
+        <div class="fields">
+          <div class="field"><label for="pf-name"><b>Name</b></label><input id="pf-name" type="text" placeholder="e.g. 75-Gallon Reef" maxlength="40"></div>
+          <div class="field"><label for="pf-display"><b>Display tank model</b></label><input id="pf-display" type="text" placeholder="e.g. Aqueon 75" maxlength="60"></div>
+        </div>
+        <div class="trio" style="margin-top:8px">
+          <div class="field"><label for="pf-dl">Inside length (in)</label><input id="pf-dl" type="number" step="0.25" min="0"></div>
+          <div class="field"><label for="pf-dw">Inside width (in)</label><input id="pf-dw" type="number" step="0.25" min="0"></div>
+          <div class="field"><label for="pf-dd">Water depth (in)</label><input id="pf-dd" type="number" step="0.25" min="0"></div>
+          <div class="field"><label for="pf-sand">Sand bed (in)</label><input id="pf-sand" type="number" step="0.25" min="0"></div>
+          <div class="field"><label for="pf-rock">Rock (lb)</label><input id="pf-rock" type="number" step="1" min="0"></div>
+        </div>
+      </fieldset>
+      <fieldset><legend class="label">Sump</legend>
+        <label class="chip" style="align-self:flex-start"><input type="checkbox" id="pf-hassump">This system has a sump</label>
+        <div id="pf-sump" style="display:flex;flex-direction:column;gap:8px">
+          <div class="field"><label for="pf-sumpmodel"><b>Sump model</b></label><input id="pf-sumpmodel" type="text" placeholder="e.g. Eshopps RS-75" maxlength="60"></div>
+          <div class="trio">
+            <div class="field"><label for="pf-sl">Length (in)</label><input id="pf-sl" type="number" step="0.25" min="0"></div>
+            <div class="field"><label for="pf-sw">Width (in)</label><input id="pf-sw" type="number" step="0.25" min="0"></div>
+            <div class="field"><label for="pf-sd">Running depth (in)</label><input id="pf-sd" type="number" step="0.25" min="0"></div>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset><legend class="label">Salt</legend>
+        <div class="field"><label for="pf-salt"><b>Salt mix</b></label><select id="pf-salt"></select></div>
+      </fieldset>
+      <fieldset><legend class="label">Dosing products</legend>
+        <div id="pf-products" style="display:flex;flex-direction:column;gap:10px"></div>
+      </fieldset>
+      <fieldset><legend class="label">Lights</legend>
+        <div class="fields">
+          <div class="field"><label for="pf-light"><b>Fixture</b></label><input id="pf-light" type="text" list="pf-light-list" placeholder="e.g. Noopsyche K7 Pro IV" maxlength="60"><datalist id="pf-light-list"><option value="Noopsyche K7 Pro IV"><option value="Noopsyche K7 Pro III"></datalist></div>
+          <div class="field"><label for="pf-lightcount"><b>How many</b></label><input id="pf-lightcount" type="number" step="1" min="1" max="12"></div>
+        </div>
+      </fieldset>
+      <p class="hint" id="pf-second">Setting up a second device? Skip this, then sign in under Data &amp; backup to bring your log over.</p>
+      <div class="form-actions">
+        <button class="primary" type="submit" id="pf-save">Save profile</button>
+        <button type="button" id="pf-cancel">Skip for now</button>
+        <span class="status" id="pf-status" role="status"></span>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="lightbox" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photo">
   <div class="box">
     <img id="lb-img" alt="">
@@ -533,6 +585,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   </div>
 </div>
 
+<script src="config.js"></script>
 <script src="store.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
@@ -952,7 +1005,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
 
   // ---------- dosing & salt ----------
   const GAL_IN3 = 231, ROCK_GAL_PER_LB = 0.0444, SAND_SOLID = 0.6;
-  const VOL_DEF = { dl:47.75, dw:17.75, dd:19.5, sand:1.5, rock:50, other:0, sl:20, sw:10, sd:8 };
+  let VOL_DEF = { dl:47.75, dw:17.75, dd:19.5, sand:1.5, rock:50, other:0, sl:20, sw:10, sd:8 };
   const DOSE = {
     alk: { name:"Alkalinity", unit:"dKH", dp:2, product:"Brightwell Reef Code B", potency:2.22, maxDay:1.0, maxNote:"about 1 dKH per day", target:8.5 },
     ca:  { name:"Calcium", unit:"ppm", dp:0, product:"Brightwell Reef Code A", potency:16, maxDay:8, maxNote:"label max 5 mL per 10 gal per day (≈8 ppm)", target:420 },
@@ -963,7 +1016,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     af35: { label:"Aquaforest Reef Salt, mixed to 35 ppt (1.026)", alk:8.0, ca:450, mg:1390, k:null, sg:1.026, gpg:157, range:"Published: KH 7.7–8.3 dKH, Ca 440–460, Mg 1360–1420 at 35 ppt." },
     custom: { label:"Custom / batch values", range:"Enter the values for your salt or batch." }
   };
-  let dosingDoc = null, maintDirty = {};
+  let dosingDoc = null, maintDirty = {}, profile = null;
   $("s-preset").innerHTML = Object.entries(SALTS).map(([k, s]) => '<option value="' + k + '">' + esc(s.label) + '</option>').join("");
   const VKEYS = Object.keys(VOL_DEF);
   function setVol(v){ VKEYS.forEach(k => { $("v-" + k).value = v[k] ?? VOL_DEF[k]; }); }
@@ -983,7 +1036,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function renderCorrection(V){
     const rows = Object.entries(DOSE).map(([k, d]) => {
       const cur = latestVal(k);
-      return '<tr data-k="' + k + '"><td>' + d.name + '</td><td class="prod">' + esc(d.product) + '<br><span class="hint">' + '<input id="p-' + k + '" type="number" step="0.01" aria-label="' + d.name + ' potency" value="' + (dosingDoc?.potency?.[k] ?? d.potency) + '"> ' + d.unit + ' per mL per gal</span></td>' +
+      return '<tr data-k="' + k + '"><td>' + d.name + '</td><td class="prod">' + esc(d.product) + '<br><span class="hint">' + '<input id="p-' + k + '" type="number" step="0.01" aria-label="' + d.name + ' potency" value="' + d.potency + '" title="Set in Tank profile"> ' + d.unit + ' per mL per gal</span></td>' +
         '<td><input id="c-' + k + '" type="number" step="any" aria-label="Current ' + d.name + '" value="' + (cur ? cur[k] : "") + '"></td>' +
         '<td><input id="t-d-' + k + '" type="number" step="any" aria-label="Target ' + d.name + '" value="' + (dosingDoc?.target?.[k] ?? d.target) + '"></td>' +
         '<td class="res" id="r-' + k + '"></td></tr>';
@@ -1061,8 +1114,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
   $("s-preset").addEventListener("change", () => { const p = SALTS[$("s-preset").value]; if (p && p.alk != null) setSalt({ preset: $("s-preset").value, ...p }); $("s-preset").title = p ? p.range : ""; setStatus("s-status", p ? p.range : ""); renderWC(); });
   function dosingPayload(){
-    const potency = {}, target = {}; Object.keys(DOSE).forEach(k => { potency[k] = num($("p-" + k).value) ?? DOSE[k].potency; target[k] = num($("t-d-" + k).value) ?? DOSE[k].target; });
-    return { volume: getVol(), salt: getSalt(), potency, target, wc: { gal: num($("w-gal").value), freq: num($("w-freq").value) }, split: num($("m-split").value) };
+    const target = {}; Object.keys(DOSE).forEach(k => { target[k] = num($("t-d-" + k).value) ?? DOSE[k].target; });
+    return { volume: getVol(), salt: getSalt(), target, wc: { gal: num($("w-gal").value), freq: num($("w-freq").value) }, split: num($("m-split").value) };
   }
   async function saveDosing(statusId){
     if (!db) { setStatus(statusId, "Saving isn't available in this view.", true); return; }
@@ -1074,7 +1127,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function applyDosingDoc(d){
     dosingDoc = d || null;
     setVol(d && d.volume ? d.volume : VOL_DEF);
-    setSalt(d && d.salt ? d.salt : { preset:"af33", ...SALTS.af33 });
+    const pfSalt = (profile && SALTS[profile.salt] && SALTS[profile.salt].alk != null) ? profile.salt : "af33";
+    setSalt(d && d.salt ? d.salt : { preset: pfSalt, ...SALTS[pfSalt] });
     $("w-gal").value = d && d.wc && d.wc.gal != null ? d.wc.gal : ""; $("w-freq").value = d && d.wc && d.wc.freq ? d.wc.freq : 7;
     $("m-split").value = d && d.split ? d.split : 4;
     $("corr").innerHTML = ""; renderDosing();
@@ -1339,8 +1393,85 @@ details.backup summary { cursor: pointer; list-style: revert; }
   grid = shapeGrid(); renderGridTable(); renderOrder();
   $("lp-loaded").textContent = "Starting template (unsaved)";
 
+  // ---------- tank profile ----------
+  const PRODUCTS = {
+    alk: [{ name:"Brightwell Reef Code B", potency:2.22 }],
+    ca:  [{ name:"Brightwell Reef Code A", potency:16 }],
+    mg:  [{ name:"Brightwell Magnesion", potency:26 }]
+  };
+  const PROFILE_BLANK = { name:"My Reef", display:"", dl:47.75, dw:17.75, dd:19.5, sand:1.5, rock:50, hasSump:true, sumpModel:"", sl:20, sw:10, sd:8,
+    salt:"af33", alk:{ name:"Brightwell Reef Code B", potency:2.22 }, ca:{ name:"Brightwell Reef Code A", potency:16 }, mg:{ name:"Brightwell Magnesion", potency:26 }, light:"", lightCount:1 };
+  let profileSeen = false;
+  const pfNum = (id, d) => { const v = num($(id).value); return v == null || v < 0 ? d : v; };
+  $("pf-salt").innerHTML = Object.entries(SALTS).map(([k, v]) => '<option value="' + k + '">' + esc(v.label) + '</option>').join("");
+  $("pf-products").innerHTML = ["alk","ca","mg"].map(k => { const d = DOSE[k];
+    return '<div class="fields three"><div class="field" style="grid-column:span 2"><label for="pf-' + k + '-name"><b>' + d.name + ' product</b></label><input id="pf-' + k + '-name" type="text" list="pf-' + k + '-list" maxlength="60">' +
+      '<datalist id="pf-' + k + '-list">' + PRODUCTS[k].map(x => '<option value="' + esc(x.name) + '">').join("") + '</datalist></div>' +
+      '<div class="field"><label for="pf-' + k + '-pot"><b>Strength</b> ' + d.unit + ' per mL per gal</label><input id="pf-' + k + '-pot" type="number" step="any" min="0"></div></div>'; }).join("") +
+    '<p class="hint">Strength is how much 1 mL raises 1 US gallon. Picking a listed product fills it in; for anything else, take it from the label.</p>';
+  ["alk","ca","mg"].forEach(k => $("pf-" + k + "-name").addEventListener("change", () => { const hit = PRODUCTS[k].find(x => x.name === $("pf-" + k + "-name").value.trim()); if (hit) $("pf-" + k + "-pot").value = hit.potency; }));
+  $("pf-hassump").addEventListener("change", () => { $("pf-sump").hidden = !$("pf-hassump").checked; });
+
+  function fillProfileForm(p){
+    $("pf-name").value = p.name || ""; $("pf-display").value = p.display || "";
+    ["dl","dw","dd","sand","rock","sl","sw","sd"].forEach(k => { $("pf-" + k).value = p[k] ?? ""; });
+    $("pf-hassump").checked = p.hasSump !== false; $("pf-sump").hidden = p.hasSump === false; $("pf-sumpmodel").value = p.sumpModel || "";
+    $("pf-salt").value = SALTS[p.salt] ? p.salt : "af33";
+    ["alk","ca","mg"].forEach(k => { $("pf-" + k + "-name").value = (p[k] && p[k].name) || ""; $("pf-" + k + "-pot").value = (p[k] && p[k].potency) ?? ""; });
+    $("pf-light").value = p.light || ""; $("pf-lightcount").value = p.lightCount || 1;
+  }
+  function readProfileForm(){
+    const hasSump = $("pf-hassump").checked;
+    const prod = k => ({ name: $("pf-" + k + "-name").value.trim() || DOSE[k].product, potency: pfNum("pf-" + k + "-pot", DOSE[k].potency) });
+    return { name: $("pf-name").value.trim() || "My Reef", display: $("pf-display").value.trim(),
+      dl: pfNum("pf-dl", 0), dw: pfNum("pf-dw", 0), dd: pfNum("pf-dd", 0), sand: pfNum("pf-sand", 0), rock: pfNum("pf-rock", 0),
+      hasSump, sumpModel: hasSump ? $("pf-sumpmodel").value.trim() : "", sl: hasSump ? pfNum("pf-sl", 0) : 0, sw: hasSump ? pfNum("pf-sw", 0) : 0, sd: hasSump ? pfNum("pf-sd", 0) : 0,
+      salt: $("pf-salt").value, alk: prod("alk"), ca: prod("ca"), mg: prod("mg"),
+      light: $("pf-light").value.trim(), lightCount: Math.max(1, Math.round(pfNum("pf-lightcount", 1))) };
+  }
+  function applyProfile(p){
+    profile = p;
+    const q = p || PROFILE_BLANK;
+    if (p) {
+      const title = (p.name || "My Reef") + " Log";
+      $("hdr-title").textContent = title; document.title = title;
+      $("hdr-sub").textContent = "Water chemistry log" + (p.hasSump && p.sumpModel ? " · " + p.sumpModel + (/sump/i.test(p.sumpModel) ? "" : " sump") : "");
+      $("vol-hint").textContent = (p.display || "Display") + " (inside " + p.dl + " × " + p.dw + " in, " + p.dd + " in of water)" +
+        (p.hasSump ? " plus " + (p.sumpModel || "sump") + " (" + p.sl + " × " + p.sw + " in at " + p.sd + " in running depth)" : "") + ", from your tank profile. Measure your actual water depths and adjust; everything below uses the net figure.";
+      $("spec-fixture").textContent = (p.light || "Not set") + (p.light ? " ×" + (p.lightCount || 1) : "");
+      $("spec-note").hidden = !p.light || /k7/i.test(p.light);
+    }
+    VOL_DEF = { dl:q.dl, dw:q.dw, dd:q.dd, sand:q.sand, rock:q.rock, other:0, sl:q.hasSump ? q.sl : 0, sw:q.hasSump ? q.sw : 0, sd:q.hasSump ? q.sd : 0 };
+    ["alk","ca","mg"].forEach(k => { if (q[k]) { DOSE[k].product = q[k].name || DOSE[k].product; if (q[k].potency > 0) DOSE[k].potency = q[k].potency; } });
+    applyDosingDoc(dosingDoc);
+  }
+  function openProfile(first){
+    fillProfileForm(profile || PROFILE_BLANK);
+    $("pf-title").textContent = first ? "Set up your tank" : "Tank profile";
+    $("pf-second").hidden = !first; $("pf-cancel").textContent = first ? "Skip for now" : "Cancel";
+    setStatus("pf-status", ""); $("pf").hidden = false; $("pf-name").focus();
+  }
+  $("btn-profile").addEventListener("click", () => openProfile(false));
+  $("pf-cancel").addEventListener("click", () => { $("pf").hidden = true; try { sessionStorage.setItem("reef-pf-skip", "1"); } catch (e) {} });
+  $("pf").addEventListener("keydown", ev => { if (ev.key === "Escape") $("pf").hidden = true; });
+  $("pf-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const p = readProfileForm();
+    if (!(p.dl > 0 && p.dw > 0 && p.dd > 0)) { setStatus("pf-status", "Enter the display's inside length, width and water depth.", true); return; }
+    if (!db) { applyProfile(p); $("pf").hidden = true; return; }
+    $("pf-save").disabled = true;
+    try {
+      await db.doc("settings/profile").set(p);
+      if (dosingDoc) await db.doc("settings/dosing").set({ ...dosingDoc,
+        volume: { dl:p.dl, dw:p.dw, dd:p.dd, sand:p.sand, rock:p.rock, sl:p.sl, sw:p.sw, sd:p.sd, other: (dosingDoc.volume && dosingDoc.volume.other) || 0 },
+        salt: SALTS[p.salt] && SALTS[p.salt].alk != null ? { preset: p.salt, ...SALTS[p.salt] } : dosingDoc.salt });
+      $("pf").hidden = true;
+    } catch (e) { setStatus("pf-status", "Couldn't save the profile (" + (e && e.code || "error") + ").", true); }
+    $("pf-save").disabled = false;
+  });
+
   // ---------- backup ----------
-  const BK_COLS = ["tests","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7"];
+  const BK_COLS = ["tests","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile"];
   const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
   async function buildBackup(){
     const docs = [], blobs = {};
@@ -1403,6 +1534,10 @@ details.backup summary { cursor: pointer; list-style: revert; }
     db.collection("lightprograms").orderBy("ts", "desc").limit(200).onSnapshot(snap => { programs = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderPrograms();
       if (firstPrograms) { firstPrograms = false; if (programs.length) loadProgram(programs[0]); } }, () => { renderPrograms(); });
     db.collection("par").orderBy("ts", "asc").limit(500).onSnapshot(snap => { parLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (!$("tab-lighting").hidden) renderPar(); }, () => {});
+    db.doc("settings/profile").onSnapshot(snap => {
+      applyProfile(snap.exists ? snap.data() : null);
+      if (!profileSeen) { profileSeen = true; if (!snap.exists && window.__standalone && canWrite) { let skip = false; try { skip = sessionStorage.getItem("reef-pf-skip") === "1"; } catch (e) {} if (!skip) openProfile(true); } }
+    }, () => {});
     db.doc("settings/dosing").onSnapshot(snap => { applyDosingDoc(snap.exists ? snap.data() : null); }, () => {});
     claude.use("assets").then(a => { assets = a; if (!a) { $("ph-label").hidden = true; setStatus("ph-status", canWrite ? "Photo uploads aren't available in this view." : ""); } });
     db.collection("tests").orderBy("ts", "asc").limit(1000).onSnapshot(snap => {
@@ -1417,6 +1552,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   })();
 })();
 </script>
+<script src="sync.js"></script>
 <script>
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });

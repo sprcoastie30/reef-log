@@ -6,6 +6,7 @@ The app loads these libraries from the jsDelivr CDN at run time. They are not co
 |---|---|---|---|
 | qrcode-generator (Kazuhiko Arase) | 1.4.4 | MIT | Drawing QR codes for the Noopsyche app |
 | jsQR (cozmo) | 1.4.0 | Apache-2.0 | Reading QR codes from images |
+| supabase-js (Supabase) | 2.117.2 | MIT | Sign-in and device sync (loaded only when sync is turned on) |
 | IBM Plex Sans, Sans Condensed, Mono (Google Fonts) | current | SIL Open Font License 1.1 | Typography |
 
 ## Formats and references

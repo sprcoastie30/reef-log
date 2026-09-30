@@ -36,7 +36,7 @@ def main() -> int:
     if not title_m:
         print("No <title> in source", file=sys.stderr)
         return 1
-    title = title_m.group(0).strip()
+    title = "<title>Reef Log</title>"  # the app sets the full name from the tank profile at run time
     src = src[: title_m.start()] + src[title_m.end():]
     links = re.findall(r'<link rel="(?:preconnect|stylesheet)"[^>]*>\s*', src)
     for l in links:
@@ -47,7 +47,11 @@ def main() -> int:
     if marker not in src:
         print("Library script marker not found", file=sys.stderr)
         return 1
-    src = src.replace(marker, '<script src="store.js"></script>\n' + marker, 1)
+    src = src.replace(marker, '<script src="config.js"></script>\n<script src="store.js"></script>\n' + marker, 1)
+
+    # sync.js runs after the app script so the Data & backup panel exists.
+    last = src.rfind("</script>")
+    src = src[: last + len("</script>")] + '\n<script src="sync.js"></script>' + src[last + len("</script>"):]
 
     head = "\n".join([
         "<!doctype html>",

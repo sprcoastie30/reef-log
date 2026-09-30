@@ -2,13 +2,18 @@
  * Reef Log local store.
  * Provides the same small storage interface the app uses (window.claude.use("db" | "assets" | "downloads" | "user")),
  * backed by the browser's IndexedDB so the app runs on its own, on the user's device, with no server.
+ * It also records what changed locally, so sync.js can send changes to the cloud and apply changes from other devices.
  * Copyright (c) 2026 Carl Peterson. All rights reserved.
  */
 (function () {
   "use strict";
-  var DB_NAME = "reeflog", DB_VER = 1;
+  var DB_NAME = "reeflog", DB_VER = 2;
   var idb = null, memoryOnly = false;
   var docs = new Map(), blobs = new Map(), urls = new Map(), listeners = new Set();
+  var meta = new Map();   // doc path -> { u: updated ms, d: 1 if not yet synced, x: 1 if deleted }
+  var bmeta = new Map();  // blob id -> { up: 1 if uploaded, del: 1 if deletion not yet synced }
+  var kv = new Map();     // small sync settings (cursor, account)
+  var changeHooks = new Set();
 
   function uid() {
     var a = new Uint8Array(16);
@@ -26,6 +31,8 @@
     });
     return out;
   }
+  var lastStamp = 0;
+  function stamp() { var t = Date.now(); if (t <= lastStamp) t = lastStamp + 1; lastStamp = t; return t; }
 
   function openDb() {
     return new Promise(function (res, rej) {
@@ -33,18 +40,17 @@
       var r = indexedDB.open(DB_NAME, DB_VER);
       r.onupgradeneeded = function () {
         var d = r.result;
-        if (!d.objectStoreNames.contains("docs")) d.createObjectStore("docs");
-        if (!d.objectStoreNames.contains("blobs")) d.createObjectStore("blobs");
+        ["docs", "blobs", "meta", "bmeta", "kv"].forEach(function (n) { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n); });
       };
       r.onsuccess = function () { res(r.result); };
       r.onerror = function () { rej(r.error); };
     });
   }
-  function run(store, mode, fn) {
+  function run(stores, fn) {
     if (memoryOnly || !idb) return Promise.resolve();
     return new Promise(function (res, rej) {
-      var t = idb.transaction(store, mode);
-      fn(t.objectStore(store));
+      var t = idb.transaction(stores, "readwrite");
+      fn(function (n) { return t.objectStore(n); });
       t.oncomplete = function () { res(); };
       t.onerror = function () { rej(t.error); };
       t.onabort = function () { rej(t.error || new Error("Storage write aborted")); };
@@ -54,9 +60,11 @@
     return openDb().then(function (d) {
       idb = d;
       return new Promise(function (res, rej) {
-        var t = idb.transaction(["docs", "blobs"], "readonly");
-        t.objectStore("docs").openCursor().onsuccess = function (e) { var c = e.target.result; if (c) { docs.set(c.key, c.value); c.continue(); } };
-        t.objectStore("blobs").openCursor().onsuccess = function (e) { var c = e.target.result; if (c) { blobs.set(c.key, c.value); c.continue(); } };
+        var names = ["docs", "blobs", "meta", "bmeta", "kv"], maps = [docs, blobs, meta, bmeta, kv];
+        var t = idb.transaction(names, "readonly");
+        names.forEach(function (n, i) {
+          t.objectStore(n).openCursor().onsuccess = function (e) { var c = e.target.result; if (c) { maps[i].set(c.key, c.value); c.continue(); } };
+        });
         t.oncomplete = res; t.onerror = function () { rej(t.error); };
       });
     }).then(function () {
@@ -110,6 +118,7 @@
     if (pending) return; pending = true;
     setTimeout(function () { pending = false; listeners.forEach(function (l) { try { l(); } catch (e) { console.error(e); } }); }, 0);
   }
+  function localChanged() { changeHooks.forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); }
   function subscribe(fn) {
     var l = fn; listeners.add(l);
     ready.then(function () { setTimeout(function () { if (listeners.has(l)) l(); }, 0); });
@@ -121,9 +130,16 @@
     if (typeof path !== "string" || path.split("/").length % 2 !== 0) throw new TypeError("A document path needs an even number of segments: " + path);
   }
   function write(path, data) {
-    docs.set(path, data);
+    var m = { u: stamp(), d: 1, x: 0 };
+    docs.set(path, data); meta.set(path, m);
     notify();
-    return run("docs", "readwrite", function (s) { s.put(data, path); });
+    return run(["docs", "meta"], function (s) { s("docs").put(data, path); s("meta").put(m, path); }).then(localChanged);
+  }
+  function remove(path) {
+    var m = { u: stamp(), d: 1, x: 1 };
+    docs.delete(path); meta.set(path, m);
+    notify();
+    return run(["docs", "meta"], function (s) { s("docs").delete(path); s("meta").put(m, path); }).then(localChanged);
   }
   function docRef(path) {
     checkDocPath(path);
@@ -137,9 +153,7 @@
           return write(path, merge(docs.get(path), data));
         });
       },
-      delete: function () {
-        return ready.then(function () { docs.delete(path); notify(); return run("docs", "readwrite", function (s) { s.delete(path); }); });
-      },
+      delete: function () { return ready.then(function () { return remove(path); }); },
       onSnapshot: function (next) { return subscribe(function () { next(snapDoc(path)); }); },
       collection: function (sub) { return collRef(path + "/" + sub); }
     };
@@ -163,17 +177,22 @@
   var DB = Object.freeze({ doc: docRef, collection: collRef });
 
   // ---------- assets (photos) ----------
+  function putBlobLocal(id, b, bm) {
+    if (urls.has(id)) URL.revokeObjectURL(urls.get(id));
+    blobs.set(id, b); urls.set(id, URL.createObjectURL(b)); bmeta.set(id, bm);
+    return run(["blobs", "bmeta"], function (s) { s("blobs").put(b, id); s("bmeta").put(bm, id); });
+  }
   var ASSETS = Object.freeze({
     upload: function (blob, opts) {
       return ready.then(function () {
         var type = (opts && opts.type) || blob.type || "application/octet-stream";
         var b = blob.type === type ? blob : new Blob([blob], { type: type });
         var id = uid();
-        blobs.set(id, b); urls.set(id, URL.createObjectURL(b));
-        return run("blobs", "readwrite", function (s) { s.put(b, id); }).then(function () {
+        return putBlobLocal(id, b, { up: 0, del: 0 }).then(function () {
+          localChanged();
           return { id: id, url: urls.get(id), sizeBytes: b.size, contentType: type };
         }).catch(function (e) {
-          blobs.delete(id);
+          blobs.delete(id); bmeta.delete(id);
           var err = new Error("Couldn't store the photo on this device"); err.code = (e && e.name === "QuotaExceededError") ? "quota_exceeded" : "upstream_error"; throw err;
         });
       });
@@ -181,8 +200,12 @@
     delete: function (id) {
       return ready.then(function () {
         if (urls.has(id)) URL.revokeObjectURL(urls.get(id));
+        var wasUp = bmeta.has(id) && bmeta.get(id).up;
         blobs.delete(id); urls.delete(id);
-        return run("blobs", "readwrite", function (s) { s.delete(id); }).then(function () { return { deleted: true }; });
+        var bm = { up: 0, del: wasUp ? 1 : 0 };
+        if (bm.del) bmeta.set(id, bm); else bmeta.delete(id);
+        return run(["blobs", "bmeta"], function (s) { s("blobs").delete(id); if (bm.del) s("bmeta").put(bm, id); else s("bmeta").delete(id); })
+          .then(function () { localChanged(); return { deleted: true }; });
       });
     },
     list: function () {
@@ -222,6 +245,67 @@
   var CAPS = { db: DB, assets: ASSETS, downloads: DOWNLOADS, user: USER };
   window.claude = Object.freeze({ use: function (name) { return ready.then(function () { return CAPS[name] || null; }); } });
 
+  // ---------- sync hooks (used by sync.js) ----------
+  window.__reefStore = Object.freeze({
+    ready: ready,
+    onLocalChange: function (f) { changeHooks.add(f); return function () { changeHooks.delete(f); }; },
+    // Documents changed on this device and not yet sent. Records from before change tracking count as unsent.
+    dirtyDocs: function () {
+      var out = [];
+      docs.forEach(function (v, k) { var m = meta.get(k); if (!m || m.d) out.push({ path: k, data: clone(v), u: m ? m.u : 1, deleted: false }); });
+      meta.forEach(function (m, k) { if (m.x && m.d) out.push({ path: k, data: null, u: m.u, deleted: true }); });
+      return out;
+    },
+    markClean: function (path, u) {
+      var m = meta.get(path);
+      var nm = m ? { u: m.u, d: m.u === u ? 0 : m.d, x: m.x } : { u: u, d: 0, x: 0 };
+      meta.set(path, nm);
+      return run(["meta"], function (s) { s("meta").put(nm, path); });
+    },
+    // A change from another device. Kept only if it is newer than what this device has.
+    applyRemote: function (path, data, u, deleted) {
+      checkDocPath(path);
+      var m = meta.get(path);
+      if (m && m.u >= u) return Promise.resolve(false);
+      var nm = { u: u, d: 0, x: deleted ? 1 : 0 };
+      meta.set(path, nm);
+      if (deleted) docs.delete(path); else docs.set(path, clone(data));
+      notify();
+      return run(["docs", "meta"], function (s) { if (deleted) s("docs").delete(path); else s("docs").put(data, path); s("meta").put(nm, path); })
+        .then(function () { return true; });
+    },
+    photoAssetIds: function () {
+      var ids = [];
+      docs.forEach(function (v, k) { if (k.indexOf("photos/") === 0 && v && v.asset) ids.push(v.asset); });
+      return ids;
+    },
+    blobsToUpload: function () {
+      var ids = [];
+      blobs.forEach(function (b, id) { var bm = bmeta.get(id); if (!bm || !bm.up) ids.push(id); });
+      return ids;
+    },
+    blobsToDelete: function () { var ids = []; bmeta.forEach(function (bm, id) { if (bm.del) ids.push(id); }); return ids; },
+    hasBlob: function (id) { return blobs.has(id); },
+    getBlob: function (id) { return blobs.get(id) || null; },
+    putRemoteBlob: function (id, b) { return putBlobLocal(id, b, { up: 1, del: 0 }).then(notify); },
+    markBlobUploaded: function (id) { if (!blobs.has(id)) return Promise.resolve(); var bm = { up: 1, del: 0 }; bmeta.set(id, bm); return run(["bmeta"], function (s) { s("bmeta").put(bm, id); }); },
+    markBlobDeleted: function (id) { bmeta.delete(id); return run(["bmeta"], function (s) { s("bmeta").delete(id); }); },
+    getKV: function (k) { return kv.get(k); },
+    setKV: function (k, v) { if (v === undefined) kv.delete(k); else kv.set(k, v); return run(["kv"], function (s) { if (v === undefined) s("kv").delete(k); else s("kv").put(v, k); }); },
+    // Forget sync state (used when signing out or switching accounts): everything local counts as unsent again.
+    resetSyncState: function () {
+      meta.forEach(function (m, k) { if (m.x) meta.delete(k); });
+      var nm = new Map(); docs.forEach(function (v, k) { nm.set(k, { u: (meta.get(k) || {}).u || 1, d: 1, x: 0 }); });
+      meta = nm; bmeta.clear(); blobs.forEach(function (b, id) { bmeta.set(id, { up: 0, del: 0 }); });
+      kv.delete("cursor");
+      return run(["meta", "bmeta", "kv"], function (s) {
+        s("meta").clear(); meta.forEach(function (m, k) { s("meta").put(m, k); });
+        s("bmeta").clear(); bmeta.forEach(function (m, k) { s("bmeta").put(m, k); });
+        s("kv").delete("cursor");
+      });
+    }
+  });
+
   // ---------- restore from a backup file ----------
   function dataUrlToBlob(u) {
     var m = /^data:([^;,]*)(;base64)?,(.*)$/.exec(u);
@@ -238,12 +322,15 @@
     Object.keys(backup.blobs || {}).forEach(function (id) { newBlobs.set(id, dataUrlToBlob(backup.blobs[id])); });
     return ready.then(function () {
       if (memoryOnly || !idb) throw new Error("This browser isn't allowing on-device storage");
+      var now = stamp();
       return new Promise(function (res, rej) {
-        var t = idb.transaction(["docs", "blobs"], "readwrite");
-        var ds = t.objectStore("docs"), bs = t.objectStore("blobs");
-        ds.clear(); bs.clear();
-        newDocs.forEach(function (v, k) { ds.put(v, k); });
-        newBlobs.forEach(function (v, k) { bs.put(v, k); });
+        var names = ["docs", "blobs", "meta", "bmeta", "kv"];
+        var t = idb.transaction(names, "readwrite");
+        var ds = t.objectStore("docs"), bs = t.objectStore("blobs"), ms = t.objectStore("meta"), bms = t.objectStore("bmeta");
+        ds.clear(); bs.clear(); ms.clear(); bms.clear(); t.objectStore("kv").delete("cursor");
+        // Restored records are newer than anything else, so they win when this device next syncs.
+        newDocs.forEach(function (v, k) { ds.put(v, k); ms.put({ u: now, d: 1, x: 0 }, k); });
+        newBlobs.forEach(function (v, k) { bs.put(v, k); bms.put({ up: 0, del: 0 }, k); });
         t.oncomplete = res; t.onerror = function () { rej(t.error); }; t.onabort = function () { rej(t.error || new Error("Restore aborted")); };
       });
     });
