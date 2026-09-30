@@ -2,6 +2,10 @@
 
 A reef aquarium log that runs in any browser and installs to a phone's home screen:
 
+- **Today**: the home screen. One suggested next step, alerts, readings in plain words against the user's own targets (tap any reading for what it means, likely causes, what to do and what to avoid), what's due, a tank-cycle tracker, a readiness ladder (first fish, soft corals, LPS, SPS) checked against logged tests and tank age, golden rules and common beginner problems. Includes "Share for help", a one-tap tank summary for forums and Facebook groups.
+- **Retest check**: a reading that jumps more than a tank normally moves between tests is flagged, and dosing suggestions hold until a retest confirms it.
+- **Targets**: users set their own ranges inside broad safe limits; suggested ranges by tank type (fish only, soft corals, LPS, SPS/mixed) and a "Match my salt" button are offered, never forced.
+- **Tank setup**: standard glass-tank size presets, or the maker's total volume for all-in-ones; ammonia and nitrite tracking for new tanks.
 - **Chemistry**: log water tests and chart alkalinity, calcium, magnesium, nitrate, phosphate, salinity, temperature and pH against target ranges, with maintenance-event markers and per-day change.
 - **Dosing products**: presets for Brightwell Reef Code A/B and Magnesion, Red Sea Reef Foundation A/B/C, Seachem Reef Fusion 1/2, BRS Pharma Soda Ash (DIY), Tropic Marin All-For-Reef and Carbocalcium (liquid, or powder mixed to solution), ESV B-Ionic, Aquaforest Component 1+2+3+, Seachem Reef Builder (powder, dosed in grams) and saturated kalkwasser (dosed with top-off, with an evaporation check), each marked as label strength or calculated from the maker's stated concentration or mix, with the maker's daily limit where one is stated; any other product by label strength. Dosing by hand or by auto doser (doses per day, doser minimum, container days, doser heads) with matching schedule tasks.
 - **Themes and units**: Auto (follows the device), Light, Dark and Blue themes; US units (gal, in, lb, °F) or metric (L, cm, kg, °C), set in the tank profile. Data is always stored in US units, so switching never changes saved records.

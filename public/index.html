@@ -195,6 +195,32 @@ table.calc td.res { font-weight: 500; color: var(--ink); }
 .result-list li span:last-child { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
 .callout { border-left: 3px solid var(--event); padding: 6px 10px; font-size: 0.86rem; background: var(--warn-bg); border-radius: 0 6px 6px 0; margin-top: 8px; }
 .callout.warn { border-left-color: var(--warn); }
+.td-hero { display: flex; flex-direction: column; gap: 12px; }
+.td-hero h2 { font-size: 1.35rem; margin-top: 2px; }
+.td-hero p { color: var(--ink); max-width: 70ch; }
+.td-alerts { display: flex; flex-direction: column; gap: 0; }
+.td-read, .td-lvl, .td-prob { border-bottom: 1px solid var(--grid); }
+.td-read summary, .td-lvl summary { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: baseline; padding: 9px 0 9px 10px; cursor: pointer; list-style: none; border-left: 4px solid var(--line); }
+.td-read summary::-webkit-details-marker, .td-lvl summary::-webkit-details-marker { display: none; }
+.td-read summary { grid-template-columns: minmax(0, 1fr) auto minmax(90px, auto) auto; }
+.td-read .nm, .td-lvl .nm { font-weight: 600; }
+.td-read .v { font: 600 1rem var(--f-mono); }
+.td-read .v small { font-weight: 400; color: var(--muted); }
+.td-read .st, .td-lvl .st { font-size: 0.82rem; font-weight: 600; }
+.td-read .dt { font-size: 0.78rem; color: var(--muted); }
+.td-read.good summary, .td-lvl.good summary { border-left-color: var(--ok); }
+.td-read.watch summary, .td-lvl.watch summary { border-left-color: var(--warn); }
+.td-read.act summary { border-left-color: var(--bad); }
+.td-read.good .st, .td-lvl.good .st { color: var(--ok); } .td-read.watch .st, .td-lvl.watch .st { color: var(--warn); } .td-read.act .st { color: var(--bad); }
+.td-help { padding: 4px 4px 12px 14px; font-size: 0.88rem; display: flex; flex-direction: column; gap: 6px; }
+.td-lvl ul { list-style: none; padding: 4px 4px 4px 14px; margin: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; }
+.td-lvl li.ok span { color: var(--ok); } .td-lvl li.no span { color: var(--bad); } .td-lvl li.q span { color: var(--muted); }
+.td-lvl .hint { padding: 0 4px 12px 14px; }
+.td-due { list-style: none; padding: 0; margin: 0; } .td-due li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--grid); }
+.td-rules { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.td-prob summary { padding: 9px 0; cursor: pointer; font-weight: 600; } .td-prob p { padding: 0 0 12px; font-size: 0.88rem; }
+@media (max-width: 520px) { .td-read summary { grid-template-columns: minmax(0, 1fr) auto; } .td-read .dt { display: none; } }
+button.linkbtn { border: 0; background: none; color: var(--accent); padding: 0 2px; font: 600 0.8rem var(--f-body); text-decoration: underline; cursor: pointer; }
 .wcl-week { margin-top: 12px; }
 .wcl-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 2px solid var(--line); }
 .wcl-head b { font-family: var(--f-display); }
@@ -315,7 +341,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
   <div class="notice" id="ro-notice" hidden>This log is read-only for you. Only the tank owner can add or change entries.</div>
 
   <nav class="tabs" role="tablist" aria-label="Log sections">
-    <button type="button" role="tab" id="tb-chemistry" data-tab="chemistry" aria-selected="true">Chemistry</button>
+    <button type="button" role="tab" id="tb-today" data-tab="today" aria-selected="true">Today</button>
+    <button type="button" role="tab" id="tb-chemistry" data-tab="chemistry" aria-selected="false">Chemistry</button>
     <button type="button" role="tab" id="tb-maintenance" data-tab="maintenance" aria-selected="false">Maintenance<span class="count" id="c-mt"></span></button>
     <button type="button" role="tab" id="tb-livestock" data-tab="livestock" aria-selected="false">Livestock<span class="count" id="c-ls"></span></button>
     <button type="button" role="tab" id="tb-equipment" data-tab="equipment" aria-selected="false">Equipment<span class="count" id="c-eq"></span></button>
@@ -324,7 +351,10 @@ details.backup summary { cursor: pointer; list-style: revert; }
     <button type="button" role="tab" id="tb-lighting" data-tab="lighting" aria-selected="false">Lighting</button>
   </nav>
 
-  <div class="tabpanel" id="tab-chemistry" role="tabpanel" aria-labelledby="tb-chemistry">
+  <div class="tabpanel" id="tab-today" role="tabpanel" aria-labelledby="tb-today">
+    <div id="td-root" style="display:flex;flex-direction:column;gap:18px"><div class="skeleton">Loading…</div></div>
+  </div>
+  <div class="tabpanel" id="tab-chemistry" role="tabpanel" aria-labelledby="tb-chemistry" hidden>
   <div id="supply-alerts" class="supply-alerts"></div>
   <div class="notice" id="example-notice" hidden>
     <strong>Example data.</strong> The charts below show made-up readings so you can see how the log works. They disappear as soon as you save your first test.
@@ -380,7 +410,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
         <summary>Target ranges</summary>
         <p class="hint">Bands on the charts and the in-range check use these. Defaults: Alk 9 dKH, Ca 440 ppm, Mg 1350 ppm, salinity 35 ppt (1.026 SG).</p>
         <div class="tgrid" id="tgrid"></div>
-        <div class="form-actions" style="margin-top:10px"><button type="button" id="t-save">Save targets</button><button type="button" id="t-reset">Restore defaults</button><span class="status" id="t-status" role="status"></span></div>
+        <div class="form-actions" style="margin-top:10px"><button type="button" id="t-save">Save targets</button><button type="button" id="t-reset">Restore defaults</button><button type="button" id="t-salt">Match my salt</button><span class="status" id="t-status" role="status"></span></div>
       </details>
       <div class="io">
         <button type="button" id="btn-export">Export CSV</button>
@@ -615,7 +645,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     <div class="dose-grid">
       <section class="panel">
         <div><h2>System water volume</h2><p class="hint" id="vol-hint">Enter your display's inside length, width and water depth, and your sump's running level, or fill them in once under Tank profile. Everything below uses the net figure.</p></div>
-        <div class="vol-cols">
+        <div class="vol-cols" id="vol-cols">
           <fieldset><legend class="label">Display, inside dimensions (<span data-ul="len">in</span>)</legend>
             <div class="trio">
               <div class="field"><label for="v-dl">Length</label><input id="v-dl" type="number" step="0.25"></div>
@@ -887,6 +917,16 @@ details.backup summary { cursor: pointer; list-style: revert; }
   </details>
 </div>
 
+<div class="lightbox" id="sh" hidden role="dialog" aria-modal="true" aria-labelledby="sh-title">
+  <div class="box" style="max-width:640px">
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div><h2 id="sh-title">Share for help</h2><p class="hint">A summary of your tank for a Facebook group, Reef2Reef or your local club. Add your question, then copy or share it. Nothing is posted for you.</p></div>
+      <div class="field"><label for="sh-q"><b>Your question</b> (optional)</label><input id="sh-q" type="text" maxlength="300" placeholder="e.g. My hammer coral hasn't opened in two days. What should I check?"></div>
+      <div class="field"><label for="sh-text"><b>Tank summary</b> (you can edit it)</label><textarea id="sh-text" rows="14" style="font:0.8rem var(--f-mono)"></textarea></div>
+      <div class="form-actions"><button type="button" class="primary" id="sh-copy">Copy</button><button type="button" id="sh-share">Share…</button><button type="button" id="sh-close">Close</button><span class="status" id="sh-status" role="status"></span></div>
+    </div>
+  </div>
+</div>
 <div class="lightbox" id="pf" hidden role="dialog" aria-modal="true" aria-labelledby="pf-title">
   <div class="box" style="max-width:720px">
     <form id="pf-form" novalidate style="padding:16px;display:flex;flex-direction:column;gap:14px">
@@ -897,8 +937,12 @@ details.backup summary { cursor: pointer; list-style: revert; }
           <div class="field"><label for="pf-display"><b>Display tank model</b></label><input id="pf-display" type="text" placeholder="e.g. Aqueon 75" maxlength="60"></div>
           <div class="field"><label for="pf-started"><b>Tank set up</b> (month)</label><input id="pf-started" type="month"></div>
           <label class="chip" style="align-self:end"><input type="checkbox" id="pf-tips" checked>Show new-reefer tips</label>
+          <div class="field"><label for="pf-type"><b>What the tank is for</b></label><select id="pf-type"><option value="">Not set</option><option value="fowlr">Fish only (FOWLR)</option><option value="softie">Soft corals</option><option value="lps">LPS and soft corals</option><option value="sps">SPS or mixed reef</option></select></div>
+          <div class="field"><label for="pf-preset"><b>Tank size</b></label><select id="pf-preset"></select></div>
         </div>
-        <div class="trio" style="margin-top:8px">
+        <p class="hint" id="pf-preset-note"></p>
+        <div class="field" id="pf-vol-wrap" hidden><label for="pf-vol"><b>Total water volume</b> <span data-ul="vol">gal</span>, from the maker</label><input id="pf-vol" type="number" step="any" min="0" placeholder="e.g. 34"></div>
+        <div class="trio" id="pf-dims" style="margin-top:8px">
           <div class="field"><label for="pf-dl">Inside length (<span data-ul="len">in</span>)</label><input id="pf-dl" type="number" step="0.25" min="0"></div>
           <div class="field"><label for="pf-dw">Inside width (<span data-ul="len">in</span>)</label><input id="pf-dw" type="number" step="0.25" min="0"></div>
           <div class="field"><label for="pf-dd">Water depth (<span data-ul="len">in</span>)</label><input id="pf-dd" type="number" step="0.25" min="0"></div>
@@ -973,8 +1017,21 @@ details.backup summary { cursor: pointer; list-style: revert; }
     { key:"po4",  name:"Phosphate",  unit:"ppm", step:"0.01", dp:2, lo:0.03,  hi:0.10 },
     { key:"sal",  name:"Salinity",   unit:"ppt", step:"0.1",  dp:1, lo:34,    hi:36,    t:35, ut:"sal" },
     { key:"temp", name:"Temperature",unit:"°F",  step:"0.1",  dp:1, lo:76,    hi:79, ut:"temp" },
-    { key:"ph",   name:"pH",         unit:"",    step:"0.01", dp:2, lo:7.9,   hi:8.3 }
+    { key:"ph",   name:"pH",         unit:"",    step:"0.01", dp:2, lo:7.9,   hi:8.3 },
+    { key:"nh3",  name:"Ammonia",    unit:"ppm", step:"0.01", dp:2, lo:0,     hi:0.05, opt:true },
+    { key:"no2",  name:"Nitrite",    unit:"ppm", step:"0.01", dp:2, lo:0,     hi:0.1,  opt:true }
   ];
+  // Broad limits a target may be set within (stored units: ppt, °F). Outside them most reef animals are stressed.
+  const SAFE = { alk:[6,12], ca:[350,500], mg:[1150,1550], no3:[0,50], po4:[0,0.5], sal:[30,37], temp:[72,82], ph:[7.6,8.6], nh3:[0,0.25], no2:[0,0.5] };
+  // Suggested ranges by tank type (common hobby ranges, not rules). Users keep their own targets; these are offered, never forced.
+  const TANK_TYPES = {
+    fowlr:  { label:"Fish only (FOWLR)", t:{ alk:{lo:7,hi:11,t:8}, ca:{lo:380,hi:450}, mg:{lo:1250,hi:1400}, no3:{lo:5,hi:40}, po4:{lo:0.03,hi:0.5} }, alkEvery:14, caMgEvery:30 },
+    softie: { label:"Soft corals", t:{ alk:{lo:7.5,hi:10,t:8.5}, ca:{lo:400,hi:450,t:420}, mg:{lo:1250,hi:1400,t:1320}, no3:{lo:5,hi:20}, po4:{lo:0.03,hi:0.15} }, alkEvery:7, caMgEvery:30 },
+    lps:    { label:"LPS and soft corals", t:{ alk:{lo:8,hi:10,t:8.8}, ca:{lo:400,hi:460,t:430}, mg:{lo:1280,hi:1400,t:1350}, no3:{lo:3,hi:15}, po4:{lo:0.03,hi:0.1} }, alkEvery:3, caMgEvery:7 },
+    sps:    { label:"SPS or mixed reef", t:{ alk:{lo:7.5,hi:9,t:8.3}, ca:{lo:400,hi:460,t:430}, mg:{lo:1300,hi:1420,t:1350}, no3:{lo:2,hi:10}, po4:{lo:0.02,hi:0.08} }, alkEvery:2, caMgEvery:7 }
+  };
+  const TYPE_COMMON = { sal:{lo:34,hi:36,t:35}, temp:{lo:76,hi:79}, ph:{lo:7.9,hi:8.4}, nh3:{lo:0,hi:0.05}, no2:{lo:0,hi:0.1} };
+  const typeSuggest = (type, k) => { const tt = TANK_TYPES[type]; return tt ? (tt.t[k] || TYPE_COMMON[k]) : null; };
   const DEFAULTS = Object.fromEntries(PARAMS.map(p => [p.key, p.t != null ? {lo:p.lo, hi:p.hi, t:p.t} : {lo:p.lo, hi:p.hi}]));
   const tgtText = (p, t) => t.t != null ? fmt(p, t.t) + (p.key === "sal" ? (p.unit === "SG" ? " ≈ " + ((t.t - 1) * 1327.5).toFixed(1) + " ppt" : " ≈ " + (1 + t.t / 1327.5).toFixed(3) + " SG") : "") + " (" + fmt(p, t.lo) + "–" + fmt(p, t.hi) + ")" : fmt(p, t.lo) + "–" + fmt(p, t.hi);
   const EVENTS = ["Water change","Dosing change","New livestock","Equipment","Lighting","Filter media","Treatment"];
@@ -1078,6 +1135,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const lastN = [...real].reverse().find(t => t.no3 != null && t.po4 != null);
     $("m-np").textContent = lastN && lastN.po4 > 0 ? "NO₃:PO₄ ≈ " + Math.round(lastN.no3 / lastN.po4) + ":1 (" + dshort(lastN.ts) + ")" : "";
     renderCards(list); renderHistory(real); renderSupplyAlerts();
+    if (!$("tab-today").hidden && typeof renderToday === "function") renderToday();
     if (typeof refillCurrents === "function" && $("corr").innerHTML) { refillCurrents(); updateCorrection(); renderConsumption(); renderMaint(); renderWC(); }
   }
 
@@ -1086,6 +1144,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const win = windowed(list);
     PARAMS.forEach(p => {
       const pts = list.filter(t => t[p.key] != null);
+      if (p.opt && !pts.length) return; // ammonia and nitrite appear once logged
       const last = pts[pts.length-1], prev = pts[pts.length-2];
       const st = statusOf(p, last ? last[p.key] : null);
       let rateTxt = "";
@@ -1160,9 +1219,10 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const tb = $("hist");
     $("h-count").textContent = real.length ? real.length + " entries, newest first" : "";
     if (!real.length) { tb.innerHTML = '<tbody><tr><td class="note" style="text-align:left">Saved tests will list here. Use the form to log your first one, or import a CSV.</td></tr></tbody>'; return; }
-    let h = '<thead><tr><th>Date</th>' + PARAMS.map(p => '<th>' + p.key.toUpperCase().replace("TEMP","Temp").replace("SAL","Sal").replace("PH","pH") + '</th>').join("") + '<th class="note">Events / notes</th><th></th></tr></thead><tbody>';
+    const cols = PARAMS.filter(p => !p.opt || real.some(t => t[p.key] != null));
+    let h = '<thead><tr><th>Date</th>' + cols.map(p => '<th>' + p.key.toUpperCase().replace("TEMP","Temp").replace("SAL","Sal").replace("PH","pH") + '</th>').join("") + '<th class="note">Events / notes</th><th></th></tr></thead><tbody>';
     [...real].reverse().forEach(t => {
-      h += '<tr><td>' + dstr(t.ts) + '</td>' + PARAMS.map(p => { const v = t[p.key]; const st = statusOf(p, v); return '<td class="' + (st === "low" || st === "high" ? "out" : "") + '">' + fmt(p, v) + '</td>'; }).join("") +
+      h += '<tr><td>' + dstr(t.ts) + '</td>' + cols.map(p => { const v = t[p.key]; const st = statusOf(p, v); return '<td class="' + (st === "low" || st === "high" ? "out" : "") + '">' + fmt(p, v) + '</td>'; }).join("") +
         '<td class="note">' + (t.events || []).map(e => '<span class="ev">' + esc(e) + '</span>').join("") + esc(t.note) + '</td>' +
         '<td class="act">' + (canWrite ? '<button type="button" data-edit="' + esc(t.id) + '">Edit</button> <button type="button" class="danger" data-del="' + esc(t.id) + '">Delete</button>' : '') + '</td></tr>';
     });
@@ -1208,6 +1268,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       const stored = unconvTest(rec);
       if (editingId) await col.doc(editingId).set(stored); else await col.add(stored);
       setStatus("f-status", editingId ? "Changes saved." : "Test saved."); resetForm();
+      setTimeout(() => { const jf = jumpFlags().filter(f => Math.abs(f.ts - stored.ts) < 60000); if (jf.length) setStatus("f-status", "Saved. " + jf.map(f => f.p.name + " jumped from " + f.from + " to " + f.to + " " + f.p.unit).join("; ") + ". That's a bigger change than usual; retest before acting on it.", true); }, 400);
       completeFromTest(rec);
     } catch (e) { setStatus("f-status", e && e.code === "invalid_argument" ? "You don't have permission to save to this log." : "Couldn't save (" + (e && e.code || "error") + "). Try again.", true); }
     $("f-save").disabled = false;
@@ -1235,12 +1296,28 @@ details.backup summary { cursor: pointer; list-style: revert; }
   try { const r = localStorage.getItem("reef-range"); if (r != null) { const b = document.querySelector('[data-range="' + r + '"]'); if (b) b.click(); } } catch (e) {}
 
   // ---------- targets ----------
+  function safeDisp(p){ const r = SAFE[p.key]; if (!r) return null; const c = v => +((p.ut ? toDisp(p.ut, v) : v)).toFixed(p.dp); return [c(r[0]), c(r[1])]; }
+  function suggestDisp(p){ const sg = typeSuggest(profile && profile.tankType, p.key); if (!sg) return null; const c = v => v == null ? null : +((p.ut ? toDisp(p.ut, v) : v)).toFixed(p.dp); return { lo: c(sg.lo), hi: c(sg.hi), t: c(sg.t) }; }
   function renderTargets(){
-    $("tgrid").innerHTML = '<div class="hint" style="grid-column:1/-1">Each row: low · target · high. Target is optional; it draws a dashed line on the chart and sets the goal in the dosing calculator.</div>' + PARAMS.map(p => '<div class="field"><span class="label">' + p.name + ' ' + p.unit + '</span><div class="row" style="grid-template-columns:1fr 1fr 1fr">' +
+    const tt = profile && TANK_TYPES[profile.tankType];
+    $("tgrid").innerHTML = '<div class="hint" style="grid-column:1/-1">Each row: low · target · high. Target is optional; it draws a dashed line on the chart and sets the goal in the dosing calculator. Set these to what works for your tank, inside the safe limits shown.' + (tt ? ' Suggestions are for a ' + esc(tt.label.toLowerCase()) + ' tank (set in Tank profile).' : ' Pick a tank type in Tank profile to see suggested ranges.') + '</div>' + PARAMS.map(p => { const sd = safeDisp(p), sg = suggestDisp(p);
+      return '<div class="field"><span class="label">' + p.name + ' ' + p.unit + '</span><div class="row" style="grid-template-columns:1fr 1fr 1fr">' +
       '<input id="t-' + p.key + '-lo" type="number" step="' + p.step + '" aria-label="' + p.name + ' low" value="' + targets[p.key].lo + '">' +
       '<input id="t-' + p.key + '-t" type="number" step="' + p.step + '" aria-label="' + p.name + ' target" placeholder="target" value="' + (targets[p.key].t ?? "") + '">' +
-      '<input id="t-' + p.key + '-hi" type="number" step="' + p.step + '" aria-label="' + p.name + ' high" value="' + targets[p.key].hi + '"></div></div>').join("");
+      '<input id="t-' + p.key + '-hi" type="number" step="' + p.step + '" aria-label="' + p.name + ' high" value="' + targets[p.key].hi + '"></div>' +
+      '<span class="hint">' + (sd ? 'Safe limits ' + sd[0] + '–' + sd[1] : '') + (sg ? ' · Suggested ' + sg.lo + '–' + sg.hi + (sg.t != null ? ' (target ' + sg.t + ')' : '') + ' <button type="button" class="linkbtn" data-tsug="' + p.key + '">Use</button>' : '') + '</span></div>'; }).join("");
   }
+  $("t-salt").addEventListener("click", () => {
+    let sl; try { sl = getSalt(); } catch (e) { sl = null; }
+    if (!sl || sl.alk == null) { setStatus("t-status", "Set your salt on the Dosing & salt tab first.", true); return; }
+    const pr = SALTS[sl.preset], set = [];
+    ["alk","ca","mg"].forEach(k => { const v = sl[k]; if (v == null) return; const r = pr && pr.ranges && pr.ranges[k];
+      const lo = r ? r[0] : +(v * 0.96).toFixed(k === "alk" ? 1 : 0), hi = r ? r[1] : +(v * 1.04).toFixed(k === "alk" ? 1 : 0);
+      $("t-" + k + "-lo").value = lo; $("t-" + k + "-hi").value = hi; $("t-" + k + "-t").value = v; set.push(k); });
+    setStatus("t-status", "Alkalinity, calcium and magnesium set to " + (pr && pr.ranges ? "your salt's published range" : "your salt's values ±4%") + ". Press Save targets to keep them.");
+  });
+  $("tgrid").addEventListener("click", ev => { const b = ev.target.closest("[data-tsug]"); if (!b) return; const p = PARAMS.find(x => x.key === b.dataset.tsug), sg = suggestDisp(p);
+    $("t-" + p.key + "-lo").value = sg.lo; $("t-" + p.key + "-hi").value = sg.hi; $("t-" + p.key + "-t").value = sg.t ?? ""; setStatus("t-status", p.name + " set to the suggested range. Press Save targets to keep it."); });
   async function saveTargets(obj){
     if (!db) { setStatus("t-status", "Saving isn't available in this view.", true); return; }
     try { await db.doc("settings/targets").set(obj); setStatus("t-status", "Targets saved."); }
@@ -1253,6 +1330,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
       const tv = num($("t-" + p.key + "-t").value);
       if (lo == null || hi == null || lo >= hi) { setStatus("t-status", p.name + ": low must be below high.", true); return; }
       if (tv != null && (tv < lo || tv > hi)) { setStatus("t-status", p.name + ": target must sit between low and high.", true); return; }
+      const sd = safeDisp(p);
+      if (sd && (lo < sd[0] || hi > sd[1])) { setStatus("t-status", p.name + ": keep your range between " + sd[0] + " and " + sd[1] + " " + p.unit + ". Outside that, most reef animals are stressed.", true); return; }
       obj[p.key] = tv != null ? {lo, hi, t: tv} : {lo, hi};
     }
     if (obj.sal) { const raw = (targetsRaw && targetsRaw.sal) || DEFAULTS.sal, f = (v, key) => targets.sal && v === targets.sal[key] && raw[key] != null ? salPpt(raw[key]) : +salPpt(v).toFixed(2); obj.sal = obj.sal.t != null ? { lo: f(obj.sal.lo, "lo"), hi: f(obj.sal.hi, "hi"), t: f(obj.sal.t, "t") } : { lo: f(obj.sal.lo, "lo"), hi: f(obj.sal.hi, "hi") }; }
@@ -1261,7 +1340,10 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
   $("t-reset").addEventListener("click", () => { const b = $("t-reset");
     if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Confirm: replace my targets"; setTimeout(() => { b.dataset.confirm = ""; b.textContent = "Restore defaults"; }, 4000); return; }
-    b.dataset.confirm = ""; b.textContent = "Restore defaults"; saveTargets(JSON.parse(JSON.stringify(DEFAULTS))); });
+    b.dataset.confirm = ""; b.textContent = "Restore defaults";
+    const base = JSON.parse(JSON.stringify(DEFAULTS)), tt = profile && TANK_TYPES[profile.tankType];
+    if (tt) PARAMS.forEach(p => { const sg = typeSuggest(profile.tankType, p.key); if (sg) base[p.key] = sg.t != null ? { lo: sg.lo, hi: sg.hi, t: sg.t } : { lo: sg.lo, hi: sg.hi }; });
+    saveTargets(base); });
 
   // ---------- CSV ----------
   function toCSV(){
@@ -1320,12 +1402,13 @@ details.backup summary { cursor: pointer; list-style: revert; }
   })();
 
   // ---------- tabs ----------
-  const TABS = ["chemistry","maintenance","livestock","equipment","photos","dosing","lighting"];
+  const TABS = ["today","chemistry","maintenance","livestock","equipment","photos","dosing","lighting"];
   function showTab(name, push){
-    if (!TABS.includes(name)) name = "chemistry";
+    if (!TABS.includes(name)) name = "today";
     TABS.forEach(t => { $("tab-" + t).hidden = t !== name; $("tb-" + t).setAttribute("aria-selected", String(t === name)); });
     $("btn-jump").hidden = name !== "chemistry";
     if (name === "chemistry") renderCards(data());
+    if (name === "today") renderToday();
     if (name === "dosing") renderDosing();
     if (name === "lighting") renderLighting();
     if (name === "livestock") renderLivestock();
@@ -2035,8 +2118,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
   const isKalk = () => !!(productInfo("alk", DOSE.alk.product) || {}).kalk;
   const doseHeads = () => isAllInOne() ? (mgInOne() ? ["alk"] : ["alk","mg"]) : ["alk","ca","mg"];
   const SALTS = {
-    af35: { label:"Aquaforest Reef Salt, mixed to 35 ppt (1.026)", alk:8.0, ca:450, mg:1390, k:null, sg:35, gpg:157, range:"Published: KH 7.7–8.3 dKH, Ca 440–460, Mg 1360–1420 at 35 ppt." },
-    af33: { label:"Aquaforest Reef Salt, mixed to 33 ppt (1.025)", alk:7.8, ca:425, mg:1340, k:390, sg:33, gpg:148, range:"Published: KH 7.4–8.2 dKH, Ca 410–440, Mg 1300–1380, K 380–400 at 33 ppt. Mixing: about 390 g per 10 L." },
+    af35: { label:"Aquaforest Reef Salt, mixed to 35 ppt (1.026)", alk:8.0, ca:450, mg:1390, k:null, ranges:{ alk:[7.7,8.3], ca:[440,460], mg:[1360,1420] }, sg:35, gpg:157, range:"Published: KH 7.7–8.3 dKH, Ca 440–460, Mg 1360–1420 at 35 ppt." },
+    af33: { label:"Aquaforest Reef Salt, mixed to 33 ppt (1.025)", alk:7.8, ca:425, mg:1340, k:390, ranges:{ alk:[7.4,8.2], ca:[410,440], mg:[1300,1380] }, sg:33, gpg:148, range:"Published: KH 7.4–8.2 dKH, Ca 410–440, Mg 1300–1380, K 380–400 at 33 ppt. Mixing: about 390 g per 10 L." },
     custom: { label:"Custom / batch values", range:"Enter the values for your salt or batch." }
   };
   let dosingDoc = null, maintDirty = {}, profile = null;
@@ -2045,7 +2128,9 @@ details.backup summary { cursor: pointer; list-style: revert; }
   const VUNIT = k => k === "rock" ? "wt" : k === "other" ? "vol" : "len";
   function setVol(v){ VKEYS.forEach(k => setU("v-" + k, VUNIT(k), v[k] ?? VOL_DEF[k])); }
   function getVol(){ const o = {}; VKEYS.forEach(k => { o[k] = getU("v-" + k, VUNIT(k)) ?? 0; }); return o; }
+  let VOL_OVERRIDE = 0; // total water volume from the maker (all-in-one tanks), set in the tank profile
   function volume(){
+    if (VOL_OVERRIDE > 0) return { gross: VOL_OVERRIDE, sand: 0, rock: 0, sump: 0, other: 0, net: VOL_OVERRIDE, override: true };
     const v = getVol();
     const gross = v.dl * v.dw * v.dd / GAL_IN3, sand = v.dl * v.dw * v.sand / GAL_IN3 * SAND_SOLID, rock = v.rock * ROCK_GAL_PER_LB;
     const sump = v.sl * v.sw * v.sd / GAL_IN3; const net = gross - sand - rock + sump + v.other;
@@ -2076,6 +2161,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       if (!V) { out.innerHTML = '<span class="hint">Set your system volume first</span>'; return; }
       if (!pot) { out.innerHTML = '<span class="hint">Set the product strength in Tank profile</span>'; return; }
       if (cur == null || tgt == null) { out.innerHTML = '<span class="hint">Enter current value</span>'; return; }
+      const jf = !$("c-" + k).dataset.dirty && jumpFor(k); if (jf) { out.innerHTML = '<span class="hint"><b>Retest first.</b> The last reading jumped from ' + jf.from + ' to ' + jf.to + '; confirm it before dosing.</span>'; return; }
       const delta = tgt - cur;
       if (delta <= 0) { out.innerHTML = delta === 0 ? "At target" : '<span class="hint">Above target by ' + Math.abs(delta).toFixed(d.dp) + ' ' + d.unit + '. No dose; let consumption bring it down.</span>'; return; }
       const ml = delta * V / pot, days = Math.max(1, Math.ceil(delta / d.maxDay - 1e-9));
@@ -3027,6 +3113,17 @@ details.backup summary { cursor: pointer; list-style: revert; }
       '<datalist id="pf-' + k + '-list"></datalist></div>' +
       '<div class="field"><label for="pf-' + k + '-pot"><b>Strength</b> ' + d.unit + ' per mL (or g) <span data-ul="pot">per gal</span></label><input id="pf-' + k + '-pot" type="number" step="any" min="0"></div></div>'; }).join("") +
     '<p class="hint">Strength is how much 1 mL (or 1 g of a powder) raises 1 US gallon, or 100 L with metric units. Picking a listed product fills it in (label means the maker states it; calc means it is worked out from the maker\'s stated concentration or mix). For anything else, enter the label strength. Picking Tropic Marin All-For-Reef for alkalinity sets calcium and magnesium to it too; picking Carbocalcium or kalkwasser sets calcium to it (magnesium stays a separate product). Seachem Reef Builder is a powder, so its doses show in grams.</p>';
+  // Standard glass tanks, outside L × W × H in inches (common retail sizes). Inside is estimated at 3/8 in glass each side
+  // and water depth about 1.75 in below the rim; measuring your own tank is always more accurate.
+  const TANK_PRESETS = [["10","10 gallon",20,10,12],["20h","20 gallon high",24,12,16],["20l","20 gallon long",30,12,12],["29","29 gallon",30,12,18],["40b","40 gallon breeder",36,18,16],
+    ["55","55 gallon",48,13,21],["75","75 gallon",48,18,21],["90","90 gallon",48,18,24],["120","120 gallon (4 ft wide)",48,24,24],["125","125 gallon",72,18,21],["180","180 gallon",72,24,25]];
+  $("pf-preset").innerHTML = '<option value="">Custom: I measured it</option>' + TANK_PRESETS.map(t => '<option value="' + t[0] + '">' + esc(t[1]) + ' (' + t[2] + ' × ' + t[3] + ' × ' + t[4] + ' in outside)</option>').join("") + '<option value="aio">All-in-one or other: I know the total volume</option>';
+  function syncPresetUI(){ const v = $("pf-preset").value, aio = v === "aio";
+    $("pf-vol-wrap").hidden = !aio; $("pf-dims").hidden = aio;
+    $("pf-preset-note").textContent = aio ? "Use the total system water volume the maker lists (display plus built-in filter area). Dosing and water change math will use it directly." : v ? "Dimensions filled in from the standard outside size. Actual water depth varies with sand and how full you keep it; measure and adjust for the most accurate dosing." : ""; }
+  $("pf-preset").addEventListener("change", () => { const t = TANK_PRESETS.find(x => x[0] === $("pf-preset").value);
+    if (t) withUnits(pfUnitsShown, () => { setU("pf-dl", "len", t[2] - 0.75); setU("pf-dw", "len", t[3] - 0.75); setU("pf-dd", "len", t[4] - 1.75); if (!$("pf-display").value) $("pf-display").value = t[1]; });
+    syncPresetUI(); });
   function renderPfDatalists(){
     ["alk","ca","mg"].forEach(k => { const d = DOSE[k];
       $("pf-" + k + "-list").innerHTML = PRODUCTS[k].map(x => '<option value="' + esc(x.name) + '" label="' + esc(+toDisp("pot", x.potency).toPrecision(3) + " " + d.unit + " per " + (x.du || "mL") + " " + uLabel("pot") + " (" + x.basis + ")") + '">').join(""); });
@@ -3052,7 +3149,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
 
   function fillProfileForm(p){
     $("pf-name").value = p.name || ""; $("pf-display").value = p.display || "";
-    $("pf-started").value = p.started || ""; $("pf-tips").checked = p.tips !== false;
+    $("pf-started").value = p.started || ""; $("pf-tips").checked = p.tips !== false; $("pf-type").value = TANK_TYPES[p.tankType] ? p.tankType : "";
+    $("pf-preset").value = p.volOverride > 0 ? "aio" : (TANK_PRESETS.some(t => t[0] === p.preset) ? p.preset : ""); setU("pf-vol", "vol", p.volOverride > 0 ? p.volOverride : ""); syncPresetUI();
     ["dl","dw","dd","sand","rock","sl","sw","sd"].forEach(k => setU("pf-" + k, k === "rock" ? "wt" : "len", p[k] ?? ""));
     $("pf-hassump").checked = p.hasSump !== false; $("pf-sump").hidden = p.hasSump === false; $("pf-sumpmodel").value = p.sumpModel || "";
     $("pf-salt").value = SALTS[p.salt] ? p.salt : "af35";
@@ -3068,7 +3166,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
       hasSump, sumpModel: hasSump ? $("pf-sumpmodel").value.trim() : "", sl: hasSump ? pfU("pf-sl", "len", 0) : 0, sw: hasSump ? pfU("pf-sw", "len", 0) : 0, sd: hasSump ? pfU("pf-sd", "len", 0) : 0,
       salt: $("pf-salt").value, alk: prod("alk"), ca: prod("ca"), mg: prod("mg"),
       light: $("pf-light").value.trim(), lightCount: Math.max(1, Math.round(pfNum("pf-lightcount", 1))), units: $("pf-units").value === "metric" ? "metric" : "us", salUnit: $("pf-salu").value === "sg" ? "sg" : "ppt",
-      started: $("pf-started").value || "", tips: $("pf-tips").checked };
+      started: $("pf-started").value || "", tips: $("pf-tips").checked, tankType: $("pf-type").value || "",
+      preset: $("pf-preset").value === "aio" ? "" : $("pf-preset").value, volOverride: $("pf-preset").value === "aio" ? (pfU("pf-vol", "vol", 0) || 0) : 0 };
   }
   function applyUnits(u, su){
     u = u === "metric" ? "metric" : "us"; su = su === "sg" ? "sg" : "ppt";
@@ -3081,13 +3180,16 @@ details.backup summary { cursor: pointer; list-style: revert; }
   }
   function applyProfile(p){
     profile = p;
+    VOL_OVERRIDE = p && p.volOverride > 0 ? p.volOverride : 0;
     if (p) applyUnits(p.units, p.salUnit);
+    $("vol-cols").hidden = VOL_OVERRIDE > 0;
     const q = p || PROFILE_BLANK;
     if (p) {
       $("hdr-title").textContent = p.name || "My Reef"; document.title = (p.name || "My Reef") + " · Holdfast";
       $("hdr-sub").textContent = "Holdfast · Reef log & dosing";
       const L = v => +toDisp("len", v).toFixed(isMetric() ? 1 : 2), lu = uLabel("len");
-      $("vol-hint").textContent = (p.display || "Display") + " (inside " + L(p.dl) + " × " + L(p.dw) + " " + lu + ", " + L(p.dd) + " " + lu + " of water)" +
+      if (p.volOverride > 0) $("vol-hint").textContent = (p.display || "Your tank") + ": " + fmtVol(p.volOverride) + " total water volume from the maker, set in Tank profile. Everything below uses it directly.";
+      else $("vol-hint").textContent = (p.display || "Display") + " (inside " + L(p.dl) + " × " + L(p.dw) + " " + lu + ", " + L(p.dd) + " " + lu + " of water)" +
         (p.hasSump ? " plus " + (p.sumpModel || "sump") + " (" + L(p.sl) + " × " + L(p.sw) + " " + lu + " at " + L(p.sd) + " " + lu + " running depth)" : "") + ", from your tank profile. Measure your actual water depths and adjust; everything below uses the net figure.";
       $("spec-fixture").textContent = (p.light || "Not set") + (p.light ? " ×" + (p.lightCount || 1) : "");
       $("spec-note").hidden = !p.light || /k7/i.test(p.light);
@@ -3100,7 +3202,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     });
     applyDosingDoc(dosingDoc);
     if (p) { initLlForm(); renderLightLog(); }
-    renderWcLog();
+    renderWcLog(); renderTargets(); if (!$("tab-today").hidden) renderToday();
   }
   function openProfile(first){
     pfUnitsShown = UNITS; fillProfileForm({ ...(profile || PROFILE_BLANK), units: UNITS }); pfLabels();
@@ -3114,7 +3216,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   $("pf-form").addEventListener("submit", async ev => {
     ev.preventDefault();
     const p = withUnits(pfUnitsShown, readProfileForm);
-    if (!(p.dl > 0 && p.dw > 0 && p.dd > 0)) { setStatus("pf-status", "Enter the display's inside length, width and water depth.", true); return; }
+    if (!(p.volOverride > 0) && !(p.dl > 0 && p.dw > 0 && p.dd > 0)) { setStatus("pf-status", $("pf-preset").value === "aio" ? "Enter the total water volume." : "Pick a tank size, or enter the display's inside length, width and water depth.", true); return; }
     if (!db) { applyProfile(p); $("pf").hidden = true; return; }
     $("pf-save").disabled = true;
     try {
@@ -3126,6 +3228,241 @@ details.backup summary { cursor: pointer; list-style: revert; }
     } catch (e) { setStatus("pf-status", "Couldn't save the profile (" + (e && e.code || "error") + ").", true); }
     $("pf-save").disabled = false;
   });
+
+  // ---------- Today: plain-language home screen ----------
+  // Readings and tank history in stored units (ppt, °F), whatever the display units are.
+  const canonTests = () => testsRaw.map(t => ({ ...t, sal: salPpt(t.sal) })).sort((a, b) => a.ts - b.ts);
+  const hasVal = (t, k) => t[k] != null && t[k] !== "";
+  const tempDelta = dF => isMetric() ? (dF * 5 / 9).toFixed(1) + " °C" : dF.toFixed(1) + " °F";
+
+  // Retest check: a jump bigger than a tank normally moves between two tests is more often a test error than a real change.
+  const JUMP = { alk: 1.5, ca: 50, mg: 150, sal: 1.5, temp: 4, ph: 0.5, no3: 15, po4: 0.15, nh3: 0.25, no2: 0.25 };
+  function jumpFlags(){
+    const out = [], ct = canonTests();
+    PARAMS.forEach(p => {
+      const pts = ct.filter(t => hasVal(t, p.key)); if (pts.length < 2) return;
+      const b = pts[pts.length - 1], a = pts[pts.length - 2], days = (b.ts - a.ts) / DAY;
+      if (days > 45 || Date.now() - b.ts > 21 * DAY) return;
+      const d = b[p.key] - a[p.key]; if (Math.abs(d) <= JUMP[p.key]) return;
+      const show = v => p.ut ? +toDisp(p.ut, v).toFixed(p.dp) : +(+v).toFixed(p.dp);
+      out.push({ k: p.key, p, from: show(a[p.key]), to: show(b[p.key]), days: Math.max(1, Math.round(days)), ts: b.ts, up: d > 0 });
+    });
+    return out;
+  }
+  const jumpFor = k => jumpFlags().find(j => j.k === k);
+
+  // Status of the latest reading against the user's own targets: Good, Watch (a little outside), Act (well outside)
+  function readingStatus(p, v){
+    const t = targets[p.key]; if (v == null || !t) return "none";
+    if (v >= t.lo && v <= t.hi) return "good";
+    const w = Math.max(t.hi - t.lo, 1e-9), dist = v < t.lo ? (t.lo - v) / w : (v - t.hi) / w;
+    return dist <= 0.5 ? "watch" : "act";
+  }
+  const STATUS_WORD = { good: "Good", watch: "Keep an eye on it", act: "Needs attention", none: "No reading" };
+
+  // Tank age: the set-up month in the profile, or the earliest thing logged.
+  function tankStart(){
+    if (profile && profile.started) return toTs(profile.started + "-01", "12:00");
+    const firsts = [testsRaw, wcLog, livestock.map(l => ({ ts: l.added ? toTs(l.added) : null }))].map(a => Math.min(...a.map(x => x.ts).filter(Boolean))).filter(isFinite);
+    return firsts.length ? Math.min(...firsts) : null;
+  }
+  const tankAgeDays = () => { const s0 = tankStart(); return s0 ? Math.max(0, Math.floor((Date.now() - s0) / DAY)) : null; };
+
+  // ---------- cycling ----------
+  function cycleState(){
+    const ct = canonTests(), nh = ct.filter(t => hasVal(t, "nh3")), no2 = ct.filter(t => hasVal(t, "no2")), no3 = ct.filter(t => hasVal(t, "no3"));
+    const age = tankAgeDays(), fishIn = livestock.some(l => l.type === "fish" && (l.status || "alive") === "alive");
+    if (!nh.length && !no2.length) {
+      if (age != null && age >= 60 && fishIn) return { stage: "assumed", done: true, text: "No ammonia or nitrite tests logged, but the tank has been running " + nDays(age) + " with fish, so it is very likely cycled. Test both once to be sure." };
+      return { stage: "none", done: false, text: "No ammonia or nitrite tests logged yet. A tank only cycles if it has an ammonia source (fish food, bottled ammonia or live rock). Test both every 2 to 3 days and log them here; the app tracks the cycle for you, and test both before adding fish." };
+    }
+    const lastN = nh[nh.length - 1], lastNi = no2[no2.length - 1];
+    const zeroN = t => t.nh3 <= 0.1, zeroNi = t => t.no2 <= 0.1;
+    const nhOk = nh.length >= 2 && nh.slice(-2).every(zeroN) && (nh[nh.length - 1].ts - nh[nh.length - 2].ts) >= 0.9 * DAY;
+    const niOk = no2.length >= 2 && no2.slice(-2).every(zeroNi) && (no2[no2.length - 1].ts - no2[no2.length - 2].ts) >= 0.9 * DAY;
+    const nitrateSeen = no3.some(t => t.no3 > 0), rose = nh.some(t => t.nh3 > 0.1) || no2.some(t => t.no2 > 0.1), mature = fishIn || (age != null && age >= 60);
+    if (mature && lastN && lastN.nh3 > 0.1) return { stage: "ammonia", done: false, alarm: true, text: "Ammonia is showing (" + lastN.nh3 + " ppm)" + (fishIn ? " with fish in the tank" : "") + ". Look for anything dead, feed very lightly, do a water change, and test daily until it reads zero." };
+    if (mature && lastNi && lastNi.no2 > 0.1) return { stage: "nitrite", done: false, alarm: true, text: "Nitrite is showing (" + lastNi.no2 + " ppm). Feed lightly and test every day or two until it reads zero." };
+    if (nhOk && niOk && nitrateSeen && (rose || fishIn)) return { stage: "done", done: true, text: "Ammonia and nitrite read zero on two tests a day or more apart, and nitrate has shown up. If you cycled without fish, the real test is to add about 2 ppm of ammonia and check that ammonia and nitrite are both back to zero within 24 hours. Once they are, the cycle is done." };
+    if (lastNi && lastNi.no2 > 0.1) return { stage: "nitrite", done: false, text: "Stage 2 of 3: nitrite is present (" + lastNi.no2 + " ppm). The second group of bacteria is growing. Keep testing every 2 to 3 days; this stage often takes the longest." };
+    if (lastN && lastN.nh3 > 0.1) return { stage: "ammonia", done: false, text: "Stage 1 of 3: ammonia is present (" + lastN.nh3 + " ppm) and bacteria are starting to grow. Keep a small ammonia source going and test every 2 to 3 days." };
+    if (!rose && !fishIn) return { stage: "none", done: false, text: "Ammonia and nitrite read zero, but they haven't risen yet, so the cycle hasn't started. A tank only cycles with an ammonia source: add a small amount of fish food or bottled ammonia (about 2 ppm), then test every 2 to 3 days." };
+    return { stage: "almost", done: false, text: "Stage 3 of 3: ammonia and nitrite are near zero. To call the cycle done the app looks for two zero readings a day or more apart" + (nitrateSeen ? "" : ", plus some nitrate showing up") + "." };
+  }
+
+  // ---------- readiness ladder: first fish, soft corals, LPS, SPS ----------
+  // Common hobby guidelines (not guarantees): cycle first; softies after roughly 2 months; LPS after about 3 months with
+  // steady alkalinity; SPS after about 6 months with alkalinity held within about 0.5 dKH and low but not zero nutrients.
+  function inWindow(ct, k, days){ const cut = Date.now() - days * DAY; return ct.filter(t => hasVal(t, k) && t.ts >= cut); }
+  function latest(ct, k, days){ const w = inWindow(ct, k, days || 30); return w.length ? w[w.length - 1][k] : null; }
+  function rangeOf(ct, k, days){ const w = inWindow(ct, k, days).map(t => t[k]); return w.length ? { n: w.length, min: Math.min(...w), max: Math.max(...w) } : { n: 0 }; }
+  function maxDaily(ct, k, days){ const w = inWindow(ct, k, days); let m = 0; for (let i = 1; i < w.length; i++) { const dd = Math.max(1, (w[i].ts - w[i - 1].ts) / DAY); m = Math.max(m, Math.abs(w[i][k] - w[i - 1][k]) / dd); } return w.length > 1 ? m : null; }
+  const heldCoral = (groups, days) => livestock.some(l => l.type === "coral" && (l.status || "alive") === "alive" && groups.test(l.kind || "") && l.added && Date.now() - toTs(l.added) >= days * DAY);
+  function readiness(){
+    const ct = canonTests(), age = tankAgeDays(), cyc = cycleState(), flags = jumpFlags();
+    const c = (ok, text) => ({ ok, text });
+    const need = (what) => c(null, "Need a " + what + " reading in the last 30 days");
+    const within = (k, lo, hi, label, unit) => { const v = latest(ct, k, 30); return v == null ? need(label) : c(v >= lo && v <= hi, label + " " + (+v.toFixed(k === "po4" ? 2 : k === "alk" ? 1 : 0)) + " " + unit + (v >= lo && v <= hi ? " (inside " : " (aim for ") + lo + "–" + hi + ")"); };
+    const ageAt = (d, label) => age == null ? c(null, "Set the month the tank was set up in Tank profile") : c(age >= d, "Tank age " + nDays(age) + (age >= d ? "" : "; " + label + " usually wait about " + nDays(d)));
+    const sal = rangeOf(ct, "sal", 21), temp = rangeOf(ct, "temp", 21);
+    const salSteady = lim => sal.n < 2 ? c(null, "Log salinity at least twice over the next couple of weeks") : c(sal.max - sal.min <= lim, "Salinity moved " + (sal.max - sal.min).toFixed(1) + " ppt over 3 weeks (keep within about " + lim + " ppt; one mark on a refractometer is about 1.3)");
+    const tempSteady = lim => temp.n < 2 ? c(null, "Log temperature at least twice over the next couple of weeks") : c(temp.max - temp.min <= lim, "Temperature moved " + tempDelta(temp.max - temp.min) + " over 3 weeks (keep within about " + tempDelta(lim) + ")");
+    const noFlags = c(!flags.length, flags.length ? "Retest first: " + flags.map(f => f.p.name.toLowerCase()).join(", ") + " jumped since the last test" : "No suspicious jumps in recent tests");
+    const nh = latest(ct, "nh3", 21), ni = latest(ct, "no2", 21);
+    const toxic = (nh != null && nh > 0.1) || (ni != null && ni > 0.1) ? c(false, "Ammonia or nitrite is above zero; wait until both read zero") : null;
+    const alkR = rangeOf(ct, "alk", 21), alkMax = maxDaily(ct, "alk", 21);
+    const levels = [
+      { key: "fish", label: "First fish", items: [c(cyc.done ? true : cyc.stage === "none" ? null : false, cyc.done ? (cyc.stage === "assumed" ? "Very likely cycled (not tested)" : "Cycle complete") : "Cycle not finished yet"), toxic, salSteady(2), tempSteady(3)].filter(Boolean),
+        tip: "Add one or two hardy fish first, then wait 2 to 4 weeks between additions so the bacteria can keep up. Quarantine new fish if you can." },
+      { key: "soft", label: "First soft corals (zoanthids, mushrooms, leathers)", items: [c(cyc.done, cyc.done ? "Cycle complete" : "Cycle not finished yet"), toxic, ageAt(56, "soft corals"), within("no3", 0.5, 25, "Nitrate", "ppm"), within("po4", 0.01, 0.2, "Phosphate", "ppm"), within("alk", 7, 11, "Alkalinity", "dKH"), salSteady(2), noFlags].filter(Boolean),
+        tip: "A little nitrate and phosphate is coral food, so zero is not the goal. Place new soft corals low and in moderate flow, start with lower light if you can, and let them settle for a week before moving them." },
+      { key: "lps", label: "LPS corals (hammers, torches, acans)", items: [toxic, ageAt(90, "LPS"), salSteady(2), tempSteady(3), alkR.n < 3 ? c(null, "Log alkalinity at least 3 times over 3 weeks") : c(alkR.max - alkR.min <= 1.0, "Alkalinity moved " + (alkR.max - alkR.min).toFixed(1) + " dKH over 3 weeks (keep within about 1)"), within("ca", 380, 480, "Calcium", "ppm"), within("mg", 1250, 1450, "Magnesium", "ppm"), within("no3", 2, 20, "Nitrate", "ppm"), within("po4", 0.02, 0.15, "Phosphate", "ppm"), noFlags,
+          c(heldCoral(/soft|zoa|mush|other/i, 30) ? true : null, heldCoral(/soft|zoa|mush|other/i, 30) ? "Soft corals doing well for a month or more" : "Suggested: keep a few soft corals healthy for a month first")].filter(Boolean),
+        tip: "LPS like steady alkalinity more than a perfect number. Give them room; many have sweeper tentacles that sting neighbors at night." },
+      { key: "sps", label: "SPS corals (acropora, montipora)", items: [ageAt(180, "SPS"), alkR.n < 5 ? c(null, "Log alkalinity at least 5 times over 3 weeks") : c(alkMax != null && alkMax <= 0.5 && alkR.max - alkR.min <= 0.8, "Alkalinity changed up to " + (alkMax || 0).toFixed(2) + " dKH a day and " + (alkR.max - alkR.min).toFixed(1) + " dKH over 3 weeks (keep within about 0.5 a day and 0.8 over 3 weeks)"),
+          within("ca", 400, 470, "Calcium", "ppm"), within("mg", 1300, 1450, "Magnesium", "ppm"), within("no3", 1, 15, "Nitrate", "ppm"), within("po4", 0.01, 0.1, "Phosphate", "ppm"), salSteady(1.4), tempSteady(2), noFlags,
+          c(heldCoral(/lps/i, 60) ? true : null, heldCoral(/lps/i, 60) ? "LPS corals doing well for 2 months or more" : "Suggested: succeed with LPS for a couple of months first")].filter(Boolean),
+        tip: "Start with hardier SPS like montipora and pocillopora before acropora. Test alkalinity several times a week, and consider a doser for steady daily dosing." }
+    ];
+    levels.forEach(L => { const req = L.items.filter(i => !/^Suggested/.test(i.text));
+      L.state = req.some(i => i.ok === false) ? "notyet" : req.some(i => i.ok == null) ? "data" : "ready"; });
+    return { levels, cyc, age };
+  }
+
+  // ---------- "What does this mean?" ----------
+  const HELP = {
+    alk: { what: "Alkalinity is the carbonate corals use to build their skeletons, and it keeps pH steady. Steady matters more than the exact number.",
+      low: ["Corals and coralline algae use it up, water changes may not be keeping up, or the salt mixes low.", "Retest to confirm. Raise it slowly, about 1 dKH a day at most, then find a daily dose that holds it.", "Don't jump it back up all at once. A big swing stresses corals more than a steady, slightly low number."],
+      high: ["Too much dosing, a salt batch mixing high, or a test error.", "Retest. If it's real, pause or cut back alkalinity dosing and let the tank use it down over a few days.", "Don't add acids or other chemicals to force it down."] },
+    ca: { what: "Calcium works with alkalinity to build coral skeletons.",
+      low: ["Coral growth using it up, or a two-part dose out of balance with your alkalinity.", "Raise it gradually, about 20 ppm a day or less, and check magnesium: low magnesium makes calcium hard to hold.", "Don't fix calcium alone without looking at alkalinity; they work together."],
+      high: ["Too much calcium dosing, a salt mixing high, or a test error.", "Retest. If it's real, stop calcium dosing until it drifts back into range.", "Don't add other products to balance it out."] },
+    mg: { what: "Magnesium keeps calcium and alkalinity from falling out of the water as a white crust.",
+      low: ["Used slowly by corals and coralline algae; salts vary.", "Raise it gradually, up to about 100 ppm a day, with a magnesium supplement.", "If calcium and alkalinity won't hold steady, fix magnesium first. Keep your normal alkalinity dosing going while you do."],
+      high: ["Usually extra magnesium dosing.", "Stop magnesium dosing; use and water changes bring it down. A little high is rarely a problem.", "Don't worry about small overshoots."] },
+    no3: { what: "Nitrate comes from fish food and waste. Corals need a little; too much feeds algae.",
+      low: ["Light feeding, strong nutrient removal (carbon dosing, big water changes, algae reactor), or an algae or bacteria bloom using it up.", "Feed a little more or ease off nutrient removal, then give it a week. If that isn't enough, a nitrate supplement can raise it slowly.", "Don't chase zero. Very low nutrients can starve corals and can favor dinoflagellates."],
+      high: ["Overfeeding, more fish than the filtration can handle, something dead, or not enough water changes.", "Feed a bit less, keep up water changes, clean filter socks and the skimmer, and look for anything dead. Bring it down over weeks.", "Don't crash it to zero quickly; big nutrient swings can set off algae."] },
+    po4: { what: "Phosphate also comes from food and waste. A small amount is normal and healthy.",
+      low: ["A phosphate remover (GFO, lanthanum), carbon dosing, an algae reactor or refugium, or very light feeding.", "Ease off the phosphate remover and feed a little more. Corals can pale at zero.", "Don't run phosphate removers without testing often."],
+      high: ["Overfeeding, rock releasing stored phosphate, or not enough export.", "Feed less, keep up water changes, and add a phosphate remover gently while testing every few days.", "Don't drop it fast; lower it over a couple of weeks."] },
+    sal: { what: "Salinity is how salty the water is. Most reefs run about 35 ppt (1.026 SG).",
+      low: ["Topping off with too much fresh water, or a refractometer that needs calibration.", "Calibrate with 35 ppt fluid first. Then raise it slowly, about 1 ppt a day, by topping off with saltwater.", "Don't correct it all at once."],
+      high: ["Evaporation topped off with saltwater instead of fresh RO/DI, or the auto top-off not working.", "Check the auto top-off and top off with fresh RO/DI water. Lower it about 1 ppt a day.", "Don't dump in a lot of fresh water at once."] },
+    temp: { what: "Temperature should stay steady; the daily swing matters as much as the number.",
+      low: ["A failing or undersized heater, or a cold room.", "Check the heater. A separate heater controller adds a safety cutoff. Raise it slowly.", "Don't change it more than about 2 °F (1 °C) a day."],
+      high: ["Summer heat, lights or pumps adding heat, or a heater stuck on.", "Blow a fan across the water surface, shorten the light period, and use a heater controller so a stuck heater can't cook the tank. Warm water holds less oxygen, so add surface movement or an air stone.", "Don't cool it quickly with ice or large cold water changes."] },
+    ph: { what: "pH moves through the day: lower at night, higher with the lights on. Test at the same time each day.",
+      low: ["Carbon dioxide in the house air, a test taken first thing in the morning, or low alkalinity.", "Test at the same time of day, check alkalinity, and improve air exchange (skimmer air from outside or a CO2 scrubber).", "Don't use pH buffer products to chase the number. Most are really alkalinity supplements and can push alkalinity too high. A pH of about 7.8 to 8.4 is fine for most reefs."],
+      high: ["Kalkwasser or other high-pH additions, or testing at the end of the light period.", "Slow down kalkwasser or high-pH additions and test at a consistent time.", "A high afternoon reading up to about 8.4 is normal. Above about 8.6, stop kalkwasser right away and retest."] },
+    nh3: { what: "Ammonia comes from waste and anything decaying, and it's toxic. It should read zero in a cycled tank.",
+      high: ["The tank is still cycling, overfeeding, something dead, or a filter problem.", "Find and remove anything dead, feed lightly, do a water change, and test daily until it's back to zero. If only a hobby kit shows a trace, retest; some kits and water conditioners can throw readings off.", "Don't add livestock until ammonia reads zero."] },
+    no2: { what: "Nitrite is the middle step of the cycle. It's much less toxic in salt water than in freshwater, but it should still read zero in a cycled tank.",
+      high: ["The tank is still cycling, or the bacteria were set back (medication, cleaning, a big die-off).", "Feed lightly and test every day or two until it's back to zero.", "Don't add livestock until nitrite reads zero."] }
+  };
+  const PROBLEMS = [
+    ["Brown dust on the sand and glass", "Usually diatoms, very common in the first 1 to 3 months. They fade on their own as the tank matures. Keep up water changes, make sure your RO/DI reads 0 TDS, and add a snail cleanup crew once the tank is cycled. This is a normal phase, not a problem to fight."],
+    ["Red or purple slime on the sand or rock", "Usually cyanobacteria. Common causes are extra nutrients, dead spots with low flow, and long light periods. Improve flow where it grows, siphon it out during water changes, check nitrate and phosphate, and feed a little less. Fix the cause before reaching for a treatment."],
+    ["Green hair algae", "Fed by extra nutrients, especially phosphate. Pull it out by hand, feed a little less, test phosphate, and add algae-eating snails once the tank is cycled. It takes weeks to win, so be patient."],
+    ["Brown snotty strings or bubbles", "Possibly dinoflagellates, which often show up when nitrate and phosphate sit near zero. Dinos often fade at night and come back with the lights, while cyano usually stays put. If you can, confirm with a microscope, or post photos to your local club or forum. Don't strip nutrients further; raise nitrate and phosphate slowly into a normal range."],
+    ["Cloudy water", "In a new tank this is often a bacterial bloom that clears in a few days. A white cloud right after dosing can mean calcium and alkalinity came out of solution; dose slower and in different spots. Don't add more chemicals to clear it."],
+    ["A coral won't open", "New corals can take a few days. Look for a recent swing in alkalinity, salinity or temperature, a lighting change, pests, or a fish picking at it. Keep things steady and change one thing at a time."],
+    ["A fish is scratching or has white spots", "It could be ich (white salt-like grains) or velvet (a fine gold dust with fast breathing), which can kill within days. If spots spread or breathing speeds up, act within a day. Treat fish in a separate hospital tank, never the display: copper and many fish medicines kill corals and invertebrates. The parasite also lives on in the display, so it needs to stay fish-free for about 11 weeks. Occasional scratching alone is common and not always a sign of disease. Quarantining new fish is the best prevention."]
+  ];
+  const GOLDEN = ["Go slow: most reef losses come from changing things too fast.", "Change one thing at a time, then watch for a few days.", "Test before you act, and retest a surprising number.", "Feed lightly; you can always feed more tomorrow.", "Add livestock gradually, and quarantine fish if you can."];
+  function helpHtml(p, v){
+    const h = HELP[p.key]; if (!h) return "";
+    const st = readingStatus(p, v), t = targets[p.key], side = st === "good" || st === "none" ? null : v < t.lo ? "low" : "high", g = side && h[side];
+    return '<div class="td-help"><p>' + esc(h.what) + '</p>' + (g ? '<p><b>Why it may be ' + side + ':</b> ' + esc(g[0]) + '</p><p><b>What to do:</b> ' + esc(g[1]) + '</p><p><b>Avoid:</b> ' + esc(g[2]) + '</p>' : st === "good" ? '<p>Inside your range. Keep doing what you are doing, and test on your usual schedule.</p>' : '') + '</div>';
+  }
+
+  // ---------- Today rendering ----------
+  function renderToday(){
+    const host = $("td-root"); if (!host) return;
+    const rd = readiness(), flags = jumpFlags(), age = rd.age;
+    const real = testsRaw.filter(t => PARAMS.some(p => hasVal(t, p.key)));
+    let reminders = []; try { reminders = allReminders().filter(r => r.due.d <= 0); } catch (e) {}
+    let supply = []; try { supply = supplyCheck().filter(a => a.state === "need" || a.state === "notneeded" || (a.state === "salt" && !tipsOn())); } catch (e) {}
+    const tt = profile && TANK_TYPES[profile.tankType];
+    // next step
+    let next;
+    if (!profile) next = ["Set up your tank", "Enter your tank size and a few details so the dosing and water change math fits your system.", "btn-profile"];
+    else if (!real.length) next = ["Log your first test", "Even one test gives the app a starting point. Log what you have tested; leave the rest blank.", "go-test"];
+    else if (flags.length) next = ["Retest " + flags.map(f => f.p.name.toLowerCase()).join(" and "), "A reading jumped more than a tank usually changes between tests. Retest before changing any dosing.", "go-test"];
+    else if (rd.cyc.alarm) next = [rd.cyc.stage === "ammonia" ? "Ammonia is showing" : "Nitrite is showing", rd.cyc.text, "go-test"];
+    else if (!rd.cyc.done && rd.cyc.stage !== "none") next = ["Keep cycling", rd.cyc.text, "go-test"];
+    else if (rd.cyc.stage === "none" && (age == null || age < 90) && !livestock.some(l => l.type === "fish" && (l.status || "alive") === "alive")) next = ["Start your tank's cycle", rd.cyc.text, "go-test"];
+    else if (supply.some(a => a.state === "need")) next = ["Start dosing " + supply.filter(a => a.state === "need").map(a => DOSE[a.k].name.toLowerCase()).join(" and "), "Water changes no longer keep up with what your tank uses. The Dosing tab has the daily amount.", "go-dosing"];
+    else if (reminders.length) next = [reminders.length + (reminders.length === 1 ? " task due today" : " tasks due today"), reminders.slice(0, 3).map(r => r.name).join(", ") + (reminders.length > 3 ? " and more" : "") + ".", "go-maint"];
+    else next = ["Nothing needs doing today", "Your tank is on track. Keep feeding lightly and testing on schedule.", ""];
+    const btnFor = id => id === "btn-profile" ? '<button type="button" class="primary" data-td="profile">Set up my tank</button>' : id === "go-test" ? '<button type="button" class="primary" data-td="test">Log a test</button>' : id === "go-dosing" ? '<button type="button" class="primary" data-td="dosing">Open dosing</button>' : id === "go-maint" ? '<button type="button" class="primary" data-td="maint">Open schedule</button>' : "";
+    // readings
+    const ct = canonTests();
+    const rows = PARAMS.map(p => { const pts = ct.filter(t => hasVal(t, p.key)); if (!pts.length) return p.opt ? "" : '<details class="td-read none"><summary><span class="nm">' + p.name + '</span><span class="v">—</span><span class="st">Not tested yet</span></summary>' + helpHtml(p, null) + '</details>';
+      const last = pts[pts.length - 1], raw = last[p.key], v = p.ut ? +toDisp(p.ut, raw).toFixed(p.dp) : raw, st = readingStatus(p, v), stale = Date.now() - last.ts > 14 * DAY, jf = flags.find(f => f.k === p.key);
+      return '<details class="td-read ' + (jf ? "act" : st) + '"><summary><span class="nm">' + p.name + '</span><span class="v">' + fmt(p, v) + ' <small>' + p.unit + '</small></span><span class="st">' + (jf ? "Retest first" : STATUS_WORD[st]) + (stale ? ' · test due' : '') + '</span><span class="dt">' + dshort(last.ts) + '</span></summary>' +
+        (jf ? '<p class="callout warn">Jumped from ' + jf.from + ' to ' + jf.to + ' ' + p.unit + ' in ' + nDays(jf.days) + '. That is more than a tank usually changes, so retest before acting. If the retest agrees, look for a cause such as a dosing change or a new salt batch.</p>' : '') + helpHtml(p, v) + '</details>'; }).join("");
+    // readiness
+    const RD = { ready: ["Ready", "good"], data: ["Need more tests", "none"], notyet: ["Not yet", "watch"] };
+    const firstOpen = rd.levels.find(L => L.state !== "ready");
+    const ladder = rd.levels.map(L => '<details class="td-lvl ' + RD[L.state][1] + '"' + (L === firstOpen ? " open" : "") + '><summary><span class="nm">' + esc(L.label) + '</span><span class="st">' + RD[L.state][0] + '</span></summary><ul>' +
+      L.items.map(i => '<li class="' + (i.ok === true ? "ok" : i.ok === false ? "no" : "q") + '"><span aria-hidden="true">' + (i.ok === true ? "✓" : i.ok === false ? "✗" : "○") + '</span> ' + esc(i.text) + '</li>').join("") + '</ul><p class="hint">' + esc(L.tip) + '</p></details>').join("");
+    const cycleCard = (!rd.cyc.done || (age != null && age < 120)) && rd.cyc.stage !== "assumed" ? '<section class="panel"><h2>' + (rd.cyc.alarm ? "Ammonia or nitrite showing" : "Tank cycle") + '</h2><p' + (rd.cyc.alarm ? ' class="callout warn"' : '') + '>' + esc(rd.cyc.text) + '</p><p class="hint">Ammonia and nitrite appear on the Chemistry tab once you log them.</p></section>' : "";
+    const alerts = flags.map(f => '<div class="callout warn"><b>Retest ' + esc(f.p.name.toLowerCase()) + '.</b> It went from ' + f.from + ' to ' + f.to + ' ' + esc(f.p.unit) + ' in ' + nDays(f.days) + '. Hold off on dosing changes until a retest confirms it.</div>').join("") +
+      supply.map(a => { const t = supplyText(a); return '<div class="callout warn"><b>' + esc(t.title) + '.</b> ' + esc(t.body) + '</div>'; }).join("");
+    host.innerHTML =
+      '<section class="panel td-hero"><div><span class="label">' + (age != null ? "Day " + (age + 1) + (tt ? " · " + esc(tt.label) : "") : (tt ? esc(tt.label) : "Today")) + '</span><h2>' + esc(next[0]) + '</h2><p>' + esc(next[1]) + '</p></div>' +
+        '<div class="form-actions">' + btnFor(next[2]) + (next[2] === "go-test" ? '' : '<button type="button" data-td="test">Log a test</button>') + '<button type="button" data-td="wc">Log a water change</button><button type="button" data-td="share">Share for help</button></div></section>' +
+      (alerts ? '<div class="td-alerts">' + alerts + '</div>' : '') +
+      '<div class="cols">' +
+        '<section class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><h2>Latest readings</h2><span class="hint">Tap one for what it means</span></div>' + (real.length ? rows : '<p class="hint">No tests yet. Log your first one and each reading will show here in plain words: good, keep an eye on it, or needs attention, measured against your own targets.</p>') + '</section>' +
+        '<div style="display:flex;flex-direction:column;gap:18px">' +
+          (reminders.length ? '<section class="panel"><h2>Due today</h2><ul class="td-due">' + reminders.slice(0, 8).map(r => '<li><span>' + esc(r.name) + '</span><span class="pill ' + r.due.cls + '">' + esc(r.due.label) + '</span></li>').join("") + '</ul><div class="form-actions"><button type="button" data-td="maint">Open schedule</button></div></section>' : '') +
+          cycleCard +
+          '<section class="panel"><h2>Ready for…</h2><p class="hint">Checked against your logged tests and tank age. These are common hobby guidelines, not guarantees; healthy, steady animals are the real sign.</p>' + ladder + '</section>' +
+        '</div></div>' +
+      (tipsOn() ? '<div class="cols"><section class="panel"><h2>Golden rules</h2><ul class="td-rules">' + GOLDEN.map(g => '<li>' + esc(g) + '</li>').join("") + '</ul></section>' +
+        '<section class="panel"><h2>Common problems</h2>' + PROBLEMS.map(pb => '<details class="td-prob"><summary>' + esc(pb[0]) + '</summary><p>' + esc(pb[1]) + '</p></details>').join("") + '<p class="hint">General guidance only. When in doubt, ask your local reef club or forum with photos and your recent tests; "Share for help" puts those together for you.</p></section></div>' : '');
+  }
+  $("td-root").addEventListener("click", ev => {
+    const b = ev.target.closest("[data-td]"); if (!b) return; const a = b.dataset.td;
+    if (a === "profile") openProfile(!profile);
+    if (a === "test") { showTab("chemistry", true); $("entry").scrollIntoView({ block: "start" }); $("f-alk").focus({ preventScroll: true }); }
+    if (a === "wc") { showTab("maintenance", true); $("wcl-date").value = today(); $("wcl-time").value = nowTime(); $("wcl-entry").scrollIntoView({ block: "start" }); $("wcl-amt").focus({ preventScroll: true }); }
+    if (a === "dosing") { showTab("dosing", true); }
+    if (a === "maint") { showTab("maintenance", true); }
+    if (a === "share") openShare();
+  });
+
+  // ---------- Share for help ----------
+  function shareText(){
+    const ct = canonTests(), V = volume().net, age = tankAgeDays(), tt = profile && TANK_TYPES[profile.tankType], L = [];
+    L.push((profile && profile.name ? profile.name : "My tank") + ": " + [profile && profile.display, profile && profile.hasSump && profile.sumpModel ? profile.sumpModel + " sump" : ""].filter(Boolean).join(" + ") + (V ? " (about " + fmtVol(V, 0) + " total water)" : "") + (age != null ? ", running " + nDays(age) : "") + (tt ? ", " + tt.label.toLowerCase() : "") + ".");
+    L.push(""); L.push("Latest tests:");
+    PARAMS.forEach(p => { const pts = ct.filter(t => hasVal(t, p.key)); if (!pts.length) return; const d = v => p.ut ? +toDisp(p.ut, v).toFixed(p.dp) : +(+v).toFixed(p.dp), last = pts[pts.length - 1], prev = pts.length > 1 ? pts[pts.length - 2] : null;
+      L.push("- " + p.name + " " + d(last[p.key]) + " " + p.unit + " (" + dshort(last.ts) + (prev ? "; before that " + d(prev[p.key]) + " on " + dshort(prev.ts) : "") + ")" + (jumpFor(p.key) ? "  [big jump, retesting]" : "")); });
+    const doses = CONS_KEYS.filter(k => doseAt(k, Date.now()) > 0).map(k => DOSE[k].product + " " + doseAt(k, Date.now()) + " " + du(k) + "/day");
+    L.push(""); L.push("Dosing: " + (doses.length ? doses.join(", ") : "none"));
+    const w30 = wcLog.filter(e => e.ts >= Date.now() - 30 * DAY), g30 = w30.reduce((a, e) => a + e.gal, 0), s = getSalt();
+    L.push("Water changes: " + (w30.length ? fmtVol(g30, 0) + " in " + w30.length + (w30.length === 1 ? " change" : " changes") + " over the last 30 days" + (V ? " (" + Math.round(g30 / V * 100) + "% of the system)" : "") : "plan is " + readWcPlan().pct + "% every " + nDays(readWcPlan().every)) + (SALTS[s.preset] && SALTS[s.preset].label ? "; salt: " + SALTS[s.preset].label : ""));
+    const cur = [...lightLog.map(e => ({ ...e })), ...programs.map(k7AsLogEntry)].sort((a, b) => b.ts - a.ts)[0];
+    if (profile && profile.light) L.push("Lights: " + profile.light + (profile.lightCount > 1 ? " ×" + profile.lightCount : "") + (cur && cur.channels ? "; peak " + Object.entries(cur.channels).map(([n, v]) => n + " " + v + "%").join(", ") : "") + (cur && cur.on && cur.off ? "; " + cur.on + " to " + cur.off : ""));
+    const alive = livestock.filter(l => (l.status || "alive") === "alive"), cnt = t => alive.filter(l => l.type === t).reduce((a, l) => a + (Number(l.qty) || 1), 0);
+    if (alive.length) { L.push("Livestock: " + [cnt("fish") + " fish", cnt("coral") + " corals", cnt("invert") + " inverts"].join(", ") + ".");
+      const recent = alive.filter(l => l.added && Date.now() - toTs(l.added) <= 30 * DAY); if (recent.length) L.push("Added in the last 30 days: " + recent.map(l => l.name).join(", ") + "."); }
+    const ev = testsRaw.filter(t => t.events && t.events.length && t.ts >= Date.now() - 21 * DAY).sort((a, b) => b.ts - a.ts).slice(0, 6);
+    if (ev.length) L.push("Recent changes: " + ev.map(t => dshort(t.ts) + " " + t.events.join("/") + (t.note ? " (" + t.note + ")" : "")).join("; ") + ".");
+    L.push(""); L.push("Logged with Holdfast: Reef Log & Dosing");
+    return L.join("\n");
+  }
+  function openShare(){
+    $("sh-q").value = ""; $("sh-text").value = shareText(); setStatus("sh-status", ""); $("sh").hidden = false; $("sh-q").focus();
+  }
+  const shareFull = () => ($("sh-q").value.trim() ? $("sh-q").value.trim() + "\n\n" : "") + $("sh-text").value;
+  $("sh-copy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(shareFull()); setStatus("sh-status", "Copied. Paste it into your post."); } catch (e) { $("sh-text").select(); setStatus("sh-status", "Select all and copy it from the box.", true); } });
+  $("sh-share").addEventListener("click", async () => { if (navigator.share) { try { await navigator.share({ text: shareFull() }); } catch (e) {} } else { setStatus("sh-status", "Sharing isn't available in this browser; use Copy instead.", true); } });
+  $("sh-close").addEventListener("click", () => { $("sh").hidden = true; });
+  $("sh").addEventListener("keydown", ev => { if (ev.key === "Escape") $("sh").hidden = true; });
 
   // ---------- backup ----------
   const BK_COLS = ["tests","tasks","gear","rodilog","livestock","equipment","photos","lightprograms","lightlog","par","waterchanges"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile","settings/rodi"];
@@ -3191,7 +3528,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     setTimeout(() => { if (b.dataset.confirm === "1" && !b.dataset.timer) { b.dataset.timer = "1"; setTimeout(() => { if (b.isConnected && b.dataset.confirm === "1") { b.dataset.confirm = ""; b.textContent = orig; } delete b.dataset.timer; }, 4000); } }); }, true);
   (function(){ const c = window.REEF_CONFIG || {}; if (c.feedbackUrl) { $("fb-link").href = c.feedbackUrl; $("fb-hint").textContent = c.feedbackNote || "Opens the Holdfast feedback form."; } })();
   renderUnitLabels();
-  showTab((location.hash || "").slice(1) || (() => { try { return localStorage.getItem("reef-tab"); } catch (e) { return null; } })() || "chemistry");
+  showTab((location.hash || "").slice(1) || (() => { try { return localStorage.getItem("reef-tab"); } catch (e) { return null; } })() || "today");
   document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => { try { localStorage.setItem("reef-tab", b.dataset.tab); } catch (e) {} }));
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (!$("tab-chemistry").hidden) renderCards(data()); if (!$("tab-lighting").hidden) renderLighting(); }, 150); });
 
