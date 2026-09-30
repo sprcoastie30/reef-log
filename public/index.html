@@ -746,7 +746,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
         <div><span class="label">Mounting</span><b class="num" id="spec-mount">8–12 in above water</b></div>
         <div><span class="label">Program format</span><b class="num">24 points × 6 channels, 0–100%</b></div>
       </div>
-      <p class="hint">Power, beam and mounting height are from Noopsyche's K7 V4 product page; Noopsyche's manual advises starting at 50% total brightness when moving up from weaker lights, and the planner flags any channel above that. Noopsyche doesn't publish channel names or the QR layout. The channel names, their order, and the code layout here come from the open-source K7 LED Controller project, which documents the K7 Pro as White, Royal Blue, Green, UV, Cyan, Red. That project says "K7 Pro" without naming a generation, so check the order once on your Pro IV with the channel test.</p>
+      <p class="hint">Power, beam and mounting height are from Noopsyche's K7 V4 product page; Noopsyche's manual advises starting at 50% total brightness when moving up from weaker lights, and the planner flags any channel above that. Noopsyche doesn't publish channel names or the QR layout. The channel names, their order (White, Royal Blue, Green, UV, Cyan, Red) and the code layout come from the open-source K7 LED Controller project, and were confirmed against a QR code exported by the Noopsyche app for a K7 Pro IV: the six manual values in the code matched the app's six sliders, top to bottom.</p>
           <div class="callout" id="spec-note" hidden>Your tank profile lists a different light. The planner, QR codes and controller presets here are built for Noopsyche K7 Pro fixtures; the PAR log works with any light.</div>
     </section>
 
@@ -782,7 +782,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       <section class="panel">
         <h2>Send to light</h2>
         <h3 style="font-size:1rem">Noopsyche app (QR code)</h3>
-        <p class="hint">Makes a QR code for the Noopsyche app's Import. The order below is the K7 Pro order documented by the K7 LED Controller project. Because it hasn't been confirmed on a Pro IV, the button unlocks once you've run the channel test and ticked the box. The code also carries manual-mode values; the planner sets those to your program's brightest hour.</p>
+        <p class="hint">Makes a QR code for the Noopsyche app's Import. The order below matches the Noopsyche app's own export (checked on a K7 Pro IV) and the K7 LED Controller project's documentation. If colors ever land on the wrong channel on your light, change the order, run the channel test, and tick the box. The code also carries manual-mode values; the planner sets those to your program's brightest hour.</p>
         <fieldset><legend class="label">Channel order in the QR code</legend>
           <div class="fields three" id="k7-order"></div>
         </fieldset>
@@ -2787,7 +2787,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function readOrder(){ return k7.order.map((_, pos) => $("ko-" + pos).value); }
   function updateMakeBtn(){
     const ord = readOrder(), unique = new Set(ord).size === 6;
-    $("k7-make").disabled = !($("k7-confirmed").checked && unique);
+    const standard = ord.every((k, i) => k === CH[i].key); // the verified order needs no extra confirmation
+    $("k7-make").disabled = !(unique && (standard || $("k7-confirmed").checked));
     if (!unique) setStatus("k7-status", "Each channel can appear in only one position.", true);
   }
   $("k7-order").addEventListener("change", () => { $("k7-confirmed").checked = false; updateMakeBtn(); setStatus("k7-status", "Order changed; confirm it before making a code."); });
@@ -2847,13 +2848,13 @@ details.backup summary { cursor: pointer; list-style: revert; }
       const rows = []; const times = []; for (let h = 0; h < 24; h++) { const rec = m[2].substr(h * 16, 16); times.push([parseInt(rec.substr(0, 2), 16), parseInt(rec.substr(2, 2), 16)]); rows.push([0,1,2,3,4,5].map(i => parseInt(rec.substr(4 + i * 2, 2), 16))); }
       const manual = [0,1,2,3,4,5].map(i => parseInt(m[1].substr(i * 2, 2), 16));
       const offHour = times.some((t, i) => t[0] !== i || t[1] !== 0);
-      const ord = readOrder(), confirmed = $("k7-confirmed").checked;
+      const ord = readOrder(), confirmed = $("k7-confirmed").checked || ord.every((k, i) => k === CH[i].key);
       const g = rows.map(r => CH.map(c => r[ord.indexOf(c.key)]));
       const peakRow = peakRowOf(rows);
       const nm = i => { const c = CH.find(x => x.key === ord[i]); return c ? c.name : "Position " + (i + 1); };
       host.innerHTML = '<div class="callout">Read 24 points' + (offHour ? ' (some times are not on the hour; the planner uses one point per hour)' : '') + '. Brightest hour: ' + peakRow.map((v, i) => nm(i) + ' ' + v + '%').join(", ") +
         '. Manual-mode values in the code: ' + manual.map((v, i) => nm(i) + ' ' + v + '%').join(", ") + '. ' +
-        (confirmed ? 'Loaded into the program using your confirmed channel order.' : 'Channel order isn\'t confirmed yet, so the names in the program may not match your app. Run the channel test before relying on them.') + '</div>';
+        (confirmed ? 'Loaded into the program using the verified K7 channel order.' : 'Channel order isn\'t confirmed yet, so the names in the program may not match your app. Run the channel test before relying on them.') + '</div>';
       loadProgram({ grid: g, name: f.name.replace(/\.[^.]+$/, ""), note: "Imported from QR" });
     } catch (e) { host.innerHTML = '<p class="status err">Couldn\'t read that image.</p>'; }
   });
