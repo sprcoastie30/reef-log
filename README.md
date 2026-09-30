@@ -7,7 +7,7 @@ A reef aquarium log that runs in any browser and installs to a phone's home scre
 - **Livestock**: fish, corals (by group) and invertebrates with photo, date added, source, placement, status (in tank, lost, rehomed) and days in the tank.
 - **Equipment**: list of everything on the system, by category and status.
 - **Photos**: dated tank photos, grouped by month.
-- **Dosing & salt**: system water volume, correction and daily maintenance doses, and a water-change planner using salt-mix values (Aquaforest Reef Salt presets).
+- **Dosing & salt**: system water volume, correction and daily maintenance doses, salt-mix values (Aquaforest Reef Salt presets), and a water change plan: 10% weekly, 35% monthly, 1.5% daily auto water change or custom, with gallons, salt, old water replaced per month, parameter step per change, the plan's effect on daily alkalinity dosing, a side-by-side comparison, and one click to put the plan into the maintenance schedule.
 - **Lighting**: 24-hour, 6-channel program planner for Noopsyche K7 Pro lights, QR code export/import for the Noopsyche app, preset export/import for the open-source K7 LED Controller, and a PAR log.
 - **Tank profile**: each user sets their tank, sump, salt, dosing products and lights on first run (and any time with the **Tank profile** button). It drives the header, the water-volume math, dosing strengths, the default salt and the lighting panel.
 

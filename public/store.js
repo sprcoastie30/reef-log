@@ -113,14 +113,22 @@
       docChanges: function () { return list.map(function (d, i) { return { type: "added", doc: d, oldIndex: -1, newIndex: i }; }); }
     };
   }
-  var pending = false;
-  function notify() {
+  // Batch change notifications and deliver each one only to listeners watching an affected document or collection.
+  var pending = false, changed = new Set(), changedAll = false;
+  function notify(path) {
+    if (path) changed.add(path); else changedAll = true;
     if (pending) return; pending = true;
-    setTimeout(function () { pending = false; listeners.forEach(function (l) { try { l(); } catch (e) { console.error(e); } }); }, 0);
+    setTimeout(function () {
+      var all = changedAll, paths = changed; pending = false; changed = new Set(); changedAll = false;
+      listeners.forEach(function (l) {
+        if (!all && l.watch && !l.watch(paths)) return;
+        try { l(); } catch (e) { console.error(e); }
+      });
+    }, 0);
   }
   function localChanged() { changeHooks.forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); }
-  function subscribe(fn) {
-    var l = fn; listeners.add(l);
+  function subscribe(fn, watch) {
+    var l = function () { fn(); }; l.watch = watch; listeners.add(l);
     ready.then(function () { setTimeout(function () { if (listeners.has(l)) l(); }, 0); });
     return function () { listeners.delete(l); };
   }
@@ -132,13 +140,13 @@
   function write(path, data) {
     var m = { u: stamp(), d: 1, x: 0 };
     docs.set(path, data); meta.set(path, m);
-    notify();
+    notify(path);
     return run(["docs", "meta"], function (s) { s("docs").put(data, path); s("meta").put(m, path); }).then(localChanged);
   }
   function remove(path) {
     var m = { u: stamp(), d: 1, x: 1 };
     docs.delete(path); meta.set(path, m);
-    notify();
+    notify(path);
     return run(["docs", "meta"], function (s) { s("docs").delete(path); s("meta").put(m, path); }).then(localChanged);
   }
   function docRef(path) {
@@ -154,7 +162,7 @@
         });
       },
       delete: function () { return ready.then(function () { return remove(path); }); },
-      onSnapshot: function (next) { return subscribe(function () { next(snapDoc(path)); }); },
+      onSnapshot: function (next) { return subscribe(function () { next(snapDoc(path)); }, function (paths) { return paths.has(path); }); },
       collection: function (sub) { return collRef(path + "/" + sub); }
     };
   }
@@ -164,7 +172,9 @@
       orderBy: function (f, dir) { return makeQuery(col, { f: f, dir: dir || "asc" }, lim); },
       limit: function (n) { return makeQuery(col, order, n); },
       get: function () { return ready.then(function () { return runQuery(col, order, lim); }); },
-      onSnapshot: function (next) { return subscribe(function () { next(runQuery(col, order, lim)); }); }
+      onSnapshot: function (next) {
+        return subscribe(function () { next(runQuery(col, order, lim)); }, function (paths) { var hit = false; paths.forEach(function (p) { if (!hit && inCollection(p, col)) hit = true; }); return hit; });
+      }
     };
   }
   function collRef(col) {
@@ -270,7 +280,7 @@
       var nm = { u: u, d: 0, x: deleted ? 1 : 0 };
       meta.set(path, nm);
       if (deleted) docs.delete(path); else docs.set(path, clone(data));
-      notify();
+      notify(path);
       return run(["docs", "meta"], function (s) { if (deleted) s("docs").delete(path); else s("docs").put(data, path); s("meta").put(nm, path); })
         .then(function () { return true; });
     },

@@ -577,12 +577,28 @@ details.backup summary { cursor: pointer; list-style: revert; }
           <div class="field"><label for="s-k"><b>Mix K</b> ppm</label><input id="s-k" type="number" step="5"></div>
           <div class="field"><label for="s-sg"><b>Mixed to</b> SG</label><input id="s-sg" type="number" step="0.001"></div>
           <div class="field"><label for="s-gpg"><b>Salt per gallon</b> g</label><input id="s-gpg" type="number" step="1"></div>
-          <div class="field"><label for="w-gal"><b>Water change</b> gal</label><input id="w-gal" type="number" step="1" min="0"></div>
-          <div class="field"><label for="w-freq"><b>Every</b> days</label><input id="w-freq" type="number" step="1" min="1" value="7"></div>
         </div>
-        <div id="wc-out"></div>
         <div class="form-actions"><button type="button" id="s-save">Save salt profile</button><span class="status" id="s-status"></span></div>
         <p class="hint">Aquaforest publishes lab results for each production batch through its "Check your salt" page. Enter your batch's numbers in the mix fields for the most accurate prediction.</p>
+      </section>
+
+      <section class="panel" id="wc-panel">
+        <div><h2>Water change plan</h2><p class="hint">Pick how you change water. Everything below uses your net system volume, the salt above, and your latest test results.</p></div>
+        <div class="fields">
+          <div class="field" style="grid-column:1/-1"><label for="w-plan"><b>Plan</b></label><select id="w-plan">
+            <option value="weekly10">10% weekly (manual)</option>
+            <option value="monthly35">35% monthly (manual)</option>
+            <option value="awc15">1.5% daily (auto water change)</option>
+            <option value="custom">Custom</option>
+          </select></div>
+          <div class="field"><label for="w-pct"><b>Change size</b> % of system</label><input id="w-pct" type="number" step="0.5" min="0.1" max="100"></div>
+          <div class="field"><label for="w-every"><b>Every</b> days</label><input id="w-every" type="number" step="1" min="1" max="120"></div>
+          <div class="field" id="w-res-wrap"><label for="w-res"><b>AWC saltwater reservoir</b> gal</label><input id="w-res" type="number" step="0.5" min="0.5" value="5"></div>
+        </div>
+        <div id="wc-out"></div>
+        <h3 style="font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:4px 0 0">Compare the three plans</h3>
+        <div class="tablewrap"><table id="wc-compare"></table></div>
+        <div class="form-actions"><button type="button" id="w-save">Save plan</button><button type="button" class="primary" id="w-sched">Put this plan in my maintenance schedule</button><span class="status" id="w-status" role="status"></span></div>
       </section>
     </div>
   </div>
@@ -1665,24 +1681,106 @@ details.backup summary { cursor: pointer; list-style: revert; }
   }
   function getSalt(){ return { preset: $("s-preset").value, alk: num($("s-alk").value), ca: num($("s-ca").value), mg: num($("s-mg").value), k: num($("s-k").value), sg: num($("s-sg").value), gpg: num($("s-gpg").value) }; }
   function setSalt(s){ $("s-preset").value = SALTS[s.preset] ? s.preset : "custom"; ["alk","ca","mg","k","sg","gpg"].forEach(k => { $("s-" + k).value = s[k] ?? ""; }); }
+  // ---------- water change plan ----------
+  const WC_PLANS = {
+    weekly10:  { label: "10% weekly", pct: 10,  every: 7 },
+    monthly35: { label: "35% monthly", pct: 35, every: 30 },
+    awc15:     { label: "1.5% daily auto", pct: 1.5, every: 1, auto: true }
+  };
+  const DAYS_PER_MONTH = 30.44;
+  function readWcPlan(){
+    const plan = WC_PLANS[$("w-plan").value] ? $("w-plan").value : "custom";
+    const base = WC_PLANS[plan];
+    return { plan, pct: base ? base.pct : Math.max(0.1, Math.min(100, num($("w-pct").value) || 10)), every: base ? base.every : Math.max(1, Math.round(num($("w-every").value) || 7)),
+      res: Math.max(0.5, num($("w-res").value) || 5), auto: base ? !!base.auto : (Math.max(1, Math.round(num($("w-every").value) || 7)) === 1 && (num($("w-pct").value) || 10) <= 5) };
+  }
+  function setWcPlan(w){
+    let plan = "weekly10", pct = 10, every = 7, res = 5;
+    if (w && w.plan) { plan = WC_PLANS[w.plan] || w.plan === "custom" ? w.plan : "weekly10"; pct = w.pct || pct; every = w.every || every; res = w.res || res; }
+    else if (w && w.gal != null) { // older saved plans stored gallons and days
+      const V = volume().net || 1; plan = "custom"; pct = Math.round(w.gal / V * 1000) / 10; every = w.freq || 7;
+    }
+    if (WC_PLANS[plan]) { pct = WC_PLANS[plan].pct; every = WC_PLANS[plan].every; }
+    $("w-plan").value = plan; $("w-pct").value = pct; $("w-every").value = every; $("w-res").value = res;
+    $("w-res-wrap").hidden = !(WC_PLANS[plan] && WC_PLANS[plan].auto) && !(plan === "custom" && every === 1);
+  }
+  $("w-plan").addEventListener("change", () => { const b = WC_PLANS[$("w-plan").value]; if (b) { $("w-pct").value = b.pct; $("w-every").value = b.every; } $("w-res-wrap").hidden = !(b && b.auto) && !($("w-plan").value === "custom" && Number($("w-every").value) === 1); renderWC(); });
+  ["w-pct","w-every"].forEach(id => $(id).addEventListener("input", () => { if ($("w-plan").value !== "custom") $("w-plan").value = "custom"; $("w-res-wrap").hidden = Number($("w-every").value) !== 1; }));
+  function planMath(pct, every, V, gpg){
+    const p = pct / 100, gal = V * p, perMonth = DAYS_PER_MONTH / every;
+    return { p, gal, perMonth, galMonth: gal * perMonth, saltChange: gpg * gal, saltMonth: gpg * gal * perMonth,
+      replacedMonth: 1 - Math.pow(1 - p, perMonth) };
+  }
+  const kgLb = g => (g / 1000).toFixed(2) + " kg (" + (g / 453.6).toFixed(1) + " lb)";
   function renderWC(){
-    const V = volume().net, s = getSalt(); let wc = num($("w-gal").value);
-    if (wc == null) { wc = Math.round(V * 0.1); $("w-gal").value = wc; }
-    const freq = Math.max(1, num($("w-freq").value) || 7), f = V ? Math.min(1, wc / V) : 0;
+    const V = volume().net, s = getSalt(), w = readWcPlan(), gpg = s.gpg || 0;
+    const m = planMath(w.pct, w.every, V, gpg);
+    const perLabel = w.every === 1 ? "each day" : "each change";
     const rows = [];
     const add = (key, name, unit, dp, mix) => { const t = latestVal(key); if (!t) { rows.push('<li><span>' + name + '</span><span class="hint">No reading logged</span></li>'); return null; }
-      const cur = t[key], after = cur * (1 - f) + (mix ?? 0) * f, d = after - cur;
-      rows.push('<li><span>' + name + '</span><span>' + cur.toFixed(dp) + ' → <b>' + after.toFixed(dp) + '</b> ' + unit + ' (' + (d >= 0 ? "+" : "−") + Math.abs(d).toFixed(dp + (dp === 0 ? 0 : 1)) + ')</span></li>'); return d; };
-    const dAlk = add("alk","Alkalinity","dKH",2,s.alk); add("ca","Calcium","ppm",0,s.ca); add("mg","Magnesium","ppm",0,s.mg);
+      const cur = t[key], after = cur * (1 - m.p) + (mix ?? 0) * m.p, d = after - cur;
+      rows.push('<li><span>' + name + '</span><span>' + cur.toFixed(dp) + ' → <b>' + after.toFixed(dp) + '</b> ' + unit + ' (' + (d >= 0 ? "+" : "−") + Math.abs(d).toFixed(dp + (dp === 0 ? 0 : 1)) + ')</span></li>'); return { cur, d }; };
+    const alkRes = add("alk","Alkalinity","dKH",2,s.alk); add("ca","Calcium","ppm",0,s.ca); add("mg","Magnesium","ppm",0,s.mg);
     add("no3","Nitrate","ppm",1,0); add("po4","Phosphate","ppm",3,0);
-    const grams = (s.gpg || 0) * wc;
-    let callout = "";
-    if (s.alk != null && s.alk < targets.alk.lo) callout = "This salt mixes to " + s.alk.toFixed(1) + " dKH, below your " + targets.alk.lo + "–" + targets.alk.hi + " dKH target, so each change pulls alkalinity toward " + s.alk.toFixed(1) + ". Keep water changes consistent in size so your daily Reef Code B dose absorbs the dip, rather than chasing it after each change.";
-    $("wc-out").innerHTML = '<ul class="result-list"><li><span>Change size</span><span><b>' + (f * 100).toFixed(1) + '%</b> of ' + V.toFixed(1) + ' gal · every ' + freq + ' days</span></li>' +
-      '<li><span>Salt to mix</span><span><b>' + (grams / 1000).toFixed(2) + ' kg</b> (' + (grams / 453.6).toFixed(2) + ' lb) for ' + wc + ' gal</span></li>' + rows.join("") + '</ul>' +
-      (callout ? '<div class="callout">' + esc(callout) + '</div>' : '') +
-      '<p class="hint">New saltwater carries no nitrate or phosphate, so each change dilutes them by the change percentage. Salt weight is a starting point; always finish mixing by refractometer.</p>';
+    const notes = [];
+    if (alkRes && s.alk != null) {
+      const perDay = alkRes.d / w.every; // average dKH per day the plan adds or removes
+      if (perDay < -0.005) {
+        const ml = -perDay * V / (DOSE.alk.potency || 2.22);
+        notes.push("This plan lowers alkalinity by about " + (-perDay).toFixed(3) + " dKH a day on average, because the salt mixes below your current level. That's roughly " + ml.toFixed(1) + " mL a day of " + DOSE.alk.product + " to make up, on top of what your corals use.");
+      } else if (perDay > 0.005) notes.push("This plan raises alkalinity by about " + perDay.toFixed(3) + " dKH a day on average, which offsets part of what your corals use, so you'll dose a little less.");
+    }
+    if (w.every >= 21 && alkRes && s.alk != null && Math.abs(alkRes.d) >= 0.2) notes.push("A change this large moves alkalinity " + Math.abs(alkRes.d).toFixed(2) + " dKH in one step. Match the new water's alkalinity to the tank, or split the change over a couple of days, to keep the swing small.");
+    if (w.auto || w.every === 1) notes.push("An auto water change takes out and adds back " + m.gal.toFixed(2) + " gal a day. Your " + w.res + " gal reservoir lasts about " + Math.max(1, Math.floor(w.res / m.gal)) + " days. Check the pump's daily volume against a measuring cup now and then, since small dosing pumps drift.");
+    $("wc-out").innerHTML = '<ul class="result-list">' +
+      '<li><span>Change size</span><span><b>' + w.pct + '%</b> = <b>' + m.gal.toFixed(m.gal < 5 ? 2 : 1) + ' gal</b> ' + (w.every === 1 ? "every day" : "every " + w.every + " days") + '</span></li>' +
+      '<li><span>Salt ' + perLabel + '</span><span>' + kgLb(m.saltChange) + '</span></li>' +
+      '<li><span>Per month</span><span>' + m.galMonth.toFixed(1) + ' gal of new saltwater · ' + kgLb(m.saltMonth) + ' of salt</span></li>' +
+      '<li><span>Old water replaced per month</span><span><b>' + Math.round(m.replacedMonth * 100) + '%</b></span></li>' +
+      '<li><span style="grid-column:1/-1" class="hint">After ' + (w.every === 1 ? "one day" : "one change") + ', from your latest readings:</span><span></span></li>' + rows.join("") + '</ul>' +
+      notes.map(n => '<div class="callout">' + esc(n) + '</div>').join("") +
+      '<p class="hint">Salt weight is a starting point; always finish mixing by refractometer. New saltwater has no nitrate or phosphate, so each change dilutes them by its percentage.</p>';
+    // comparison
+    const alkT = latestVal("alk"), no3T = latestVal("no3");
+    const cols = Object.values(WC_PLANS).map(pl => ({ pl, m: planMath(pl.pct, pl.every, V, gpg) }));
+    const r = (label, f) => '<tr><td style="text-align:left">' + label + '</td>' + cols.map(c => '<td>' + f(c) + '</td>').join("") + '</tr>';
+    $("wc-compare").innerHTML = '<thead><tr><th></th>' + cols.map(c => '<th' + (c.pl.pct === w.pct && c.pl.every === w.every ? ' style="color:var(--accent)"' : '') + '>' + esc(c.pl.label) + '</th>').join("") + '</tr></thead><tbody>' +
+      r("Gallons per change", c => c.m.gal.toFixed(c.m.gal < 5 ? 2 : 1)) +
+      r("Changes per month", c => c.m.perMonth.toFixed(c.m.perMonth < 10 ? 1 : 0)) +
+      r("New water per month", c => c.m.galMonth.toFixed(0) + " gal") +
+      r("Salt per month", c => (c.m.saltMonth / 1000).toFixed(1) + " kg") +
+      r("Old water replaced / month", c => Math.round(c.m.replacedMonth * 100) + "%") +
+      (alkT && s.alk != null ? r("Alk step per change", c => { const d = (s.alk - alkT.alk) * c.m.p; return (d >= 0 ? "+" : "−") + Math.abs(d).toFixed(2) + " dKH"; }) : "") +
+      (no3T ? r("Nitrate step per change", c => "−" + (no3T.no3 * c.m.p).toFixed(no3T.no3 * c.m.p < 1 ? 2 : 1) + " ppm") : "") +
+      r("Hands-on work", c => c.pl.auto ? "Refill reservoir" : c.pl.every <= 7 ? "Weekly bucket change" : "One big change") + '</tbody>';
   }
+  $("w-save").addEventListener("click", () => saveDosing("w-status"));
+  $("w-sched").addEventListener("click", async () => {
+    if (!db) { setStatus("w-status", "Saving isn't available in this view.", true); return; }
+    const V = volume().net, s = getSalt(), w = readWcPlan(), m = planMath(w.pct, w.every, V, s.gpg || 0);
+    const manualTask = tasks.find(t => t.marker === "Water change" || /^water change/i.test(t.name || ""));
+    const awcTask = tasks.find(t => /^refill awc/i.test(t.name || ""));
+    const done = [];
+    try {
+      await saveDosing("w-status"); // store the chosen plan before the task changes below trigger any refresh
+      if (w.auto || w.every === 1) {
+        const every = Math.max(1, Math.floor(w.res / m.gal));
+        const rec = { name: "Refill AWC saltwater reservoir", kind: "upkeep", every, marker: "", params: [], lastDone: awcTask ? awcTask.lastDone || "" : "",
+          notes: w.res + " gal of new saltwater, " + kgLb(s.gpg * w.res) + " of salt. The AWC uses about " + m.gal.toFixed(2) + " gal a day.", history: awcTask ? awcTask.history || [] : [] };
+        if (awcTask) await db.collection("tasks").doc(awcTask.id).set(rec); else await db.collection("tasks").add(rec);
+        done.push((awcTask ? "Updated" : "Added") + " \"Refill AWC saltwater reservoir\" every " + every + " days");
+        if (manualTask) { await db.collection("tasks").doc(manualTask.id).delete(); done.push("removed the manual water change task"); }
+      } else {
+        const rec = { name: "Water change (" + w.pct + "%, " + m.gal.toFixed(1) + " gal)", kind: "upkeep", every: w.every, marker: "Water change", params: [], lastDone: manualTask ? manualTask.lastDone || "" : "",
+          notes: "Mix " + m.gal.toFixed(1) + " gal with " + kgLb(m.saltChange) + " of salt.", history: manualTask ? manualTask.history || [] : [] };
+        if (manualTask) await db.collection("tasks").doc(manualTask.id).set(rec); else await db.collection("tasks").add(rec);
+        done.push((manualTask ? "Updated" : "Added") + " the water change task: " + m.gal.toFixed(1) + " gal every " + w.every + " days");
+        if (awcTask) { await db.collection("tasks").doc(awcTask.id).delete(); done.push("removed the AWC refill task"); }
+      }
+      setStatus("w-status", done.join("; ") + ". Download a fresh calendar file on the Maintenance tab if you use one.");
+    } catch (e) { setStatus("w-status", "Couldn't update the schedule (" + (e && e.code || "error") + ").", true); }
+  });
+
   function renderVol(){
     const r = volume();
     $("vol-out").innerHTML = '<div><span class="label">Display</span><span class="big">' + r.gross.toFixed(1) + '</span><small>gal gross</small></div>' +
@@ -1703,7 +1801,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   $("s-preset").addEventListener("change", () => { const p = SALTS[$("s-preset").value]; if (p && p.alk != null) setSalt({ preset: $("s-preset").value, ...p }); $("s-preset").title = p ? p.range : ""; setStatus("s-status", p ? p.range : ""); renderWC(); });
   function dosingPayload(){
     const target = {}; Object.keys(DOSE).forEach(k => { target[k] = num($("t-d-" + k).value) ?? DOSE[k].target; });
-    return { volume: getVol(), salt: getSalt(), target, wc: { gal: num($("w-gal").value), freq: num($("w-freq").value) }, split: num($("m-split").value) };
+    return { volume: getVol(), salt: getSalt(), target, wc: readWcPlan(), split: num($("m-split").value) };
   }
   async function saveDosing(statusId){
     if (!db) { setStatus(statusId, "Saving isn't available in this view.", true); return; }
@@ -1717,7 +1815,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     setVol(d && d.volume ? d.volume : VOL_DEF);
     const pfSalt = (profile && SALTS[profile.salt] && SALTS[profile.salt].alk != null) ? profile.salt : "af33";
     setSalt(d && d.salt ? d.salt : { preset: pfSalt, ...SALTS[pfSalt] });
-    $("w-gal").value = d && d.wc && d.wc.gal != null ? d.wc.gal : ""; $("w-freq").value = d && d.wc && d.wc.freq ? d.wc.freq : 7;
+    setWcPlan(d && d.wc ? d.wc : null);
     $("m-split").value = d && d.split ? d.split : 4;
     $("corr").innerHTML = ""; renderDosing();
   }
