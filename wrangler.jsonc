@@ -1,0 +1,10 @@
+{
+  // Cloudflare Workers static-assets deploy for Holdfast. Serves the public/ folder as-is.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "reef-log",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application"
+  }
+}
