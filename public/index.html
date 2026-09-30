@@ -286,7 +286,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
 <div class="wrap">
   <header class="top">
     <div>
-      <div class="label" id="hdr-sub">Holdfast · Reef log &amp; dosing · Eshopps RS-75 sump</div>
+      <div class="label" id="hdr-sub">Holdfast · Reef log &amp; dosing</div>
       <h1 id="hdr-title">75-Gallon Reef</h1>
       <div class="meta">
         <span id="m-last">No tests logged yet</span>
@@ -2943,7 +2943,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const q = p || PROFILE_BLANK;
     if (p) {
       $("hdr-title").textContent = p.name || "My Reef"; document.title = (p.name || "My Reef") + " · Holdfast";
-      $("hdr-sub").textContent = "Holdfast · Reef log & dosing" + (p.hasSump && p.sumpModel ? " · " + p.sumpModel + (/sump/i.test(p.sumpModel) ? "" : " sump") : "");
+      $("hdr-sub").textContent = "Holdfast · Reef log & dosing";
       const L = v => +toDisp("len", v).toFixed(isMetric() ? 1 : 2), lu = uLabel("len");
       $("vol-hint").textContent = (p.display || "Display") + " (inside " + L(p.dl) + " × " + L(p.dw) + " " + lu + ", " + L(p.dd) + " " + lu + " of water)" +
         (p.hasSump ? " plus " + (p.sumpModel || "sump") + " (" + L(p.sl) + " × " + L(p.sw) + " " + lu + " at " + L(p.sd) + " " + lu + " running depth)" : "") + ", from your tank profile. Measure your actual water depths and adjust; everything below uses the net figure.";
