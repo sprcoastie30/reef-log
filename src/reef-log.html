@@ -1915,6 +1915,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
       { name:"Seachem Reef Fusion 2", potency:3.26, basis:"calc: stated 4,400 meq/L" },
       { name:"BRS Pharma Soda Ash (mixed 381 g per gal)", potency:1.41, basis:"calc: BRS mix of 381 g per gallon of solution", maxDay:1.4, maxNote:"BRS: no more than 1.4 dKH per day" },
       { name:"Tropic Marin All-For-Reef", potency:1.48, basis:"calc: stated 2,800 dKH per 500 mL", allInOne:true, maxDay:1.4, maxNote:"label max 25 mL per 100 L per day (≈1.4 dKH)" },
+      { name:"Tropic Marin Carbocalcium (liquid)", potency:1.48, basis:"calc: stated 5,600 dKH per 1,000 mL", allInOne:true, maxDay:1.4, maxNote:"label max 25 mL per 100 L per day (≈1.4 dKH)" },
+      { name:"Tropic Marin Carbocalcium Powder (700 g mixed to 5 L)", potency:1.585, basis:"calc: stated 6,000 dKH per liter of mixed solution", allInOne:true, maxDay:1.5, maxNote:"label max 25 mL of solution per 100 L per day (≈1.5 dKH)" },
       { name:"ESV B-Ionic Part 1 (alkalinity)", potency:2.07, basis:"label: 1 mL per gal raises 2.07 dKH; start at 1 mL per 4 gal a day" },
       { name:"Aquaforest Component 2+", potency:0.69, basis:"label: 25 mL per 100 L raises 0.65 dKH" },
       { name:"Seachem Reef Builder (powder)", potency:9.25, du:"g", basis:"label: 3 g per 150 L raises 0.25 meq/L (0.7 dKH)", maxDay:2.8, maxNote:"label max 12 g per 150 L per day (≈2.8 dKH); about 1 dKH a day is gentler" },
@@ -1925,6 +1927,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
       { name:"Red Sea Reef Foundation A", potency:50, basis:"label: 1 mL raises 25 gal by 2 ppm" },
       { name:"Seachem Reef Fusion 1", potency:26.4, basis:"calc: stated 100,000 mg/L calcium" },
       { name:"Tropic Marin All-For-Reef", potency:10.57, basis:"calc: stated 20,000 mg calcium per 500 mL", allInOne:true },
+      { name:"Tropic Marin Carbocalcium (liquid)", potency:10.57, basis:"calc: stated 40,000 mg calcium per 1,000 mL", allInOne:true },
+      { name:"Tropic Marin Carbocalcium Powder (700 g mixed to 5 L)", potency:11.36, basis:"calc: stated 43,000 mg calcium per liter of mixed solution", allInOne:true },
       { name:"ESV B-Ionic Part 2 (calcium)", potency:16, basis:"label: 1 mL per gal raises 16 ppm; start at 1 mL per 4 gal a day" },
       { name:"Aquaforest Component 1+", potency:4.76, basis:"label: 25 mL per 100 L raises 4.5 ppm" },
       { name:"Kalkwasser (saturated limewater)", potency:0.216, basis:"calc: saturated at 25 °C ≈ 816 ppm calcium (Holmes-Farley)", allInOne:true, kalk:true }
@@ -2778,7 +2782,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     return '<div class="fields three"><div class="field" style="grid-column:span 2"><label for="pf-' + k + '-name"><b>' + d.name + ' product</b></label><input id="pf-' + k + '-name" type="text" list="pf-' + k + '-list" maxlength="60">' +
       '<datalist id="pf-' + k + '-list"></datalist></div>' +
       '<div class="field"><label for="pf-' + k + '-pot"><b>Strength</b> ' + d.unit + ' per mL (or g) <span data-ul="pot">per gal</span></label><input id="pf-' + k + '-pot" type="number" step="any" min="0"></div></div>'; }).join("") +
-    '<p class="hint">Strength is how much 1 mL (or 1 g of a powder) raises 1 US gallon, or 100 L with metric units. Picking a listed product fills it in (label means the maker states it; calc means it is worked out from the maker\'s stated concentration or mix). For anything else, enter the label strength. Picking Tropic Marin All-For-Reef for alkalinity sets calcium and magnesium to it too; picking kalkwasser sets calcium to it. Seachem Reef Builder is a powder, so its doses show in grams.</p>';
+    '<p class="hint">Strength is how much 1 mL (or 1 g of a powder) raises 1 US gallon, or 100 L with metric units. Picking a listed product fills it in (label means the maker states it; calc means it is worked out from the maker\'s stated concentration or mix). For anything else, enter the label strength. Picking Tropic Marin All-For-Reef for alkalinity sets calcium and magnesium to it too; picking Carbocalcium or kalkwasser sets calcium to it (magnesium stays a separate product). Seachem Reef Builder is a powder, so its doses show in grams.</p>';
   function renderPfDatalists(){
     ["alk","ca","mg"].forEach(k => { const d = DOSE[k];
       $("pf-" + k + "-list").innerHTML = PRODUCTS[k].map(x => '<option value="' + esc(x.name) + '" label="' + esc(+toDisp("pot", x.potency).toPrecision(3) + " " + d.unit + " per " + (x.du || "mL") + " " + uLabel("pot") + " (" + x.basis + ")") + '">').join(""); });
