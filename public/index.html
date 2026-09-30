@@ -191,9 +191,13 @@ table.calc td.res { font-weight: 500; color: var(--ink); }
 .result-list li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--grid); padding: 6px 0; flex-wrap: wrap; }
 .result-list li span:last-child { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
 .callout { border-left: 3px solid var(--event); padding: 6px 10px; font-size: 0.86rem; background: var(--warn-bg); border-radius: 0 6px 6px 0; margin-top: 8px; }
+:root[data-theme="blue"] { --bg: #06142b; --panel: #0b1f3d; --ink: #d7e6ff; --muted: #8fa8cf; --line: #1c3560; --grid: #132a4d; --accent: #4f8dff; --accent-ink: #04112a; --band: rgba(79,141,255,0.16); --event: #f2b35c; --ok: #6fd6b0; --ok-bg: #0f3a3a; --warn: #f2b35c; --warn-bg: #3a2c14; --bad: #ff8f8f; --bad-bg: #3d1a24; color-scheme: dark; }
 :root { --ch-w: #7d8a90; --ch-lb: #2f95d6; --ch-db: #2c46c4; --ch-uv: #7a3fcf; --ch-red: #d2463c; --ch-gb: #1f9a73; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ch-w: #d5dde0; --ch-lb: #5cb8f0; --ch-db: #7b91ff; --ch-uv: #b58cff; --ch-red: #ff7d72; --ch-gb: #4fd1a2; } }
 :root[data-theme="dark"] { --ch-w: #d5dde0; --ch-lb: #5cb8f0; --ch-db: #7b91ff; --ch-uv: #b58cff; --ch-red: #ff7d72; --ch-gb: #4fd1a2; }
+:root[data-theme="blue"] { --ch-w: #d7e6ff; --ch-lb: #5cc0ff; --ch-db: #8ea2ff; --ch-uv: #c08cff; --ch-red: #ff8a7a; --ch-gb: #4fd6a8; }
+.theme-pick { display: inline-flex; align-items: center; gap: 6px; }
+.theme-pick select { width: auto; padding: 6px 8px; }
 .spec-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px; }
 .spec-row div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .spec-row b { font-weight: 500; }
@@ -273,6 +277,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       </div>
     </div>
     <div class="actions">
+      <label class="theme-pick" for="theme-pick"><span class="label">Theme</span><select id="theme-pick"><option value="auto">Auto</option><option value="light">Light</option><option value="dark">Dark</option><option value="blue">Blue</option></select></label>
       <button type="button" id="btn-profile">Tank profile</button>
       <button class="primary" id="btn-jump" type="button">Log a test</button>
     </div>
@@ -597,9 +602,17 @@ details.backup summary { cursor: pointer; list-style: revert; }
           <div class="field"><label for="m-alk"><b>Alk used</b> dKH/day</label><input id="m-alk" type="number" step="0.05" min="0"></div>
           <div class="field"><label for="m-ca"><b>Ca used</b> ppm/day</label><input id="m-ca" type="number" step="0.5" min="0"></div>
           <div class="field"><label for="m-mg"><b>Mg used</b> ppm/day</label><input id="m-mg" type="number" step="0.5" min="0"></div>
-          <div class="field"><label for="m-split"><b>Doses per day</b></label><input id="m-split" type="number" step="1" min="1" value="4"></div>
         </div>
+        <fieldset style="margin-top:6px"><legend class="label">How you dose</legend>
+          <div class="fields three">
+            <div class="field"><label for="dm-mode"><b>Method</b></label><select id="dm-mode"><option value="manual">By hand</option><option value="auto">Auto doser</option></select></div>
+            <div class="field"><label for="m-split"><b id="m-split-lbl">Times a day</b></label><input id="m-split" type="number" step="1" min="1" max="48" value="1"></div>
+            <div class="field" id="dm-min-wrap"><label for="dm-min"><b>Doser's smallest dose</b> mL</label><input id="dm-min" type="number" step="0.1" min="0" placeholder="From its manual"></div>
+          </div>
+          <div class="fields three" id="dm-cont"></div>
+        </fieldset>
         <div id="maint-out"></div>
+        <div class="form-actions"><button type="button" id="dm-save">Save dosing setup</button><button type="button" class="primary" id="dm-sched">Put dosing in my maintenance schedule</button><span class="status" id="dm-status" role="status"></span></div>
       </section>
 
       <section class="panel">
@@ -1095,6 +1108,19 @@ details.backup summary { cursor: pointer; list-style: revert; }
     }
     setStatus("io-status", "Imported " + ok + (ok === 1 ? " row" : " rows") + (bad ? ", skipped " + bad : "") + ".", !!bad && !ok);
   });
+
+  // ---------- theme: Auto follows the device; Light, Dark and Blue are pinned; remembered on this device ----------
+  function applyTheme(t){
+    const root = document.documentElement;
+    if (t === "light" || t === "dark" || t === "blue") root.setAttribute("data-theme", t); else root.removeAttribute("data-theme");
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", t === "blue" ? "#06142b" : t === "dark" ? "#0d171b" : "#0b7480");
+  }
+  (function(){
+    let t = "auto"; try { t = localStorage.getItem("reef-theme") || "auto"; } catch (e) {}
+    $("theme-pick").value = t; if (t !== "auto") applyTheme(t);
+    $("theme-pick").addEventListener("change", () => { const v = $("theme-pick").value; try { localStorage.setItem("reef-theme", v); } catch (e) {} applyTheme(v); });
+  })();
 
   // ---------- tabs ----------
   const TABS = ["chemistry","maintenance","livestock","equipment","photos","dosing","lighting"];
@@ -1655,6 +1681,33 @@ details.backup summary { cursor: pointer; list-style: revert; }
     ca:  { name:"Calcium", unit:"ppm", dp:0, product:"Brightwell Reef Code A", potency:16, maxDay:8, maxNote:"label max 5 mL per 10 gal per day (≈8 ppm)", target:440 },
     mg:  { name:"Magnesium", unit:"ppm", dp:0, product:"Brightwell Magnesion", potency:26, maxDay:13, maxNote:"label max 10 mL per 20 gal per day (≈13 ppm)", target:1350 }
   };
+  // Strength = how much 1 mL raises 1 US gallon. "label" = maker's stated dose strength (via retailer listings);
+  // "calc" = worked out from the maker's stated concentration or mix. maxDay = maker's stated daily limit, if any.
+  const PRODUCTS = {
+    alk: [
+      { name:"Brightwell Reef Code B", potency:2.22, basis:"label", maxDay:1.11, maxNote:"label max 5 mL per 10 gal per day (≈1.1 dKH)" },
+      { name:"Red Sea Reef Foundation B", potency:2.5, basis:"label: 1 mL raises 25 gal by 0.1 dKH" },
+      { name:"Seachem Reef Fusion 2", potency:3.26, basis:"calc: stated 4,400 meq/L" },
+      { name:"BRS Pharma Soda Ash (mixed 381 g per gal)", potency:1.41, basis:"calc: BRS mix of 381 g per gallon of solution", maxDay:1.4, maxNote:"BRS: no more than 1.4 dKH per day" },
+      { name:"Tropic Marin All-For-Reef", potency:1.48, basis:"calc: stated 2,800 dKH per 500 mL", allInOne:true, maxDay:1.4, maxNote:"label max 25 mL per 100 L per day (≈1.4 dKH)" }
+    ],
+    ca: [
+      { name:"Brightwell Reef Code A", potency:16, basis:"label", maxDay:8, maxNote:"label max 5 mL per 10 gal per day (≈8 ppm)" },
+      { name:"Red Sea Reef Foundation A", potency:50, basis:"label: 1 mL raises 25 gal by 2 ppm" },
+      { name:"Seachem Reef Fusion 1", potency:26.4, basis:"calc: stated 100,000 mg/L calcium" },
+      { name:"Tropic Marin All-For-Reef", potency:10.57, basis:"calc: stated 20,000 mg calcium per 500 mL", allInOne:true }
+    ],
+    mg: [
+      { name:"Brightwell Magnesion", potency:26, basis:"label", maxDay:13, maxNote:"label max 10 mL per 20 gal per day (≈13 ppm)" },
+      { name:"Red Sea Reef Foundation C", potency:25, basis:"label: 1 mL raises 25 gal by 1 ppm" },
+      { name:"Tropic Marin All-For-Reef", potency:0.5, basis:"calc: stated 950 mg magnesium per 500 mL", allInOne:true }
+    ]
+  };
+  const GENERIC_MAX = { alk: { maxDay:1.0, maxNote:"no maker limit stated; about 1 dKH per day is a common safe pace" },
+    ca: { maxDay:20, maxNote:"no maker limit stated; spreading big corrections over several days (about 20 ppm a day) is safer" },
+    mg: { maxDay:100, maxNote:"no maker limit stated; magnesium is usually raised no more than about 100 ppm a day" } };
+  const productInfo = (k, name) => PRODUCTS[k].find(x => x.name === name) || null;
+  const isAllInOne = () => { const a = productInfo("alk", DOSE.alk.product); return !!(a && a.allInOne && DOSE.ca.product === DOSE.alk.product); };
   const SALTS = {
     af35: { label:"Aquaforest Reef Salt, mixed to 35 ppt (1.026)", alk:8.0, ca:450, mg:1390, k:null, sg:1.026, gpg:157, range:"Published: KH 7.7–8.3 dKH, Ca 440–460, Mg 1360–1420 at 35 ppt." },
     af33: { label:"Aquaforest Reef Salt, mixed to 33 ppt (1.025)", alk:7.8, ca:425, mg:1340, k:390, sg:1.025, gpg:148, range:"Published: KH 7.4–8.2 dKH, Ca 410–440, Mg 1300–1380, K 380–400 at 33 ppt. Mixing: about 390 g per 10 L." },
@@ -1702,23 +1755,98 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const v = volume().net;
     $("corr-note").textContent = "Based on " + v.toFixed(1) + " gal net. Dose into the sump or a high-flow area, and retest before the next day's dose. Reef Code A and B are meant to be dosed in equal volumes for routine maintenance; using one alone is for correcting a single parameter.";
   }
+  // ---------- daily maintenance dose: by hand or auto doser ----------
+  function readMethod(){
+    const mode = $("dm-mode").value === "auto" ? "auto" : "manual";
+    const cont = {}; ["alk","ca","mg"].forEach(k => { const v = num($("dm-c-" + k) ? $("dm-c-" + k).value : null); if (v) cont[k] = v; });
+    return { mode, perDay: Math.max(1, Math.round(num($("m-split").value) || (mode === "auto" ? 24 : 1))), minMl: num($("dm-min").value), containers: cont };
+  }
+  function setMethod(m, legacySplit){
+    const mode = m && m.mode === "auto" ? "auto" : "manual";
+    $("dm-mode").value = mode;
+    $("m-split").value = m && m.perDay ? m.perDay : (legacySplit && mode === "auto" ? legacySplit : (mode === "auto" ? 24 : 1));
+    $("dm-min").value = m && m.minMl != null ? m.minMl : "";
+    renderContainers(m && m.containers || {});
+    syncMethodFields();
+  }
+  function renderContainers(vals){
+    const heads = isAllInOne() ? ["alk"] : ["alk","ca","mg"];
+    $("dm-cont").innerHTML = heads.map(k => '<div class="field"><label for="dm-c-' + k + '"><b>' + esc(DOSE[k].product) + '</b> container mL</label><input id="dm-c-' + k + '" type="number" step="50" min="0" placeholder="e.g. 500" value="' + (vals[k] ?? "") + '"></div>').join("");
+  }
+  function syncMethodFields(){
+    const auto = $("dm-mode").value === "auto";
+    $("m-split-lbl").textContent = auto ? "Doses per day" : "Times a day";
+    $("dm-min-wrap").hidden = !auto;
+  }
+  $("dm-mode").addEventListener("change", () => { const auto = $("dm-mode").value === "auto"; $("m-split").value = auto ? 24 : 1; syncMethodFields(); renderMaint(); });
+  function maintPlan(){ // mL/day per product from the "used per day" inputs, after the water change effect
+    const V = volume().net, out = {};
+    ["alk","ca","mg"].forEach(k => {
+      const used = num($("m-" + k).value); if (!used) return;
+      const lv = latestVal(k), pot = DOSE[k].potency;
+      out[k] = { used, ml: Math.max(0, (used - wcPerDay(k, lv ? lv[k] : null)) * V / pot) };
+    });
+    return out;
+  }
   function renderMaint(){
     ["alk","ca","mg"].forEach(k => { const inp = $("m-" + k); if (!maintDirty[k]) { const r = consumption(k, consWin); inp.value = r.cons != null && r.cons > 0 ? r.cons.toFixed(k === "alk" ? 2 : 1) : ""; } });
-    const V = volume().net, split = Math.max(1, num($("m-split").value) || 1);
-    const items = [];
-    const line = (k, drop) => { const d = DOSE[k]; const pot = num($("p-" + k) ? $("p-" + k).value : null) || d.potency; const lv = latestVal(k); const ml = Math.max(0, (drop - wcPerDay(k, lv ? lv[k] : null)) * V / pot);
-      items.push('<li><span>' + esc(d.product) + '</span><span><b>' + ml.toFixed(1) + ' mL/day</b> · ' + (ml / split).toFixed(2) + ' mL × ' + split + '</span></li>'); return ml; };
-    const a = num($("m-alk").value), c = num($("m-ca").value), m = num($("m-mg").value);
-    let mlA = null, mlB = null;
-    if (a) mlB = line("alk", a);
-    if (c) mlA = line("ca", c);
-    if (m) line("mg", m);
-    let note = "";
-    if (mlB != null && mlA == null) note = "No calcium drop entered. Brightwell pairs A and B in equal volumes, which would be " + mlB.toFixed(1) + " mL/day of Reef Code A. Confirm with a calcium trend before committing.";
-    else if (mlA != null && mlB != null && Math.abs(mlA - mlB) / Math.max(mlA, mlB) > 0.3) note = "Your calcium and alkalinity use aren't in the 1:1 ratio A and B assume. Dosing to the alkalinity number and adjusting Reef Code A separately keeps both on target.";
-    $("maint-out").innerHTML = items.length ? '<ul class="result-list">' + items.join("") + '</ul>' + (note ? '<div class="callout">' + esc(note) + '</div>' : '') + '<p class="hint">For ' + V.toFixed(1) + ' gal. If you are new to dosing, begin at about 75% of these numbers and test alkalinity daily for a week before raising them.</p>'
+    const V = volume().net, m = readMethod(), plan = maintPlan(), items = [], notes = [];
+    const cont = k => num($("dm-c-" + k) ? $("dm-c-" + k).value : null);
+    const line = (k, ml, head) => {
+      const per = ml / m.perDay, eff = per * DOSE[k].potency / V, c = cont(k);
+      const how = m.mode === "auto" ? m.perDay + " doses of " + per.toFixed(2) + " mL" : (m.perDay === 1 ? "once a day" : per.toFixed(1) + " mL, " + m.perDay + " times a day");
+      items.push('<li><span>' + (head ? '<span class="hint">Head ' + head + ' · </span>' : '') + esc(DOSE[k].product) + '</span><span><b>' + ml.toFixed(1) + ' mL/day</b> · ' + how +
+        (c ? ' · container lasts ' + Math.floor(c / Math.max(ml, 0.01)) + ' days' : '') + '</span></li>');
+      if (m.mode === "auto" && m.minMl && per < m.minMl) notes.push(DOSE[k].product + ": " + per.toFixed(2) + " mL per dose is below your doser's " + m.minMl + " mL minimum. Use " + Math.max(1, Math.floor(ml / m.minMl)) + " doses a day or fewer.");
+      if (m.mode === "manual" && k === "alk" && eff > 0.5) notes.push("Each hand dose of " + DOSE.alk.product + " raises alkalinity about " + eff.toFixed(2) + " dKH at once. Splitting it into two or more doses a day, or moving to a doser, keeps the swings smaller.");
+    };
+    if (isAllInOne()) {
+      if (plan.alk) {
+        line("alk", plan.alk.ml, m.mode === "auto" ? 1 : 0);
+        const addCa = plan.alk.ml * DOSE.ca.potency / V, addMg = plan.alk.ml * DOSE.mg.potency / V;
+        const cu = plan.ca ? plan.ca.used : null, mu = plan.mg ? plan.mg.used : null;
+        notes.push(DOSE.alk.product + " supplies all three in one bottle, so it's dosed to hold alkalinity. At " + plan.alk.ml.toFixed(1) + " mL a day it also adds about " + addCa.toFixed(1) + " ppm calcium" + (cu ? " (you use " + cu + ")" : "") + " and " + addMg.toFixed(2) + " ppm magnesium" + (mu ? " (you use " + mu + ")" : "") + " a day." +
+          (cu && Math.abs(addCa - cu) / cu > 0.3 ? " Calcium is off by more than 30%, so a separate calcium supplement or a lower dose may be needed; watch the calcium trend." : "") +
+          (mu && addMg < mu * 0.5 ? " It won't keep up with your magnesium use on its own; add a magnesium supplement." : ""));
+      }
+    } else {
+      let head = 0;
+      ["alk","ca","mg"].forEach(k => { if (plan[k]) line(k, plan[k].ml, m.mode === "auto" ? ++head : 0); });
+      if (plan.alk && plan.ca && /^brightwell reef code/i.test(DOSE.alk.product) && Math.abs(plan.alk.ml - plan.ca.ml) / Math.max(plan.alk.ml, plan.ca.ml) > 0.3)
+        notes.push("Your calcium and alkalinity use aren't in the 1:1 ratio A and B assume. Dosing B to the alkalinity number and adjusting A separately keeps both on target.");
+      if (m.mode === "manual" && plan.alk && plan.ca) notes.push("Dose the alkalinity and calcium parts at different times or in different spots with good flow, and never mix the concentrates together.");
+    }
+    $("maint-out").innerHTML = items.length ? '<ul class="result-list">' + items.join("") + '</ul>' + notes.map(n => '<div class="callout">' + esc(n) + '</div>').join("") +
+      '<p class="hint">For ' + V.toFixed(1) + ' gal. If you are new to dosing, begin at about 75% of these numbers and test alkalinity daily for a week before raising them.</p>'
       : '<p class="hint">Log a few tests a day or more apart (and save your current doses above) and the daily use fills in here.</p>';
   }
+  $("dm-save").addEventListener("click", () => saveDosing("dm-status"));
+  $("dm-sched").addEventListener("click", async () => {
+    if (!db) { setStatus("dm-status", "Saving isn't available in this view.", true); return; }
+    const m = readMethod(), plan = maintPlan();
+    const keys = (isAllInOne() ? ["alk"] : ["alk","ca","mg"]).filter(k => plan[k]);
+    if (!keys.length) { setStatus("dm-status", "Nothing to schedule yet; the daily use numbers are empty.", true); return; }
+    const amounts = keys.map(k => DOSE[k].product + " " + plan[k].ml.toFixed(1) + " mL").join(", ");
+    const find = re => tasks.find(t => re.test(t.name || ""));
+    const upsert = async (hit, rec) => hit ? db.collection("tasks").doc(hit.id).set({ ...rec, lastDone: hit.lastDone || "", history: hit.history || [] }) : db.collection("tasks").add({ ...rec, lastDone: "", history: [] });
+    const done = [];
+    try {
+      await saveDosing("dm-status");
+      const manualT = find(/^dose supplements by hand/i), refillT = find(/^refill doser containers/i), calT = find(/^check doser head calibration/i);
+      if (m.mode === "manual") {
+        await upsert(manualT, { name: "Dose supplements by hand", kind: "upkeep", every: 1, marker: "", params: [], notes: amounts + (m.perDay > 1 ? ", split into " + m.perDay + " doses" : "") + "." });
+        done.push("a daily \"Dose supplements by hand\" task");
+        for (const t of [refillT, calT]) if (t) await db.collection("tasks").doc(t.id).delete();
+      } else {
+        const days = keys.map(k => { const c = num($("dm-c-" + k) ? $("dm-c-" + k).value : null); return c ? Math.floor(c / Math.max(plan[k].ml, 0.01)) : null; }).filter(x => x != null);
+        if (days.length) { const every = Math.max(1, Math.min(...days) - 2); await upsert(refillT, { name: "Refill doser containers", kind: "upkeep", every, marker: "", params: [], notes: amounts + " a day. Refill a couple of days before the first container runs dry." }); done.push("\"Refill doser containers\" every " + every + " days"); }
+        await upsert(calT, { name: "Check doser head calibration", kind: "upkeep", every: 30, marker: "", params: [], notes: "Run each head into a measuring cylinder and compare with its setting. Monthly is a common starting point; follow your doser's manual." });
+        done.push("a monthly \"Check doser head calibration\" task");
+        if (manualT) await db.collection("tasks").doc(manualT.id).delete();
+      }
+      setStatus("dm-status", "Updated your schedule with " + done.join(" and ") + ". Download a fresh calendar file on the Maintenance tab if you use one.");
+    } catch (e) { setStatus("dm-status", "Couldn't update the schedule (" + (e && e.code || "error") + ").", true); }
+  });
   function getSalt(){ return { preset: $("s-preset").value, alk: num($("s-alk").value), ca: num($("s-ca").value), mg: num($("s-mg").value), k: num($("s-k").value), sg: num($("s-sg").value), gpg: num($("s-gpg").value) }; }
   function setSalt(s){ $("s-preset").value = SALTS[s.preset] ? s.preset : "custom"; ["alk","ca","mg","k","sg","gpg"].forEach(k => { $("s-" + k).value = s[k] ?? ""; }); }
   // ---------- water change plan ----------
@@ -1830,11 +1958,17 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function doseAt(k, ts){ // mL per day in effect at a moment
     let v = 0; for (const e of doseHist) { if (toTs(e.from, "00:00") <= ts) v = Number(e[k]) || 0; else break; } return v;
   }
-  function doseAvg(k, t0, t1){ // average mL/day over [t0, t1], following dose changes
-    if (t1 <= t0) return doseAt(k, t0);
+  function doseEffAt(k, ts){ // what the dose in effect adds (mL × strength of the product used then) per day, per gallon
+    let e0 = null; for (const e of doseHist) { if (toTs(e.from, "00:00") <= ts) e0 = e; else break; }
+    if (!e0) return 0;
+    const pot = e0.pot && e0.pot[k] > 0 ? e0.pot[k] : DOSE[k].potency; // entries saved before products were recorded use today's product
+    return (Number(e0[k]) || 0) * pot;
+  }
+  function doseAvg(k, t0, t1){ // average (mL × strength) per day over [t0, t1], following dose and product changes
+    if (t1 <= t0) return doseEffAt(k, t0);
     const cuts = doseHist.map(e => toTs(e.from, "00:00")).filter(t => t > t0 && t < t1);
     const edges = [t0, ...cuts, t1]; let sum = 0;
-    for (let i = 0; i < edges.length - 1; i++) sum += doseAt(k, edges[i]) * (edges[i + 1] - edges[i]);
+    for (let i = 0; i < edges.length - 1; i++) sum += doseEffAt(k, edges[i]) * (edges[i + 1] - edges[i]);
     return sum / (t1 - t0);
   }
   function wcPerDay(k, level){ // average change per day the water change plan causes at a given level
@@ -1855,7 +1989,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function consumption(k, days){
     const V = volume().net, pot = DOSE[k].potency, tr = trend(k, days);
     if (tr.slope == null || !V) return { ...tr };
-    const dose = doseAvg(k, tr.t0, tr.t1) * pot / V, wc = wcPerDay(k, tr.mean);
+    const dose = doseAvg(k, tr.t0, tr.t1) / V, wc = wcPerDay(k, tr.mean);
     const cons = -tr.slope + dose + wc;
     const latest = latestVal(k), level = latest ? latest[k] : tr.mean;
     const hold = Math.max(0, (cons - wcPerDay(k, level)) * V / pot);
@@ -1866,14 +2000,14 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const pts = tests.filter(t => t[k] != null && t.ts >= cutoff), out = [];
     for (let i = 1; i < pts.length; i++) {
       const a = pts[i - 1], b = pts[i], d = (b.ts - a.ts) / DAY; if (d < 0.5) continue;
-      out.push({ x: (a.ts + b.ts) / 2, y: (a[k] - b[k]) / d + doseAvg(k, a.ts, b.ts) * pot / V + wcPerDay(k, (a[k] + b[k]) / 2) });
+      out.push({ x: (a.ts + b.ts) / 2, y: (a[k] - b[k]) / d + doseAvg(k, a.ts, b.ts) / V + wcPerDay(k, (a[k] + b[k]) / 2) });
     }
     return out;
   }
   function renderDoseHist(){
     CONS_KEYS.forEach(k => { $("cd-lbl-" + k).textContent = DOSE[k].product; const inp = $("cd-" + k); if (!inp.dataset.dirty) { const v = doseAt(k, Date.now()); inp.value = v ? v : ""; } });
     $("cd-hist").innerHTML = doseHist.length ? '<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Since</th>' + CONS_KEYS.map(k => '<th>' + esc(DOSE[k].name) + '</th>').join("") + (canWrite ? '<th></th>' : '') + '</tr></thead><tbody>' +
-      [...doseHist].reverse().map(e => '<tr><td>' + dstr(toTs(e.from, "12:00")) + '</td>' + CONS_KEYS.map(k => '<td>' + (Number(e[k]) || 0) + ' mL</td>').join("") + (canWrite ? '<td class="act"><button type="button" class="danger" data-cddel="' + esc(e.from) + '">Delete</button></td>' : '') + '</tr>').join("") + '</tbody></table></div>'
+      [...doseHist].reverse().map(e => '<tr><td>' + dstr(toTs(e.from, "12:00")) + '</td>' + CONS_KEYS.map(k => '<td>' + (Number(e[k]) || 0) + ' mL' + (e.product && e.product[k] ? '<br><span class="hint">' + esc(e.product[k]) + '</span>' : '') + '</td>').join("") + (canWrite ? '<td class="act"><button type="button" class="danger" data-cddel="' + esc(e.from) + '">Delete</button></td>' : '') + '</tr>').join("") + '</tbody></table></div>'
       : '<p class="hint">No doses saved yet. Enter what you dose each day (0 if nothing) and save; change it here whenever you adjust your doser.</p>';
   }
   function renderConsumption(){
@@ -1921,7 +2055,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   $("cd-save").addEventListener("click", async () => {
     if (!db) { setStatus("cd-status", "Saving isn't available in this view.", true); return; }
     const from = $("cd-from").value || today();
-    const entry = { from }; CONS_KEYS.forEach(k => { entry[k] = Math.max(0, num($("cd-" + k).value) || 0); });
+    const entry = { from, pot: {}, product: {} }; CONS_KEYS.forEach(k => { entry[k] = Math.max(0, num($("cd-" + k).value) || 0); entry.pot[k] = DOSE[k].potency; entry.product[k] = DOSE[k].product; });
     doseHist = doseHist.filter(e => e.from !== from).concat([entry]).sort((a, b) => a.from.localeCompare(b.from));
     CONS_KEYS.forEach(k => { delete $("cd-" + k).dataset.dirty; });
     try {
@@ -2005,7 +2139,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
   $("s-preset").addEventListener("change", () => { const p = SALTS[$("s-preset").value]; if (p && p.alk != null) setSalt({ preset: $("s-preset").value, ...p }); $("s-preset").title = p ? p.range : ""; setStatus("s-status", p ? p.range : ""); renderWC(); });
   function dosingPayload(){
-    return { volume: getVol(), salt: getSalt(), wc: readWcPlan(), split: num($("m-split").value), doses: doseHist, check: consCheck };
+    return { volume: getVol(), salt: getSalt(), wc: readWcPlan(), split: num($("m-split").value), doses: doseHist, check: consCheck, method: readMethod() };
   }
   async function saveDosing(statusId){
     if (!db) { setStatus(statusId, "Saving isn't available in this view.", true); return; }
@@ -2022,7 +2156,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     setWcPlan(d && d.wc ? d.wc : null);
     consCheck = d && d.check && d.check.start ? d.check : null;
     doseHist = d && Array.isArray(d.doses) ? d.doses.slice().sort((a, b) => String(a.from).localeCompare(String(b.from))) : [];
-    $("m-split").value = d && d.split ? d.split : 4;
+    setMethod(d && d.method ? d.method : null, d && d.split);
     $("corr").innerHTML = ""; renderDosing();
   }
   applyDosingDoc(null);
@@ -2288,11 +2422,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   $("lp-loaded").textContent = "Starting template (unsaved)";
 
   // ---------- tank profile ----------
-  const PRODUCTS = {
-    alk: [{ name:"Brightwell Reef Code B", potency:2.22 }],
-    ca:  [{ name:"Brightwell Reef Code A", potency:16 }],
-    mg:  [{ name:"Brightwell Magnesion", potency:26 }]
-  };
+  // (product catalog moved up next to the dosing defaults)
   const PROFILE_BLANK = { name:"My Reef", display:"", dl:47.75, dw:17.75, dd:19.5, sand:1.5, rock:50, hasSump:true, sumpModel:"", sl:20, sw:10, sd:8,
     salt:"af35", alk:{ name:"Brightwell Reef Code B", potency:2.22 }, ca:{ name:"Brightwell Reef Code A", potency:16 }, mg:{ name:"Brightwell Magnesion", potency:26 }, light:"", lightCount:1 };
   let profileSeen = false;
@@ -2300,10 +2430,14 @@ details.backup summary { cursor: pointer; list-style: revert; }
   $("pf-salt").innerHTML = Object.entries(SALTS).map(([k, v]) => '<option value="' + k + '">' + esc(v.label) + '</option>').join("");
   $("pf-products").innerHTML = ["alk","ca","mg"].map(k => { const d = DOSE[k];
     return '<div class="fields three"><div class="field" style="grid-column:span 2"><label for="pf-' + k + '-name"><b>' + d.name + ' product</b></label><input id="pf-' + k + '-name" type="text" list="pf-' + k + '-list" maxlength="60">' +
-      '<datalist id="pf-' + k + '-list">' + PRODUCTS[k].map(x => '<option value="' + esc(x.name) + '">').join("") + '</datalist></div>' +
+      '<datalist id="pf-' + k + '-list">' + PRODUCTS[k].map(x => '<option value="' + esc(x.name) + '" label="' + esc(x.potency + " " + d.unit + " per mL per gal (" + x.basis + ")") + '">').join("") + '</datalist></div>' +
       '<div class="field"><label for="pf-' + k + '-pot"><b>Strength</b> ' + d.unit + ' per mL per gal</label><input id="pf-' + k + '-pot" type="number" step="any" min="0"></div></div>'; }).join("") +
-    '<p class="hint">Strength is how much 1 mL raises 1 US gallon. Picking a listed product fills it in; for anything else, take it from the label.</p>';
-  ["alk","ca","mg"].forEach(k => $("pf-" + k + "-name").addEventListener("change", () => { const hit = PRODUCTS[k].find(x => x.name === $("pf-" + k + "-name").value.trim()); if (hit) $("pf-" + k + "-pot").value = hit.potency; }));
+    '<p class="hint">Strength is how much 1 mL raises 1 US gallon. Picking a listed product fills it in (label means the maker states it; calc means it is worked out from the maker\'s stated concentration or mix). For anything else, enter the label strength. Picking Tropic Marin All-For-Reef for alkalinity sets calcium and magnesium to it too.</p>';
+  ["alk","ca","mg"].forEach(k => $("pf-" + k + "-name").addEventListener("change", () => {
+    const hit = PRODUCTS[k].find(x => x.name === $("pf-" + k + "-name").value.trim()); if (!hit) return;
+    $("pf-" + k + "-pot").value = hit.potency;
+    if (hit.allInOne && k === "alk") ["ca","mg"].forEach(j => { const h = productInfo(j, hit.name); if (h) { $("pf-" + j + "-name").value = h.name; $("pf-" + j + "-pot").value = h.potency; } });
+  }));
   $("pf-hassump").addEventListener("change", () => { $("pf-sump").hidden = !$("pf-hassump").checked; });
 
   function fillProfileForm(p){
@@ -2336,7 +2470,11 @@ details.backup summary { cursor: pointer; list-style: revert; }
       $("spec-note").hidden = !p.light || /k7/i.test(p.light);
     }
     VOL_DEF = { dl:q.dl, dw:q.dw, dd:q.dd, sand:q.sand, rock:q.rock, other:0, sl:q.hasSump ? q.sl : 0, sw:q.hasSump ? q.sw : 0, sd:q.hasSump ? q.sd : 0 };
-    ["alk","ca","mg"].forEach(k => { if (q[k]) { DOSE[k].product = q[k].name || DOSE[k].product; if (q[k].potency > 0) DOSE[k].potency = q[k].potency; } });
+    ["alk","ca","mg"].forEach(k => {
+      if (q[k]) { DOSE[k].product = q[k].name || DOSE[k].product; if (q[k].potency > 0) DOSE[k].potency = q[k].potency; }
+      const info = productInfo(k, DOSE[k].product), lim = info && info.maxDay ? info : GENERIC_MAX[k];
+      DOSE[k].maxDay = lim.maxDay; DOSE[k].maxNote = lim.maxNote;
+    });
     applyDosingDoc(dosingDoc);
   }
   function openProfile(first){
