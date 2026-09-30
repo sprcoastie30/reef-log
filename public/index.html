@@ -1,0 +1,1426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>75-Gallon Reef Log</title>
+<meta name="description" content="Reef aquarium log: water tests with charts, equipment, photos, dosing and salt calculator, and LED light programs.">
+<meta name="theme-color" content="#0b7480">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Reef Log">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif;background:#fafafa}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<style>
+/* Layout: engineer's logbook. Header strip, summary row, small-multiple charts grid, entry form + history below. */
+:root {
+  --bg: #eef3f4;
+  --panel: #fbfdfd;
+  --ink: #13242b;
+  --muted: #5a6d74;
+  --line: #d3dee1;
+  --grid: #e3eaec;
+  --accent: #0b7480;
+  --accent-ink: #ffffff;
+  --band: rgba(11,116,128,0.10);
+  --event: #b86e0b;
+  --ok: #1f7a4a;
+  --ok-bg: #e2f2e8;
+  --warn: #a4570a;
+  --warn-bg: #fbeedd;
+  --bad: #b3261e;
+  --bad-bg: #f9e3e1;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d171b; --panel: #132127; --ink: #dce8eb; --muted: #8ea3aa; --line: #24363d; --grid: #1c2c32;
+    --accent: #3fb4c0; --accent-ink: #06181c; --band: rgba(63,180,192,0.13); --event: #e0a045;
+    --ok: #6fd19b; --ok-bg: #16352a; --warn: #f0b05a; --warn-bg: #3a2a12; --bad: #ff8a80; --bad-bg: #3d1a18;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d171b; --panel: #132127; --ink: #dce8eb; --muted: #8ea3aa; --line: #24363d; --grid: #1c2c32;
+  --accent: #3fb4c0; --accent-ink: #06181c; --band: rgba(63,180,192,0.13); --event: #e0a045;
+  --ok: #6fd19b; --ok-bg: #16352a; --warn: #f0b05a; --warn-bg: #3a2a12; --bad: #ff8a80; --bad-bg: #3d1a18;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: flex; flex-direction: column; gap: 22px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: 0.005em; }
+h1 { font-size: 1.9rem; font-weight: 700; }
+h2 { font-size: 1.2rem; font-weight: 600; }
+.label { font-family: var(--f-display); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mono, .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+button, .btn { font: 600 0.9rem var(--f-display); letter-spacing: 0.03em; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 8px 14px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.danger { color: var(--bad); }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, label.chip:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+header.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
+header.top .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 0.88rem; }
+header.top .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.notice { border: 1px dashed var(--event); background: var(--warn-bg); color: var(--ink); border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; }
+.notice strong { color: var(--warn); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 6px 12px; background: var(--panel); }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.82rem; color: var(--muted); align-items: center; }
+.legend i { display: inline-block; width: 18px; height: 10px; vertical-align: middle; margin-right: 5px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px 8px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.card .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card .val { font-family: var(--f-mono); font-size: 1.55rem; font-weight: 500; line-height: 1.1; }
+.card .unit { font-size: 0.8rem; color: var(--muted); margin-left: 4px; font-family: var(--f-body); }
+.card .sub { display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; color: var(--muted); flex-wrap: wrap; }
+.pill { font: 600 0.7rem var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.low, .pill.high { background: var(--warn-bg); color: var(--warn); }
+.pill.none { background: var(--grid); color: var(--muted); }
+.chart { position: relative; height: 150px; }
+.chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.chart svg text { font-family: var(--f-mono); font-size: 10px; fill: var(--muted); }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font: 500 0.75rem var(--f-mono); padding: 4px 7px; border-radius: 4px; white-space: nowrap; transform: translate(-50%, -115%); }
+.empty-chart { height: 150px; display: grid; place-items: center; color: var(--muted); font-size: 0.85rem; border: 1px dashed var(--line); border-radius: 6px; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+section.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.field label { font-size: 0.82rem; color: var(--muted); }
+.field label b { color: var(--ink); font-weight: 600; }
+input, textarea, select { font: 0.95rem var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; min-width: 0; }
+input[type="number"] { font-family: var(--f-mono); }
+textarea { resize: vertical; min-height: 60px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+label.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 0.82rem; cursor: pointer; user-select: none; }
+label.chip input { width: auto; margin: 0; accent-color: var(--event); }
+label.chip:has(input:checked) { border-color: var(--event); color: var(--event); }
+.form-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.status { font-size: 0.85rem; color: var(--muted); }
+.status.err { color: var(--bad); }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { font: 600 0.72rem var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); position: sticky; top: 0; background: var(--panel); }
+td { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child, td.note, th.note { text-align: left; }
+td.note { font-family: var(--f-body); white-space: normal; min-width: 180px; color: var(--muted); }
+td.out { color: var(--warn); font-weight: 500; }
+td .ev { display: inline-block; font: 600 0.66rem var(--f-display); letter-spacing: 0.05em; text-transform: uppercase; color: var(--event); border: 1px solid var(--event); border-radius: 3px; padding: 0 4px; margin: 1px 3px 1px 0; }
+td.act { white-space: nowrap; }
+td.act button { padding: 3px 8px; font-size: 0.75rem; }
+
+details.targets summary { cursor: pointer; font-family: var(--f-display); font-weight: 600; }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 14px; margin-top: 12px; }
+.tgrid .row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.io { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hint { font-size: 0.82rem; color: var(--muted); }
+code { font-family: var(--f-mono); font-size: 0.85em; background: var(--grid); padding: 1px 4px; border-radius: 3px; }
+nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+nav.tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; padding: 8px 14px 9px; color: var(--muted); font-size: 0.95rem; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+nav.tabs .count { font-family: var(--f-mono); font-size: 0.78rem; color: var(--muted); margin-left: 4px; }
+.tabpanel { display: flex; flex-direction: column; gap: 22px; }
+
+.eq-groups { display: flex; flex-direction: column; gap: 18px; }
+.eq-group h3 { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 4px; }
+.eq-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); }
+.eq-row .name { font-weight: 600; }
+.eq-row .details { color: var(--muted); font-size: 0.88rem; }
+.eq-row .dates { font-family: var(--f-mono); font-size: 0.78rem; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+.eq-row .side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.eq-row .side .btns { display: flex; gap: 6px; }
+.eq-row .side button { padding: 3px 8px; font-size: 0.75rem; }
+.pill.planned { background: var(--warn-bg); color: var(--warn); }
+.pill.retired { background: var(--grid); color: var(--muted); }
+.pill.inuse { background: var(--ok-bg); color: var(--ok); }
+
+.drop { border: 2px dashed var(--line); border-radius: 8px; padding: 18px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.drop.over { border-color: var(--accent); color: var(--ink); }
+.gallery { display: flex; flex-direction: column; gap: 18px; }
+.gallery h3 { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.thumb { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; padding: 0; text-align: left; display: flex; flex-direction: column; font: inherit; font-weight: 400; letter-spacing: 0; }
+.thumb img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--grid); max-width: 100%; }
+.thumb .cap { padding: 6px 8px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.thumb .cap span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thumb .cap .d { font-family: var(--f-mono); font-size: 0.72rem; color: var(--muted); }
+.lightbox { position: fixed; inset: 0; background: rgba(5,12,15,0.86); z-index: 20; display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+.lightbox .box { background: var(--panel); border-radius: 10px; max-width: 980px; width: 100%; max-height: 100%; overflow: auto; display: flex; flex-direction: column; }
+.lightbox img { width: 100%; max-height: 68vh; object-fit: contain; background: #000; display: block; }
+.lightbox .meta { padding: 12px 14px; display: grid; grid-template-columns: minmax(0, 1fr) 160px; gap: 10px; }
+.lightbox .meta .full { grid-column: 1 / -1; }
+@media (max-width: 520px) { .lightbox .meta { grid-template-columns: minmax(0, 1fr); } }
+.skeleton { color: var(--muted); font-size: 0.9rem; padding: 12px 0; }
+.dose-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 18px; align-items: start; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.vol-cols { display: flex; flex-direction: column; gap: 12px; }
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fields.three { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.vol-out { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.vol-out div { display: flex; flex-direction: column; gap: 2px; }
+.vol-out .big { font-family: var(--f-mono); font-size: 1.35rem; font-weight: 500; }
+.vol-out .net .big { color: var(--accent); }
+.vol-out small { color: var(--muted); font-size: 0.78rem; }
+table.calc td input { width: 5.5em; padding: 4px 6px; font-size: 0.85rem; text-align: right; }
+table.calc td.prod { font-family: var(--f-body); text-align: left; white-space: normal; min-width: 130px; }
+table.calc td.res { font-weight: 500; color: var(--ink); }
+.result-list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.result-list li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--grid); padding: 6px 0; flex-wrap: wrap; }
+.result-list li span:last-child { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.callout { border-left: 3px solid var(--event); padding: 6px 10px; font-size: 0.86rem; background: var(--warn-bg); border-radius: 0 6px 6px 0; margin-top: 8px; }
+:root { --ch-w: #7d8a90; --ch-lb: #2f95d6; --ch-db: #2c46c4; --ch-uv: #7a3fcf; --ch-red: #d2463c; --ch-gb: #1f9a73; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ch-w: #d5dde0; --ch-lb: #5cb8f0; --ch-db: #7b91ff; --ch-uv: #b58cff; --ch-red: #ff7d72; --ch-gb: #4fd1a2; } }
+:root[data-theme="dark"] { --ch-w: #d5dde0; --ch-lb: #5cb8f0; --ch-db: #7b91ff; --ch-uv: #b58cff; --ch-red: #ff7d72; --ch-gb: #4fd1a2; }
+.spec-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px; }
+.spec-row div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.spec-row b { font-weight: 500; }
+.chdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: baseline; }
+.qr-out { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.qr-out canvas { background: #fff; padding: 10px; border-radius: 6px; max-width: 100%; height: auto; image-rendering: pixelated; }
+.qr-out code { word-break: break-all; font-size: 0.7rem; max-width: 100%; }
+details.backup summary { cursor: pointer; list-style: revert; }
+.lp-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 8px 0; border-bottom: 1px solid var(--grid); }
+.lp-item .btns { display: flex; gap: 6px; align-items: center; }
+.lp-item .btns button { padding: 3px 8px; font-size: 0.75rem; }
+.lp-item .d { font-family: var(--f-mono); font-size: 0.78rem; color: var(--muted); }
+@media (max-width: 420px) { .fields:not(.three) { grid-template-columns: 1fr; } h1 { font-size: 1.6rem; } }
+@media (prefers-reduced-motion: no-preference) { .card { transition: border-color .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="label">Water chemistry log · Eshopps RS-75 sump</div>
+      <h1>75-Gallon Reef Log</h1>
+      <div class="meta">
+        <span id="m-last">No tests logged yet</span>
+        <span id="m-count"></span>
+        <span id="m-np"></span>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="btn-jump" type="button">Log a test</button>
+    </div>
+  </header>
+
+  <div class="notice" id="ro-notice" hidden>This log is read-only for you. Only the tank owner can add or change entries.</div>
+
+  <nav class="tabs" role="tablist" aria-label="Log sections">
+    <button type="button" role="tab" id="tb-chemistry" data-tab="chemistry" aria-selected="true">Chemistry</button>
+    <button type="button" role="tab" id="tb-equipment" data-tab="equipment" aria-selected="false">Equipment<span class="count" id="c-eq"></span></button>
+    <button type="button" role="tab" id="tb-photos" data-tab="photos" aria-selected="false">Photos<span class="count" id="c-ph"></span></button>
+    <button type="button" role="tab" id="tb-dosing" data-tab="dosing" aria-selected="false">Dosing &amp; salt</button>
+    <button type="button" role="tab" id="tb-lighting" data-tab="lighting" aria-selected="false">Lighting</button>
+  </nav>
+
+  <div class="tabpanel" id="tab-chemistry" role="tabpanel" aria-labelledby="tb-chemistry">
+  <div class="notice" id="example-notice" hidden>
+    <strong>Example data.</strong> The charts below show made-up readings so you can see how the log works. They disappear as soon as you save your first test.
+  </div>
+  <div class="toolbar">
+    <div class="seg" role="group" aria-label="Time range">
+      <button type="button" data-range="30">30 days</button>
+      <button type="button" data-range="90" aria-pressed="true">90 days</button>
+      <button type="button" data-range="180">6 months</button>
+      <button type="button" data-range="0">All</button>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--band)"></i>Target range</span>
+      <span><i style="border-top:2px dashed var(--event);height:0"></i>Maintenance event</span>
+      <span><i style="background:var(--warn);height:8px;width:8px;border-radius:50%"></i>Outside target</span>
+    </div>
+  </div>
+
+  <div class="grid" id="cards"></div>
+
+  <div class="cols">
+    <section class="panel" id="entry">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <h2 id="form-title">Log a test</h2>
+        <span class="hint">Leave blank what you didn't test</span>
+      </div>
+      <form id="f" novalidate>
+        <div class="fields">
+          <div class="field"><label for="f-date"><b>Date</b></label><input id="f-date" type="date" required></div>
+          <div class="field"><label for="f-time"><b>Time</b></label><input id="f-time" type="time"></div>
+          <div id="param-fields" style="display:contents"></div>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <span class="label">Events on this date</span>
+          <div class="chips" id="f-events"></div>
+        </div>
+        <div class="field" style="margin-top:12px"><label for="f-note"><b>Notes</b> · dosing changes, observations</label><textarea id="f-note"></textarea></div>
+        <div class="form-actions" style="margin-top:12px">
+          <button class="primary" type="submit" id="f-save">Save test</button>
+          <button type="button" id="f-cancel" hidden>Cancel edit</button>
+          <span class="status" id="f-status" role="status"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <h2>History</h2>
+        <span class="hint" id="h-count"></span>
+      </div>
+      <div class="tablewrap" style="max-height:520px;overflow-y:auto"><table id="hist"></table></div>
+      <details class="targets">
+        <summary>Target ranges</summary>
+        <p class="hint">Bands on the charts and the in-range check use these. Defaults follow a mixed SPS/LPS system with Alk 8–9 dKH, Ca ~420, Mg ~1350.</p>
+        <div class="tgrid" id="tgrid"></div>
+        <div class="form-actions" style="margin-top:10px"><button type="button" id="t-save">Save targets</button><button type="button" id="t-reset">Restore defaults</button><span class="status" id="t-status"></span></div>
+      </details>
+      <div class="io">
+        <button type="button" id="btn-export">Export CSV</button>
+        <label class="btn" for="imp" style="display:inline-block">Import CSV</label>
+        <input type="file" id="imp" accept=".csv,text/csv" hidden>
+        <span class="status" id="io-status"></span>
+      </div>
+      <p class="hint">Import columns: <code>date,time,alk,ca,mg,no3,po4,sal,temp,ph,events,note</code>. Date as YYYY-MM-DD; events separated by <code>;</code>.</p>
+    </section>
+  </div>
+  </div>
+
+  <div class="tabpanel" id="tab-equipment" role="tabpanel" aria-labelledby="tb-equipment" hidden>
+    <div class="cols">
+      <section class="panel" id="eq-entry">
+        <h2 id="eq-title">Add equipment</h2>
+        <form id="ef" novalidate>
+          <div class="fields">
+            <div class="field" style="grid-column:1/-1"><label for="e-name"><b>Name</b></label><input id="e-name" type="text" placeholder="e.g. Return pump"></div>
+            <div class="field"><label for="e-cat"><b>Category</b></label><select id="e-cat"></select></div>
+            <div class="field"><label for="e-status"><b>Status</b></label><select id="e-status"><option>In use</option><option>Planned</option><option>Retired</option></select></div>
+            <div class="field" style="grid-column:1/-1"><label for="e-details"><b>Make / model / specs</b></label><input id="e-details" type="text"></div>
+            <div class="field"><label for="e-installed"><b>Installed</b></label><input id="e-installed" type="date"></div>
+            <div class="field"><label for="e-serviced"><b>Last serviced</b></label><input id="e-serviced" type="date"></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label for="e-notes"><b>Notes</b> · settings, service interval, where you bought it</label><textarea id="e-notes"></textarea></div>
+          <div class="form-actions" style="margin-top:12px">
+            <button class="primary" type="submit" id="e-save">Add to list</button>
+            <button type="button" id="e-cancel" hidden>Cancel edit</button>
+            <span class="status" id="e-status-msg" role="status"></span>
+          </div>
+        </form>
+      </section>
+      <section class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+          <h2>Equipment list</h2>
+          <span class="hint" id="eq-summary"></span>
+        </div>
+        <div class="eq-groups" id="eq-list"><div class="skeleton">Loading equipment…</div></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-photos" role="tabpanel" aria-labelledby="tb-photos" hidden>
+    <section class="panel">
+      <div class="drop" id="drop">
+        <strong style="color:var(--ink)">Add tank photos</strong>
+        <span class="hint">Choose one or several images, or drag them here. Each photo is dated from the file; you can change the date and add a caption after.</span>
+        <label class="btn primary" for="ph-input" id="ph-label" style="background:var(--accent);color:var(--accent-ink);border-color:var(--accent)">Choose photos</label>
+        <input type="file" id="ph-input" accept="image/*" multiple hidden>
+        <span class="status" id="ph-status" role="status"></span>
+      </div>
+    </section>
+    <div class="gallery" id="gallery"><div class="skeleton">Loading photos…</div></div>
+  </div>
+
+  <div class="tabpanel" id="tab-dosing" role="tabpanel" aria-labelledby="tb-dosing" hidden>
+    <div class="dose-grid">
+      <section class="panel">
+        <div><h2>System water volume</h2><p class="hint">Aqueon 75 display (48.5 × 18.5 × 21.2 in outside) plus Eshopps RS-75 sump (20 × 10 × 16 in, 12 gal to the rim). Measure your actual water depths and adjust; everything below uses the net figure.</p></div>
+        <div class="vol-cols">
+          <fieldset><legend class="label">Display, inside dimensions (in)</legend>
+            <div class="trio">
+              <div class="field"><label for="v-dl">Length</label><input id="v-dl" type="number" step="0.25"></div>
+              <div class="field"><label for="v-dw">Width</label><input id="v-dw" type="number" step="0.25"></div>
+              <div class="field"><label for="v-dd">Water depth</label><input id="v-dd" type="number" step="0.25"></div>
+            </div>
+          </fieldset>
+          <fieldset><legend class="label">Displacement</legend>
+            <div class="trio">
+              <div class="field"><label for="v-sand">Sand bed (in)</label><input id="v-sand" type="number" step="0.25"></div>
+              <div class="field"><label for="v-rock">Rock (lb)</label><input id="v-rock" type="number" step="1"></div>
+              <div class="field"><label for="v-other">Other (gal)</label><input id="v-other" type="number" step="0.5" title="Plumbing adds; equipment in the sump subtracts. Use a negative number to subtract."></div>
+            </div>
+          </fieldset>
+          <fieldset><legend class="label">Sump, running level (in)</legend>
+            <div class="trio">
+              <div class="field"><label for="v-sl">Length</label><input id="v-sl" type="number" step="0.25"></div>
+              <div class="field"><label for="v-sw">Width</label><input id="v-sw" type="number" step="0.25"></div>
+              <div class="field"><label for="v-sd">Water depth</label><input id="v-sd" type="number" step="0.25"></div>
+            </div>
+          </fieldset>
+        </div>
+        <div class="vol-out" id="vol-out"></div>
+        <div class="form-actions"><button type="button" id="v-save">Save volume</button><button type="button" id="v-reset">Restore defaults</button><span class="status" id="v-status"></span></div>
+      </section>
+
+      <section class="panel">
+        <div><h2>Correction dose</h2><p class="hint">How much to add to move a parameter from today's reading to target. Current values fill in from your latest test.</p></div>
+        <div class="tablewrap"><table class="calc" id="corr"></table></div>
+        <p class="hint" id="corr-note"></p>
+      </section>
+
+      <section class="panel">
+        <div><h2>Daily maintenance dose</h2><p class="hint">Enter how much each parameter drops per day with no dosing (test at the same time on two or more days). The log's per-day change fills in when your last two readings show a drop.</p></div>
+        <div class="fields three">
+          <div class="field"><label for="m-alk"><b>Alk drop</b> dKH/day</label><input id="m-alk" type="number" step="0.05" min="0"></div>
+          <div class="field"><label for="m-ca"><b>Ca drop</b> ppm/day</label><input id="m-ca" type="number" step="0.5" min="0"></div>
+          <div class="field"><label for="m-mg"><b>Mg drop</b> ppm/day</label><input id="m-mg" type="number" step="0.5" min="0"></div>
+          <div class="field"><label for="m-split"><b>Doses per day</b></label><input id="m-split" type="number" step="1" min="1" value="4"></div>
+        </div>
+        <div id="maint-out"></div>
+      </section>
+
+      <section class="panel">
+        <div><h2>Salt &amp; water change planner</h2><p class="hint">Predicts where Alk, Ca, Mg, NO₃ and PO₄ land after a change, from your latest readings and the salt's mixed values.</p></div>
+        <div class="fields">
+          <div class="field" style="grid-column:1/-1"><label for="s-preset"><b>Salt</b></label><select id="s-preset"></select></div>
+          <div class="field"><label for="s-alk"><b>Mix Alk</b> dKH</label><input id="s-alk" type="number" step="0.1"></div>
+          <div class="field"><label for="s-ca"><b>Mix Ca</b> ppm</label><input id="s-ca" type="number" step="5"></div>
+          <div class="field"><label for="s-mg"><b>Mix Mg</b> ppm</label><input id="s-mg" type="number" step="10"></div>
+          <div class="field"><label for="s-k"><b>Mix K</b> ppm</label><input id="s-k" type="number" step="5"></div>
+          <div class="field"><label for="s-sg"><b>Mixed to</b> SG</label><input id="s-sg" type="number" step="0.001"></div>
+          <div class="field"><label for="s-gpg"><b>Salt per gallon</b> g</label><input id="s-gpg" type="number" step="1"></div>
+          <div class="field"><label for="w-gal"><b>Water change</b> gal</label><input id="w-gal" type="number" step="1" min="0"></div>
+          <div class="field"><label for="w-freq"><b>Every</b> days</label><input id="w-freq" type="number" step="1" min="1" value="7"></div>
+        </div>
+        <div id="wc-out"></div>
+        <div class="form-actions"><button type="button" id="s-save">Save salt profile</button><span class="status" id="s-status"></span></div>
+        <p class="hint">Aquaforest publishes lab results for each production batch through its "Check your salt" page. Enter your batch's numbers in the mix fields for the most accurate prediction.</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-lighting" role="tabpanel" aria-labelledby="tb-lighting" hidden>
+    <section class="panel spec">
+      <div class="spec-row">
+        <div><span class="label">Fixture</span><b>Noopsyche K7 Pro IV ×2</b></div>
+        <div><span class="label">Power</span><b class="num">100 W each</b></div>
+        <div><span class="label">Beam</span><b class="num">~90°</b></div>
+        <div><span class="label">Mounting</span><b class="num">8–12 in above water</b></div>
+        <div><span class="label">Program format</span><b class="num">24 points × 6 channels, 0–100%</b></div>
+      </div>
+      <p class="hint">Power, beam and mounting height are from Noopsyche's K7 V4 product page; Noopsyche's manual advises starting at 50% total brightness when moving up from weaker lights, and the planner flags any channel above that. Noopsyche doesn't publish channel names or the QR layout. The channel names, their order, and the code layout here come from the open-source K7 LED Controller project, which documents the K7 Pro as White, Royal Blue, Green, UV, Cyan, Red. That project says "K7 Pro" without naming a generation, so check the order once on your Pro IV with the channel test.</p>
+    </section>
+
+    <div class="dose-grid">
+      <section class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><h2>Program</h2><span class="hint" id="lp-loaded"></span></div>
+        <fieldset><legend class="label">Daily shape (hour of day, 0–23)</legend>
+          <div class="fields three">
+            <div class="field"><label for="ls-on"><b>Lights on</b></label><input id="ls-on" type="number" min="0" max="23" step="1" value="10"></div>
+            <div class="field"><label for="ls-ramp"><b>Ramp up</b> hours</label><input id="ls-ramp" type="number" min="0" max="12" step="1" value="3"></div>
+            <div class="field"><label for="ls-peakend"><b>Peak ends</b></label><input id="ls-peakend" type="number" min="0" max="23" step="1" value="17"></div>
+            <div class="field"><label for="ls-off"><b>Lights off</b></label><input id="ls-off" type="number" min="1" max="24" step="1" value="20"></div>
+          </div>
+        </fieldset>
+        <fieldset><legend class="label">Peak brightness per channel (%)</legend>
+          <div class="fields three" id="ls-peaks"></div>
+        </fieldset>
+        <div class="form-actions"><button type="button" id="ls-apply">Apply shape to all hours</button><span class="hint">Or edit single hours in the table below.</span></div>
+        <div class="chart" id="lp-chart" style="height:190px"></div>
+        <div class="vol-out" id="lp-stats"></div>
+        <div id="lp-warn"></div>
+        <details><summary class="label" style="cursor:pointer">Hour-by-hour values</summary>
+          <div class="tablewrap" style="margin-top:8px;max-height:420px;overflow-y:auto"><table class="calc" id="lp-grid"></table></div>
+        </details>
+        <div class="fields" style="margin-top:4px">
+          <div class="field" style="grid-column:1/-1"><label for="lp-name"><b>Program name</b></label><input id="lp-name" type="text" placeholder="e.g. Week 3 acclimation"></div>
+          <div class="field" style="grid-column:1/-1"><label for="lp-note"><b>Notes</b></label><input id="lp-note" type="text" placeholder="Why you changed it, PAR target"></div>
+        </div>
+        <label class="chip" style="align-self:flex-start"><input type="checkbox" id="lp-mark" checked>Add a Lighting marker to the chemistry charts</label>
+        <div class="form-actions"><button class="primary" type="button" id="lp-save">Save program</button><span class="status" id="lp-status"></span></div>
+      </section>
+
+      <section class="panel">
+        <h2>Send to light</h2>
+        <h3 style="font-size:1rem">Noopsyche app (QR code)</h3>
+        <p class="hint">Makes a QR code for the Noopsyche app's Import. The order below is the K7 Pro order documented by the K7 LED Controller project. Because it hasn't been confirmed on a Pro IV, the button unlocks once you've run the channel test and ticked the box. The code also carries manual-mode values; the planner sets those to your program's brightest hour.</p>
+        <fieldset><legend class="label">Channel order in the QR code</legend>
+          <div class="fields three" id="k7-order"></div>
+        </fieldset>
+        <label class="chip" style="align-self:flex-start"><input type="checkbox" id="k7-confirmed">I ran the channel test and this order matches my app</label>
+        <div class="form-actions"><button type="button" id="k7-save">Save order</button><button type="button" id="k7-test">Make channel test code</button><button class="primary" type="button" id="k7-make">Make QR for this program</button><span class="status" id="k7-status"></span></div>
+        <div id="qr-out" class="qr-out"></div>
+        <div class="io"><label class="btn" for="qr-imp">Read a QR code</label><input type="file" id="qr-imp" accept="image/*" hidden><span class="hint">Load an export from your app or a BeanAnimal code into the program.</span></div>
+        <div id="qr-read"></div>
+
+        <div style="border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px">
+          <h3 style="font-size:1rem">K7 LED Controller (ESP32 board, PC Bridge or Android app)</h3>
+          <p class="hint">For the open-source controller that drives the light over its own Wi-Fi. Web pages can't send directly to devices on your home network, so programs move by file: download a preset here, then open the controller and use <b>Import Preset</b>, review it, and press <b>Push</b>. Presets use the controller's own K7 Pro channel order, so they don't depend on the QR test.</p>
+          <div class="field"><label for="esp-use"><b>Use case</b> (shown in the controller)</label><input id="esp-use" type="text" placeholder="e.g. Mixed reef, LPS/SPS"></div>
+          <div class="form-actions">
+            <button type="button" class="primary" id="esp-export">Download controller preset</button>
+            <label class="btn" for="esp-imp">Read a controller preset</label><input type="file" id="esp-imp" accept="application/json,.json" hidden>
+            <span class="status" id="esp-status"></span>
+          </div>
+          <div class="hint">Controller address once your board is running: <code id="esp-host">http://k7controller.local</code> or <code>http://192.168.4.200</code> <button type="button" id="esp-copy" style="padding:2px 8px;font-size:.72rem">Copy</button> · <a href="http://k7controller.local" target="_blank" rel="noopener">Open controller</a> · <a href="https://bitbarista.github.io/k7-led-controller/guide.html" target="_blank" rel="noopener">Build guide</a></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Saved programs</h2>
+        <div id="lp-list"><div class="skeleton">Loading programs…</div></div>
+      </section>
+
+      <section class="panel">
+        <h2>PAR readings</h2>
+        <div class="fields three">
+          <div class="field"><label for="par-date"><b>Date</b></label><input id="par-date" type="date"></div>
+          <div class="field"><label for="par-sand"><b>Sand</b></label><input id="par-sand" type="number" step="1" min="0"></div>
+          <div class="field"><label for="par-mid"><b>Mid rock</b></label><input id="par-mid" type="number" step="1" min="0"></div>
+          <div class="field"><label for="par-top"><b>Rock top</b></label><input id="par-top" type="number" step="1" min="0"></div>
+        </div>
+        <div class="field"><label for="par-note"><b>Notes</b> · meter, program, time of day</label><input id="par-note" type="text"></div>
+        <div class="form-actions"><button type="button" id="par-save">Save reading</button><span class="status" id="par-status"></span></div>
+        <div class="chart" id="par-chart" style="height:170px"></div>
+        <div id="par-list"></div>
+      </section>
+    </div>
+  </div>
+  <details class="panel backup" id="backup">
+    <summary><span class="label" style="font-size:.8rem">Data &amp; backup</span></summary>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+      <p class="hint" id="bk-desc">Download everything in this log (tests, equipment, photos, dosing and salt settings, light programs, PAR readings) as one backup file. The standalone app can restore from it.</p>
+      <div class="form-actions">
+        <button type="button" class="primary" id="bk-export">Download full backup</button>
+        <label class="btn" for="bk-restore" id="bk-restore-label" hidden>Restore from backup</label><input type="file" id="bk-restore" accept="application/json,.json" hidden>
+        <span class="status" id="bk-status" role="status"></span>
+      </div>
+      <div id="bk-confirm" hidden class="callout">Restoring replaces everything currently in this app with the backup's contents. <button type="button" class="danger" id="bk-yes">Replace my data</button> <button type="button" id="bk-no">Cancel</button></div>
+    </div>
+  </details>
+</div>
+
+<div class="lightbox" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photo">
+  <div class="box">
+    <img id="lb-img" alt="">
+    <div class="meta">
+      <div class="field"><label for="lb-cap"><b>Caption</b></label><input id="lb-cap" type="text" placeholder="What's in this shot?"></div>
+      <div class="field"><label for="lb-date"><b>Date</b></label><input id="lb-date" type="date"></div>
+      <div class="form-actions full">
+        <button type="button" class="primary" id="lb-save">Save</button>
+        <button type="button" id="lb-close">Close</button>
+        <button type="button" class="danger" id="lb-del">Delete photo</button>
+        <span class="status" id="lb-status"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="store.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+(function(){
+  const PARAMS = [
+    { key:"alk",  name:"Alkalinity", unit:"dKH", step:"0.1",  dp:1, lo:8,     hi:9,     rate:true },
+    { key:"ca",   name:"Calcium",    unit:"ppm", step:"5",    dp:0, lo:400,   hi:440,   rate:true },
+    { key:"mg",   name:"Magnesium",  unit:"ppm", step:"10",   dp:0, lo:1300,  hi:1400,  rate:true },
+    { key:"no3",  name:"Nitrate",    unit:"ppm", step:"0.5",  dp:1, lo:2,     hi:10 },
+    { key:"po4",  name:"Phosphate",  unit:"ppm", step:"0.01", dp:2, lo:0.03,  hi:0.10 },
+    { key:"sal",  name:"Salinity",   unit:"SG",  step:"0.001",dp:3, lo:1.025, hi:1.026 },
+    { key:"temp", name:"Temperature",unit:"°F",  step:"0.1",  dp:1, lo:76,    hi:79 },
+    { key:"ph",   name:"pH",         unit:"",    step:"0.01", dp:2, lo:7.9,   hi:8.3 }
+  ];
+  const DEFAULTS = Object.fromEntries(PARAMS.map(p => [p.key, {lo:p.lo, hi:p.hi}]));
+  const EVENTS = ["Water change","Dosing change","New livestock","Equipment","Lighting","Filter media","Treatment"];
+  const DAY = 86400000;
+
+  let db = null, canWrite = true, tests = [], usingExamples = true, range = 90, editingId = null;
+  let targets = JSON.parse(JSON.stringify(DEFAULTS));
+  const $ = id => document.getElementById(id);
+  const fmt = (p, v) => v == null ? "—" : Number(v).toFixed(p.dp);
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const dstr = ts => new Date(ts).toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"});
+  const dshort = ts => new Date(ts).toLocaleDateString(undefined, {month:"short", day:"numeric"});
+  const num = v => (v === "" || v == null || isNaN(Number(v))) ? null : Number(v);
+
+  // ---------- example data (never stored) ----------
+  function exampleTests(){
+    const out = []; const now = Date.now(); let seed = 7;
+    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280 - 0.5; };
+    for (let i = 84; i >= 0; i -= 3) {
+      const t = now - i*DAY; const k = (84 - i) / 84;
+      out.push({ id:"ex"+i, ts:t,
+        alk: +(8.2 + Math.sin(i/9)*0.5 + rnd()*0.3).toFixed(1),
+        ca: Math.round(410 + rnd()*20 + k*10), mg: Math.round(1290 + k*60 + rnd()*20),
+        no3: +(15 - k*9 + rnd()*2).toFixed(1), po4: +(0.02 + k*0.03 + rnd()*0.01).toFixed(2),
+        sal: +(1.025 + (rnd() > 0.3 ? 0.001 : 0)).toFixed(3), temp: +(77.5 + rnd()*1.5).toFixed(1), ph: +(8.05 + rnd()*0.2).toFixed(2),
+        events: i === 60 || i === 30 ? ["Water change"] : i === 45 ? ["Dosing change"] : [], note: "Example" });
+    }
+    return out;
+  }
+
+  // ---------- rendering ----------
+  function statusOf(p, v){
+    if (v == null) return "none";
+    const t = targets[p.key];
+    if (v < t.lo) return "low"; if (v > t.hi) return "high"; return "ok";
+  }
+  function data(){ return usingExamples ? exampleTests() : tests; }
+  function windowed(list){
+    if (!range) return list;
+    const cut = Date.now() - range*DAY; return list.filter(t => t.ts >= cut);
+  }
+
+  function renderAll(){
+    const list = data();
+    $("example-notice").hidden = !usingExamples;
+    const real = usingExamples ? [] : tests;
+    $("m-last").textContent = real.length ? "Last test " + dstr(real[real.length-1].ts) : "No tests logged yet";
+    $("m-count").textContent = real.length ? real.length + (real.length === 1 ? " entry" : " entries") : "";
+    const lastN = [...real].reverse().find(t => t.no3 != null && t.po4 != null);
+    $("m-np").textContent = lastN && lastN.po4 > 0 ? "NO₃:PO₄ ≈ " + Math.round(lastN.no3 / lastN.po4) + ":1 (" + dshort(lastN.ts) + ")" : "";
+    renderCards(list); renderHistory(real);
+    if (typeof refillCurrents === "function" && $("corr").innerHTML) { refillCurrents(); updateCorrection(); renderMaint(); renderWC(); }
+  }
+
+  function renderCards(list){
+    const host = $("cards"); host.innerHTML = "";
+    const win = windowed(list);
+    PARAMS.forEach(p => {
+      const pts = list.filter(t => t[p.key] != null);
+      const last = pts[pts.length-1], prev = pts[pts.length-2];
+      const st = statusOf(p, last ? last[p.key] : null);
+      let rateTxt = "";
+      if (last && prev && last.ts - prev.ts > DAY/4) {
+        const r = (last[p.key] - prev[p.key]) / ((last.ts - prev.ts)/DAY);
+        const sign = r > 0 ? "+" : r < 0 ? "−" : "±";
+        rateTxt = sign + Math.abs(r).toFixed(p.dp + 1) + " " + p.unit + "/day";
+      }
+      const t = targets[p.key];
+      const card = document.createElement("article"); card.className = "card";
+      card.innerHTML =
+        '<div class="head"><span class="label">' + p.name + '</span><span class="pill ' + st + '">' + ({ok:"In range",low:"Low",high:"High",none:"No data"})[st] + '</span></div>' +
+        '<div><span class="val">' + (last ? fmt(p, last[p.key]) : "—") + '</span><span class="unit">' + p.unit + '</span></div>' +
+        '<div class="sub"><span>Target ' + fmt(p, t.lo) + '–' + fmt(p, t.hi) + '</span><span class="num">' + (rateTxt ? "Since last: " + rateTxt : (last ? dshort(last.ts) : "")) + '</span></div>' +
+        '<div class="chart"></div>';
+      host.appendChild(card);
+      drawChart(card.querySelector(".chart"), p, win);
+    });
+  }
+
+  function drawChart(el, p, win){
+    const pts = win.filter(t => t[p.key] != null).map(t => ({ts:t.ts, v:t[p.key]}));
+    const evs = win.filter(t => t.events && t.events.length);
+    if (!pts.length) { el.outerHTML = '<div class="empty-chart">No ' + p.name.toLowerCase() + ' readings in this range</div>'; return; }
+    const W = Math.max(240, el.clientWidth || 300), H = el.clientHeight || 150;
+    const m = {l:44, r:10, t:10, b:20};
+    const t = targets[p.key];
+    const x0 = range ? Date.now() - range*DAY : Math.min(...win.map(d => d.ts));
+    let x1 = Date.now(); if (x1 - x0 < DAY) x1 = x0 + DAY;
+    let ymin = Math.min(t.lo, ...pts.map(d => d.v)), ymax = Math.max(t.hi, ...pts.map(d => d.v));
+    const pad = (ymax - ymin || Math.abs(ymax) * 0.05 || 1) * 0.12; ymin -= pad; ymax += pad;
+    const X = ts => m.l + (ts - x0) / (x1 - x0) * (W - m.l - m.r);
+    const Y = v => m.t + (1 - (v - ymin) / (ymax - ymin)) * (H - m.t - m.b);
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + p.name + ' over time">';
+    // grid + y ticks
+    for (let i = 0; i <= 3; i++) {
+      const v = ymin + (ymax - ymin) * i / 3, y = Y(v);
+      s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y + '" y2="' + y + '" stroke="var(--grid)" stroke-width="1"/>';
+      s += '<text x="' + (m.l - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + v.toFixed(p.dp) + '</text>';
+    }
+    // target band
+    s += '<rect x="' + m.l + '" y="' + Y(t.hi) + '" width="' + (W - m.l - m.r) + '" height="' + Math.max(1, Y(t.lo) - Y(t.hi)) + '" fill="var(--band)"/>';
+    // x ticks
+    for (let i = 0; i <= 2; i++) {
+      const ts = x0 + (x1 - x0) * i / 2;
+      s += '<text x="' + X(ts) + '" y="' + (H - 4) + '" text-anchor="' + (i === 0 ? "start" : i === 2 ? "end" : "middle") + '">' + dshort(ts) + '</text>';
+    }
+    // events
+    evs.forEach(e => { const x = X(e.ts); s += '<line x1="' + x + '" x2="' + x + '" y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="var(--event)" stroke-width="1" stroke-dasharray="3 3"><title>' + esc(dstr(e.ts) + ": " + e.events.join(", ")) + '</title></line>'; });
+    // line
+    const d = pts.map((q, i) => (i ? "L" : "M") + X(q.ts).toFixed(1) + " " + Y(q.v).toFixed(1)).join(" ");
+    s += '<path d="' + d + '" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round"/>';
+    pts.forEach((q, i) => {
+      const out = q.v < t.lo || q.v > t.hi, lastPt = i === pts.length - 1;
+      s += '<circle cx="' + X(q.ts) + '" cy="' + Y(q.v) + '" r="' + (lastPt ? 4.5 : 2.6) + '" fill="' + (out ? "var(--warn)" : "var(--accent)") + '" stroke="var(--panel)" stroke-width="' + (lastPt ? 2 : 1) + '"/>';
+    });
+    s += '<rect x="' + m.l + '" y="0" width="' + (W - m.l - m.r) + '" height="' + H + '" fill="transparent" class="hit"/></svg><div class="tip" hidden></div>';
+    el.innerHTML = s;
+    const tip = el.querySelector(".tip"), hit = el.querySelector(".hit"), svg = el.querySelector("svg");
+    const move = ev => {
+      const r = svg.getBoundingClientRect(); const mx = (ev.clientX - r.left) * (W / r.width);
+      let best = pts[0]; pts.forEach(q => { if (Math.abs(X(q.ts) - mx) < Math.abs(X(best.ts) - mx)) best = q; });
+      tip.hidden = false; tip.textContent = dshort(best.ts) + " · " + fmt(p, best.v) + " " + p.unit;
+      tip.style.left = (X(best.ts) * r.width / W) + "px"; tip.style.top = (Y(best.v) * r.height / H) + "px";
+    };
+    hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
+    hit.addEventListener("pointerleave", () => { tip.hidden = true; });
+  }
+
+  function renderHistory(real){
+    const tb = $("hist");
+    $("h-count").textContent = real.length ? real.length + " entries, newest first" : "";
+    if (!real.length) { tb.innerHTML = '<tbody><tr><td class="note" style="text-align:left">Saved tests will list here. Use the form to log your first one, or import a CSV.</td></tr></tbody>'; return; }
+    let h = '<thead><tr><th>Date</th>' + PARAMS.map(p => '<th>' + p.key.toUpperCase().replace("TEMP","Temp").replace("SAL","Sal").replace("PH","pH") + '</th>').join("") + '<th class="note">Events / notes</th><th></th></tr></thead><tbody>';
+    [...real].reverse().forEach(t => {
+      h += '<tr><td>' + dstr(t.ts) + '</td>' + PARAMS.map(p => { const v = t[p.key]; const st = statusOf(p, v); return '<td class="' + (st === "low" || st === "high" ? "out" : "") + '">' + fmt(p, v) + '</td>'; }).join("") +
+        '<td class="note">' + (t.events || []).map(e => '<span class="ev">' + esc(e) + '</span>').join("") + esc(t.note) + '</td>' +
+        '<td class="act">' + (canWrite ? '<button type="button" data-edit="' + esc(t.id) + '">Edit</button> <button type="button" class="danger" data-del="' + esc(t.id) + '">Delete</button>' : '') + '</td></tr>';
+    });
+    tb.innerHTML = h + '</tbody>';
+  }
+
+  // ---------- form ----------
+  function buildForm(){
+    $("param-fields").innerHTML = PARAMS.map(p => '<div class="field"><label for="f-' + p.key + '"><b>' + p.name + '</b> ' + p.unit + '</label><input id="f-' + p.key + '" type="number" inputmode="decimal" step="' + p.step + '"></div>').join("");
+    $("f-events").innerHTML = EVENTS.map((e, i) => '<label class="chip"><input type="checkbox" id="f-ev' + i + '" value="' + esc(e) + '">' + esc(e) + '</label>').join("");
+    resetForm();
+  }
+  function today(){ const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+  function nowTime(){ const d = new Date(); return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); }
+  function resetForm(){
+    editingId = null; $("f").reset(); $("f-date").value = today(); $("f-time").value = nowTime();
+    $("form-title").textContent = "Log a test"; $("f-save").textContent = "Save test"; $("f-cancel").hidden = true;
+  }
+  function toTs(date, time){ const [y,mo,d] = date.split("-").map(Number); const [h,mi] = (time || "12:00").split(":").map(Number); return new Date(y, mo-1, d, h||0, mi||0).getTime(); }
+  function loadIntoForm(t){
+    editingId = t.id; const d = new Date(t.ts);
+    $("f-date").value = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    $("f-time").value = String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+    PARAMS.forEach(p => { $("f-" + p.key).value = t[p.key] ?? ""; });
+    EVENTS.forEach((e, i) => { $("f-ev" + i).checked = (t.events || []).includes(e); });
+    $("f-note").value = t.note || "";
+    $("form-title").textContent = "Edit test from " + dstr(t.ts); $("f-save").textContent = "Save changes"; $("f-cancel").hidden = false;
+    $("entry").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
+  }
+  function setStatus(id, msg, err){ const el = $(id); el.textContent = msg; el.classList.toggle("err", !!err); }
+
+  $("f").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    if (!$("f-date").value) { setStatus("f-status", "Pick a date for this test.", true); return; }
+    const rec = { ts: toTs($("f-date").value, $("f-time").value), note: $("f-note").value.trim(),
+      events: EVENTS.filter((e, i) => $("f-ev" + i).checked) };
+    PARAMS.forEach(p => { rec[p.key] = num($("f-" + p.key).value); });
+    if (PARAMS.every(p => rec[p.key] == null) && !rec.events.length && !rec.note) { setStatus("f-status", "Enter at least one reading, event, or note.", true); return; }
+    if (!db) { setStatus("f-status", "Saving isn't available in this view.", true); return; }
+    $("f-save").disabled = true; setStatus("f-status", "Saving…");
+    try {
+      const col = db.collection("tests");
+      if (editingId) await col.doc(editingId).set(rec); else await col.add(rec);
+      setStatus("f-status", editingId ? "Changes saved." : "Test saved."); resetForm();
+    } catch (e) { setStatus("f-status", e && e.code === "invalid_argument" ? "You don't have permission to save to this log." : "Couldn't save (" + (e && e.code || "error") + "). Try again.", true); }
+    $("f-save").disabled = false;
+  });
+  $("f-cancel").addEventListener("click", () => { resetForm(); setStatus("f-status", ""); });
+  $("btn-jump").addEventListener("click", () => { $("entry").scrollIntoView({block:"start"}); $("f-alk").focus({preventScroll:true}); });
+
+  $("hist").addEventListener("click", async ev => {
+    const e = ev.target.closest("[data-edit]"), d = ev.target.closest("[data-del]");
+    if (e) { const t = tests.find(x => x.id === e.dataset.edit); if (t) loadIntoForm(t); }
+    if (d) {
+      if (d.dataset.confirm !== "1") { d.dataset.confirm = "1"; d.textContent = "Confirm"; setTimeout(() => { d.dataset.confirm = ""; d.textContent = "Delete"; }, 4000); return; }
+      try { await db.collection("tests").doc(d.dataset.del).delete(); if (editingId === d.dataset.del) resetForm(); }
+      catch (err) { setStatus("io-status", "Couldn't delete that entry.", true); }
+    }
+  });
+
+  // ---------- range ----------
+  document.querySelectorAll("[data-range]").forEach(b => b.addEventListener("click", () => {
+    range = Number(b.dataset.range);
+    document.querySelectorAll("[data-range]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    try { localStorage.setItem("reef-range", String(range)); } catch (e) {}
+    renderCards(data());
+  }));
+  try { const r = localStorage.getItem("reef-range"); if (r != null) { const b = document.querySelector('[data-range="' + r + '"]'); if (b) b.click(); } } catch (e) {}
+
+  // ---------- targets ----------
+  function renderTargets(){
+    $("tgrid").innerHTML = PARAMS.map(p => '<div class="field"><span class="label">' + p.name + ' ' + p.unit + '</span><div class="row">' +
+      '<input id="t-' + p.key + '-lo" type="number" step="' + p.step + '" aria-label="' + p.name + ' minimum" value="' + targets[p.key].lo + '">' +
+      '<input id="t-' + p.key + '-hi" type="number" step="' + p.step + '" aria-label="' + p.name + ' maximum" value="' + targets[p.key].hi + '"></div></div>').join("");
+  }
+  async function saveTargets(obj){
+    if (!db) { setStatus("t-status", "Saving isn't available in this view.", true); return; }
+    try { await db.doc("settings/targets").set(obj); setStatus("t-status", "Targets saved."); }
+    catch (e) { setStatus("t-status", "Couldn't save targets.", true); }
+  }
+  $("t-save").addEventListener("click", () => {
+    const obj = {};
+    for (const p of PARAMS) {
+      const lo = num($("t-" + p.key + "-lo").value), hi = num($("t-" + p.key + "-hi").value);
+      if (lo == null || hi == null || lo >= hi) { setStatus("t-status", p.name + ": minimum must be below maximum.", true); return; }
+      obj[p.key] = {lo, hi};
+    }
+    saveTargets(obj);
+  });
+  $("t-reset").addEventListener("click", () => saveTargets(JSON.parse(JSON.stringify(DEFAULTS))));
+
+  // ---------- CSV ----------
+  function toCSV(){
+    const cols = ["date","time",...PARAMS.map(p => p.key),"events","note"];
+    const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+    return cols.join(",") + "\n" + tests.map(t => { const d = new Date(t.ts);
+      const row = [d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"),
+        String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"),
+        ...PARAMS.map(p => t[p.key] ?? ""), (t.events || []).join(";"), t.note || ""];
+      return row.map(q).join(","); }).join("\n") + "\n";
+  }
+  function parseCSV(text){
+    const rows = []; let row = [], f = "", inQ = false;
+    for (let i = 0; i < text.length; i++) { const c = text[i];
+      if (inQ) { if (c === '"') { if (text[i+1] === '"') { f += '"'; i++; } else inQ = false; } else f += c; }
+      else if (c === '"') inQ = true; else if (c === ",") { row.push(f); f = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && text[i+1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+      else f += c; }
+    if (f !== "" || row.length) { row.push(f); rows.push(row); }
+    return rows.filter(r => r.some(x => x.trim() !== ""));
+  }
+  $("btn-export").addEventListener("click", async () => {
+    if (!tests.length) { setStatus("io-status", "Nothing to export yet.", true); return; }
+    try { const dl = await claude.use("downloads"); if (!dl) throw {code:"unavailable"};
+      await dl.save({filename: "reef-log-" + today() + ".csv", data: toCSV()}); setStatus("io-status", "Export ready.");
+    } catch (e) { setStatus("io-status", e && e.code === "declined" ? "Export cancelled." : "Export isn't available in this view.", e && e.code !== "declined"); }
+  });
+  $("imp").addEventListener("change", async ev => {
+    const file = ev.target.files[0]; ev.target.value = ""; if (!file) return;
+    if (!db) { setStatus("io-status", "Import isn't available in this view.", true); return; }
+    const rows = parseCSV(await file.text()); if (rows.length < 2) { setStatus("io-status", "That file has no data rows.", true); return; }
+    const head = rows[0].map(h => h.trim().toLowerCase()); const di = head.indexOf("date");
+    if (di < 0) { setStatus("io-status", "The first row needs a 'date' column.", true); return; }
+    let ok = 0, bad = 0;
+    for (const r of rows.slice(1)) {
+      const get = k => { const i = head.indexOf(k); return i < 0 ? "" : (r[i] || "").trim(); };
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(get("date"))) { bad++; continue; }
+      const rec = { ts: toTs(get("date"), get("time")), note: get("note"), events: get("events") ? get("events").split(";").map(s => s.trim()).filter(Boolean) : [] };
+      PARAMS.forEach(p => { rec[p.key] = num(get(p.key)); });
+      try { await db.collection("tests").add(rec); ok++; setStatus("io-status", "Importing… " + ok); } catch (e) { bad++; }
+    }
+    setStatus("io-status", "Imported " + ok + (ok === 1 ? " row" : " rows") + (bad ? ", skipped " + bad : "") + ".", !!bad && !ok);
+  });
+
+  // ---------- tabs ----------
+  const TABS = ["chemistry","equipment","photos","dosing","lighting"];
+  function showTab(name, push){
+    if (!TABS.includes(name)) name = "chemistry";
+    TABS.forEach(t => { $("tab-" + t).hidden = t !== name; $("tb-" + t).setAttribute("aria-selected", String(t === name)); });
+    $("btn-jump").hidden = name !== "chemistry";
+    if (name === "chemistry") renderCards(data());
+    if (name === "dosing") renderDosing();
+    if (name === "lighting") renderLighting();
+    if (push) { try { history.replaceState(null, "", "#" + name); } catch (e) {} }
+  }
+  document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab, true)));
+  const ymd = ts => { const d = new Date(ts); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
+
+  // ---------- equipment ----------
+  const CATS = ["Tank & plumbing","Filtration","Lighting","Flow","Heating & cooling","Dosing","Monitoring","Biology","Other"];
+  let equipment = [], eqLoaded = false, eqEditing = null;
+  $("e-cat").innerHTML = CATS.map(c => '<option>' + esc(c) + '</option>').join("");
+  function eqReset(){ eqEditing = null; $("ef").reset(); $("eq-title").textContent = "Add equipment"; $("e-save").textContent = "Add to list"; $("e-cancel").hidden = true; }
+  function renderEquipment(){
+    $("c-eq").textContent = equipment.length ? String(equipment.length) : "";
+    const host = $("eq-list");
+    if (!eqLoaded) return;
+    if (!equipment.length) { host.innerHTML = '<div class="skeleton">No equipment listed yet. Add your sump, lights, pumps, skimmer and anything else on the system with the form.</div>'; $("eq-summary").textContent = ""; return; }
+    const inUse = equipment.filter(e => e.status === "In use").length, planned = equipment.filter(e => e.status === "Planned").length;
+    $("eq-summary").textContent = inUse + " in use" + (planned ? " · " + planned + " planned" : "");
+    const order = s => ({"In use":0,"Planned":1,"Retired":2})[s] ?? 3;
+    host.innerHTML = CATS.filter(c => equipment.some(e => (e.category || "Other") === c)).map(c => {
+      const items = equipment.filter(e => (e.category || "Other") === c).sort((a,b) => order(a.status) - order(b.status) || String(a.name).localeCompare(String(b.name)));
+      return '<div class="eq-group"><h3>' + esc(c) + '</h3>' + items.map(e => {
+        const cls = e.status === "Planned" ? "planned" : e.status === "Retired" ? "retired" : "inuse";
+        const dates = [e.installed ? "Installed " + dstr(toTs(e.installed)) : "", e.serviced ? "Serviced " + dstr(toTs(e.serviced)) : ""].filter(Boolean);
+        return '<div class="eq-row"><div style="min-width:0"><div class="name">' + esc(e.name) + '</div>' +
+          (e.details ? '<div class="details">' + esc(e.details) + '</div>' : '') +
+          (e.notes ? '<div class="details">' + esc(e.notes) + '</div>' : '') +
+          (dates.length ? '<div class="dates">' + dates.map(esc).join("<span>·</span>") + '</div>' : '') + '</div>' +
+          '<div class="side"><span class="pill ' + cls + '">' + esc(e.status || "In use") + '</span>' +
+          (canWrite ? '<div class="btns"><button type="button" data-eedit="' + esc(e.id) + '">Edit</button><button type="button" class="danger" data-edel="' + esc(e.id) + '">Delete</button></div>' : '') + '</div></div>';
+      }).join("") + '</div>';
+    }).join("");
+  }
+  $("ef").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const rec = { name: $("e-name").value.trim(), category: $("e-cat").value, status: $("e-status").value, details: $("e-details").value.trim(),
+      installed: $("e-installed").value || "", serviced: $("e-serviced").value || "", notes: $("e-notes").value.trim() };
+    if (!rec.name) { setStatus("e-status-msg", "Give the equipment a name.", true); return; }
+    if (!db) { setStatus("e-status-msg", "Saving isn't available in this view.", true); return; }
+    $("e-save").disabled = true;
+    try { const col = db.collection("equipment"); if (eqEditing) await col.doc(eqEditing).set(rec); else await col.add(rec);
+      setStatus("e-status-msg", eqEditing ? "Changes saved." : "Added."); eqReset(); }
+    catch (e) { setStatus("e-status-msg", "Couldn't save (" + (e && e.code || "error") + ").", true); }
+    $("e-save").disabled = false;
+  });
+  $("e-cancel").addEventListener("click", () => { eqReset(); setStatus("e-status-msg", ""); });
+  $("eq-list").addEventListener("click", async ev => {
+    const ed = ev.target.closest("[data-eedit]"), dl = ev.target.closest("[data-edel]");
+    if (ed) { const e = equipment.find(x => x.id === ed.dataset.eedit); if (!e) return; eqEditing = e.id;
+      $("e-name").value = e.name || ""; $("e-cat").value = CATS.includes(e.category) ? e.category : "Other"; $("e-status").value = e.status || "In use";
+      $("e-details").value = e.details || ""; $("e-installed").value = e.installed || ""; $("e-serviced").value = e.serviced || ""; $("e-notes").value = e.notes || "";
+      $("eq-title").textContent = "Edit " + e.name; $("e-save").textContent = "Save changes"; $("e-cancel").hidden = false; $("eq-entry").scrollIntoView({block:"start"}); }
+    if (dl) {
+      if (dl.dataset.confirm !== "1") { dl.dataset.confirm = "1"; dl.textContent = "Confirm"; setTimeout(() => { dl.dataset.confirm = ""; dl.textContent = "Delete"; }, 4000); return; }
+      try { await db.collection("equipment").doc(dl.dataset.edel).delete(); if (eqEditing === dl.dataset.edel) eqReset(); } catch (e) { setStatus("e-status-msg", "Couldn't delete that item.", true); }
+    }
+  });
+
+  // ---------- photos ----------
+  let photos = [], phLoaded = false, assets = null, lbId = null;
+  const blobUrl = id => (window.__blobUrl ? window.__blobUrl(id) : "/_blob/" + id);
+  const photoSrc = p => blobUrl(p.asset);
+  function renderPhotos(){
+    $("c-ph").textContent = photos.length ? String(photos.length) : "";
+    if (!phLoaded) return;
+    const host = $("gallery");
+    if (!photos.length) { host.innerHTML = '<div class="skeleton">No photos yet. Full-tank shots from the same spot each month make growth and coralline progress easy to compare.</div>'; return; }
+    const groups = {};
+    [...photos].sort((a,b) => b.ts - a.ts).forEach(p => { const k = new Date(p.ts).toLocaleDateString(undefined, {month:"long", year:"numeric"}); (groups[k] = groups[k] || []).push(p); });
+    host.innerHTML = Object.entries(groups).map(([k, list]) => '<section><h3>' + esc(k) + '</h3><div class="thumbs">' + list.map(p =>
+      '<button type="button" class="thumb" data-photo="' + esc(p.id) + '"><img loading="lazy" src="' + esc(photoSrc(p)) + '" alt="' + esc(p.caption || "Tank photo") + '"><span class="cap"><span>' + (p.caption ? esc(p.caption) : '<span style="color:var(--muted)">Add a caption</span>') + '</span><span class="d">' + dstr(p.ts) + '</span></span></button>').join("") + '</div></section>').join("");
+  }
+  async function shrink(file){
+    // Re-encode large phone photos to max 2400px JPEG to keep storage down; fall back to the original file.
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+      if (scale === 1 && file.size < 3e6 && /jpe?g|png|webp/.test(file.type)) return file;
+      const c = document.createElement("canvas"); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      return await new Promise(res => c.toBlob(b => res(b || file), "image/jpeg", 0.86));
+    } catch (e) { return file; }
+  }
+  async function uploadFiles(files){
+    files = [...files].filter(f => f.type.startsWith("image/") || /\.(heic|heif)$/i.test(f.name));
+    if (!files.length) return;
+    if (!assets || !db) { setStatus("ph-status", "Photo uploads aren't available in this view.", true); return; }
+    let ok = 0, fail = "";
+    for (const f of files) {
+      setStatus("ph-status", "Uploading " + (ok + 1) + " of " + files.length + "…");
+      try { const blob = await shrink(f); const up = await assets.upload(blob, blob.type ? undefined : {type:"image/jpeg"});
+        await db.collection("photos").add({ asset: up.id, ts: f.lastModified || Date.now(), caption: "", file: f.name }); ok++; }
+      catch (e) { fail = e && e.code === "quota_exceeded" ? "Photo storage is full; delete some photos to add more." : e && e.code === "too_large" ? f.name + " is too large." : "Couldn't upload " + f.name + "."; }
+    }
+    setStatus("ph-status", (ok ? "Added " + ok + (ok === 1 ? " photo." : " photos.") : "") + (fail ? " " + fail : ""), !!fail);
+  }
+  $("ph-input").addEventListener("change", ev => { const fs = ev.target.files; uploadFiles(fs).then(() => { ev.target.value = ""; }); });
+  const drop = $("drop");
+  ["dragenter","dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave","drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => uploadFiles(e.dataTransfer.files));
+  function openLb(id){
+    const p = photos.find(x => x.id === id); if (!p) return; lbId = id;
+    $("lb-img").src = photoSrc(p); $("lb-img").alt = p.caption || "Tank photo"; $("lb-cap").value = p.caption || ""; $("lb-date").value = ymd(p.ts);
+    ["lb-cap","lb-date","lb-save","lb-del"].forEach(k => { $(k).disabled = !canWrite; });
+    $("lb-del").textContent = "Delete photo"; $("lb-del").dataset.confirm = ""; setStatus("lb-status", "");
+    $("lb").hidden = false; $("lb-close").focus();
+  }
+  function closeLb(){ $("lb").hidden = true; lbId = null; }
+  $("gallery").addEventListener("click", ev => { const t = ev.target.closest("[data-photo]"); if (t) openLb(t.dataset.photo); });
+  $("lb-close").addEventListener("click", closeLb);
+  $("lb").addEventListener("click", ev => { if (ev.target === $("lb")) closeLb(); });
+  document.addEventListener("keydown", ev => { if (ev.key === "Escape" && !$("lb").hidden) closeLb(); });
+  $("lb-save").addEventListener("click", async () => {
+    if (!lbId) return; const d = $("lb-date").value;
+    try { await db.collection("photos").doc(lbId).update({ caption: $("lb-cap").value.trim(), ...(d ? { ts: toTs(d, "12:00") } : {}) }); setStatus("lb-status", "Saved."); }
+    catch (e) { setStatus("lb-status", "Couldn't save.", true); }
+  });
+  $("lb-del").addEventListener("click", async () => {
+    const b = $("lb-del"); if (!lbId) return;
+    if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Confirm delete"; return; }
+    const p = photos.find(x => x.id === lbId);
+    try { await db.collection("photos").doc(lbId).delete(); if (assets && p) { try { await assets.delete(p.asset); } catch (e) {} } closeLb(); }
+    catch (e) { setStatus("lb-status", "Couldn't delete.", true); }
+  });
+
+  // ---------- dosing & salt ----------
+  const GAL_IN3 = 231, ROCK_GAL_PER_LB = 0.0444, SAND_SOLID = 0.6;
+  const VOL_DEF = { dl:47.75, dw:17.75, dd:19.5, sand:1.5, rock:50, other:0, sl:20, sw:10, sd:8 };
+  const DOSE = {
+    alk: { name:"Alkalinity", unit:"dKH", dp:2, product:"Brightwell Reef Code B", potency:2.22, maxDay:1.0, maxNote:"about 1 dKH per day", target:8.5 },
+    ca:  { name:"Calcium", unit:"ppm", dp:0, product:"Brightwell Reef Code A", potency:16, maxDay:8, maxNote:"label max 5 mL per 10 gal per day (≈8 ppm)", target:420 },
+    mg:  { name:"Magnesium", unit:"ppm", dp:0, product:"Brightwell Magnesion", potency:26, maxDay:13, maxNote:"label max 10 mL per 20 gal per day (≈13 ppm)", target:1350 }
+  };
+  const SALTS = {
+    af33: { label:"Aquaforest Reef Salt, mixed to 33 ppt (1.025)", alk:7.8, ca:425, mg:1340, k:390, sg:1.025, gpg:148, range:"Published: KH 7.4–8.2 dKH, Ca 410–440, Mg 1300–1380, K 380–400 at 33 ppt. Mixing: about 390 g per 10 L." },
+    af35: { label:"Aquaforest Reef Salt, mixed to 35 ppt (1.026)", alk:8.0, ca:450, mg:1390, k:null, sg:1.026, gpg:157, range:"Published: KH 7.7–8.3 dKH, Ca 440–460, Mg 1360–1420 at 35 ppt." },
+    custom: { label:"Custom / batch values", range:"Enter the values for your salt or batch." }
+  };
+  let dosingDoc = null, maintDirty = {};
+  $("s-preset").innerHTML = Object.entries(SALTS).map(([k, s]) => '<option value="' + k + '">' + esc(s.label) + '</option>').join("");
+  const VKEYS = Object.keys(VOL_DEF);
+  function setVol(v){ VKEYS.forEach(k => { $("v-" + k).value = v[k] ?? VOL_DEF[k]; }); }
+  function getVol(){ const o = {}; VKEYS.forEach(k => { o[k] = num($("v-" + k).value) ?? 0; }); return o; }
+  function volume(){
+    const v = getVol();
+    const gross = v.dl * v.dw * v.dd / GAL_IN3, sand = v.dl * v.dw * v.sand / GAL_IN3 * SAND_SOLID, rock = v.rock * ROCK_GAL_PER_LB;
+    const sump = v.sl * v.sw * v.sd / GAL_IN3; const net = gross - sand - rock + sump + v.other;
+    return { gross, sand, rock, sump, other: v.other, net: Math.max(0, net) };
+  }
+  function latestVal(key){ for (let i = tests.length - 1; i >= 0; i--) if (tests[i][key] != null) return tests[i]; return null; }
+  function dropPerDay(key){
+    const pts = tests.filter(t => t[key] != null); if (pts.length < 2) return null;
+    const a = pts[pts.length-2], b = pts[pts.length-1]; const days = (b.ts - a.ts) / DAY; if (days < 0.25) return null;
+    const r = (a[key] - b[key]) / days; return r > 0 ? r : null;
+  }
+  function renderCorrection(V){
+    const rows = Object.entries(DOSE).map(([k, d]) => {
+      const cur = latestVal(k);
+      return '<tr data-k="' + k + '"><td>' + d.name + '</td><td class="prod">' + esc(d.product) + '<br><span class="hint">' + '<input id="p-' + k + '" type="number" step="0.01" aria-label="' + d.name + ' potency" value="' + (dosingDoc?.potency?.[k] ?? d.potency) + '"> ' + d.unit + ' per mL per gal</span></td>' +
+        '<td><input id="c-' + k + '" type="number" step="any" aria-label="Current ' + d.name + '" value="' + (cur ? cur[k] : "") + '"></td>' +
+        '<td><input id="t-d-' + k + '" type="number" step="any" aria-label="Target ' + d.name + '" value="' + (dosingDoc?.target?.[k] ?? d.target) + '"></td>' +
+        '<td class="res" id="r-' + k + '"></td></tr>';
+    }).join("");
+    $("corr").innerHTML = '<thead><tr><th>Parameter</th><th class="note">Product</th><th>Current</th><th>Target</th><th class="note">Dose</th></tr></thead><tbody>' + rows + '</tbody>';
+    updateCorrection();
+  }
+  function updateCorrection(){
+    const V = volume().net;
+    Object.entries(DOSE).forEach(([k, d]) => {
+      const cur = num($("c-" + k).value), tgt = num($("t-d-" + k).value), pot = num($("p-" + k).value), out = $("r-" + k);
+      out.style.textAlign = "left"; out.style.whiteSpace = "normal";
+      if (cur == null || tgt == null || !pot || !V) { out.innerHTML = '<span class="hint">Enter current value</span>'; return; }
+      const delta = tgt - cur;
+      if (delta <= 0) { out.innerHTML = delta === 0 ? "At target" : '<span class="hint">Above target by ' + Math.abs(delta).toFixed(d.dp) + ' ' + d.unit + '. No dose; let consumption bring it down.</span>'; return; }
+      const ml = delta * V / pot, days = Math.max(1, Math.ceil(delta / d.maxDay - 1e-9));
+      out.innerHTML = '<b class="num">' + ml.toFixed(1) + ' mL</b> total' + (days > 1 ? '<br><span class="hint">Split over ' + days + ' days: ' + (ml / days).toFixed(1) + ' mL/day (' + d.maxNote + ')</span>' : '<br><span class="hint">Raises ' + delta.toFixed(d.dp) + ' ' + d.unit + '; OK in one day</span>');
+    });
+    const v = volume().net;
+    $("corr-note").textContent = "Based on " + v.toFixed(1) + " gal net. Dose into the sump or a high-flow area, and retest before the next day's dose. Reef Code A and B are meant to be dosed in equal volumes for routine maintenance; using one alone is for correcting a single parameter.";
+  }
+  function renderMaint(){
+    ["alk","ca","mg"].forEach(k => { const inp = $("m-" + k); if (!maintDirty[k] && inp.value === "") { const r = dropPerDay(k); if (r != null) inp.value = r.toFixed(k === "alk" ? 2 : 1); } });
+    const V = volume().net, split = Math.max(1, num($("m-split").value) || 1);
+    const items = [];
+    const line = (k, drop) => { const d = DOSE[k]; const pot = num($("p-" + k) ? $("p-" + k).value : null) || d.potency; const ml = drop * V / pot;
+      items.push('<li><span>' + esc(d.product) + '</span><span><b>' + ml.toFixed(1) + ' mL/day</b> · ' + (ml / split).toFixed(2) + ' mL × ' + split + '</span></li>'); return ml; };
+    const a = num($("m-alk").value), c = num($("m-ca").value), m = num($("m-mg").value);
+    let mlA = null, mlB = null;
+    if (a) mlB = line("alk", a);
+    if (c) mlA = line("ca", c);
+    if (m) line("mg", m);
+    let note = "";
+    if (mlB != null && mlA == null) note = "No calcium drop entered. Brightwell pairs A and B in equal volumes, which would be " + mlB.toFixed(1) + " mL/day of Reef Code A. Confirm with a calcium trend before committing.";
+    else if (mlA != null && mlB != null && Math.abs(mlA - mlB) / Math.max(mlA, mlB) > 0.3) note = "Your calcium and alkalinity use aren't in the 1:1 ratio A and B assume. Dosing to the alkalinity number and adjusting Reef Code A separately keeps both on target.";
+    $("maint-out").innerHTML = items.length ? '<ul class="result-list">' + items.join("") + '</ul>' + (note ? '<div class="callout">' + esc(note) + '</div>' : '') + '<p class="hint">For ' + V.toFixed(1) + ' gal. Start at about 75% of these numbers, retest alkalinity daily for a week, then adjust.</p>'
+      : '<p class="hint">Enter a daily drop to see doses. Two or more alkalinity tests a day or more apart with no dosing in between will give you this number in the log.</p>';
+  }
+  function getSalt(){ return { preset: $("s-preset").value, alk: num($("s-alk").value), ca: num($("s-ca").value), mg: num($("s-mg").value), k: num($("s-k").value), sg: num($("s-sg").value), gpg: num($("s-gpg").value) }; }
+  function setSalt(s){ $("s-preset").value = SALTS[s.preset] ? s.preset : "custom"; ["alk","ca","mg","k","sg","gpg"].forEach(k => { $("s-" + k).value = s[k] ?? ""; }); }
+  function renderWC(){
+    const V = volume().net, s = getSalt(); let wc = num($("w-gal").value);
+    if (wc == null) { wc = Math.round(V * 0.1); $("w-gal").value = wc; }
+    const freq = Math.max(1, num($("w-freq").value) || 7), f = V ? Math.min(1, wc / V) : 0;
+    const rows = [];
+    const add = (key, name, unit, dp, mix) => { const t = latestVal(key); if (!t) { rows.push('<li><span>' + name + '</span><span class="hint">No reading logged</span></li>'); return null; }
+      const cur = t[key], after = cur * (1 - f) + (mix ?? 0) * f, d = after - cur;
+      rows.push('<li><span>' + name + '</span><span>' + cur.toFixed(dp) + ' → <b>' + after.toFixed(dp) + '</b> ' + unit + ' (' + (d >= 0 ? "+" : "−") + Math.abs(d).toFixed(dp + (dp === 0 ? 0 : 1)) + ')</span></li>'); return d; };
+    const dAlk = add("alk","Alkalinity","dKH",2,s.alk); add("ca","Calcium","ppm",0,s.ca); add("mg","Magnesium","ppm",0,s.mg);
+    add("no3","Nitrate","ppm",1,0); add("po4","Phosphate","ppm",3,0);
+    const grams = (s.gpg || 0) * wc;
+    let callout = "";
+    if (s.alk != null && s.alk < targets.alk.lo) callout = "This salt mixes to " + s.alk.toFixed(1) + " dKH, below your " + targets.alk.lo + "–" + targets.alk.hi + " dKH target, so each change pulls alkalinity toward " + s.alk.toFixed(1) + ". Keep water changes consistent in size so your daily Reef Code B dose absorbs the dip, rather than chasing it after each change.";
+    $("wc-out").innerHTML = '<ul class="result-list"><li><span>Change size</span><span><b>' + (f * 100).toFixed(1) + '%</b> of ' + V.toFixed(1) + ' gal · every ' + freq + ' days</span></li>' +
+      '<li><span>Salt to mix</span><span><b>' + (grams / 1000).toFixed(2) + ' kg</b> (' + (grams / 453.6).toFixed(2) + ' lb) for ' + wc + ' gal</span></li>' + rows.join("") + '</ul>' +
+      (callout ? '<div class="callout">' + esc(callout) + '</div>' : '') +
+      '<p class="hint">New saltwater carries no nitrate or phosphate, so each change dilutes them by the change percentage. Salt weight is a starting point; always finish mixing by refractometer.</p>';
+  }
+  function renderVol(){
+    const r = volume();
+    $("vol-out").innerHTML = '<div><span class="label">Display</span><span class="big">' + r.gross.toFixed(1) + '</span><small>gal gross</small></div>' +
+      '<div><span class="label">Sand + rock</span><span class="big">−' + (r.sand + r.rock).toFixed(1) + '</span><small>gal displaced</small></div>' +
+      '<div><span class="label">Sump</span><span class="big">+' + r.sump.toFixed(1) + '</span><small>gal at running level</small></div>' +
+      '<div class="net"><span class="label">Net system</span><span class="big">' + r.net.toFixed(1) + '</span><small>gal · ' + (r.net * 3.785).toFixed(0) + ' L</small></div>';
+  }
+  function renderDosing(){ renderVol(); if (!$("corr").innerHTML) renderCorrection(); else updateCorrection(); renderMaint(); renderWC(); }
+  function refillCurrents(){ Object.keys(DOSE).forEach(k => { const inp = $("c-" + k); if (inp && !inp.dataset.dirty) { const t = latestVal(k); inp.value = t ? t[k] : ""; } }); }
+  $("tab-dosing").addEventListener("input", ev => {
+    const id = ev.target.id || "";
+    if (id.startsWith("c-")) ev.target.dataset.dirty = "1";
+    if (id.startsWith("m-") && id !== "m-split") maintDirty[id.slice(2)] = true;
+    if (/^s-(alk|ca|mg|k|sg|gpg)$/.test(id)) $("s-preset").value = "custom";
+    if (id === "s-preset") return;
+    renderVol(); updateCorrection(); renderMaint(); renderWC();
+  });
+  $("s-preset").addEventListener("change", () => { const p = SALTS[$("s-preset").value]; if (p && p.alk != null) setSalt({ preset: $("s-preset").value, ...p }); $("s-preset").title = p ? p.range : ""; setStatus("s-status", p ? p.range : ""); renderWC(); });
+  function dosingPayload(){
+    const potency = {}, target = {}; Object.keys(DOSE).forEach(k => { potency[k] = num($("p-" + k).value) ?? DOSE[k].potency; target[k] = num($("t-d-" + k).value) ?? DOSE[k].target; });
+    return { volume: getVol(), salt: getSalt(), potency, target, wc: { gal: num($("w-gal").value), freq: num($("w-freq").value) }, split: num($("m-split").value) };
+  }
+  async function saveDosing(statusId){
+    if (!db) { setStatus(statusId, "Saving isn't available in this view.", true); return; }
+    try { await db.doc("settings/dosing").set(dosingPayload()); setStatus(statusId, "Saved."); } catch (e) { setStatus(statusId, "Couldn't save.", true); }
+  }
+  $("v-save").addEventListener("click", () => saveDosing("v-status"));
+  $("s-save").addEventListener("click", () => saveDosing("s-status"));
+  $("v-reset").addEventListener("click", () => { setVol(VOL_DEF); renderDosing(); setStatus("v-status", "Defaults restored. Save to keep them."); });
+  function applyDosingDoc(d){
+    dosingDoc = d || null;
+    setVol(d && d.volume ? d.volume : VOL_DEF);
+    setSalt(d && d.salt ? d.salt : { preset:"af33", ...SALTS.af33 });
+    $("w-gal").value = d && d.wc && d.wc.gal != null ? d.wc.gal : ""; $("w-freq").value = d && d.wc && d.wc.freq ? d.wc.freq : 7;
+    $("m-split").value = d && d.split ? d.split : 4;
+    $("corr").innerHTML = ""; renderDosing();
+  }
+  applyDosingDoc(null);
+
+  // ---------- lighting ----------
+  // Channel order and QR layout per the open-source K7 LED Controller (bitbarista, MIT):
+  // payload = 6 manual-mode bytes, "#", then 24 rows of [hour, minute, ch1..ch6], all as 2-digit hex.
+  const CH = [
+    { key:"w",   name:"White",      color:"var(--ch-w)" },
+    { key:"rb",  name:"Royal Blue", color:"var(--ch-db)" },
+    { key:"gr",  name:"Green",      color:"var(--ch-gb)" },
+    { key:"uv",  name:"UV",         color:"var(--ch-uv)" },
+    { key:"cy",  name:"Cyan",       color:"var(--ch-lb)" },
+    { key:"red", name:"Red",        color:"var(--ch-red)" }
+  ];
+  const TEMPLATE_PEAK = { w:15, rb:40, gr:5, uv:40, cy:40, red:5 };
+  let grid = [], programs = [], parLog = [], k7 = { order: CH.map(c => c.key), confirmed: false }, lpLoadedId = null;
+  const hh = h => (h % 12 === 0 ? 12 : h % 12) + (h < 12 || h === 24 ? " AM" : " PM");
+  const clampPct = v => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
+
+  $("ls-peaks").innerHTML = CH.map(c => '<div class="field"><label for="lsp-' + c.key + '"><span class="chdot" style="background:' + c.color + '"></span><b>' + c.name + '</b></label><input id="lsp-' + c.key + '" type="number" min="0" max="100" step="1" value="' + TEMPLATE_PEAK[c.key] + '"></div>').join("");
+
+  function shapeGrid(){
+    const on = clampH($("ls-on").value, 10), ramp = Math.max(0, Math.round(num($("ls-ramp").value) ?? 3)), pe = clampH($("ls-peakend").value, 17), off = Math.max(1, Math.min(24, Math.round(num($("ls-off").value) ?? 20)));
+    const peaks = CH.map(c => clampPct($("lsp-" + c.key).value));
+    const g = [];
+    for (let h = 0; h < 24; h++) {
+      let f = 0;
+      if (h >= on && h < off) {
+        if (h < on + ramp) f = (h - on + 1) / (ramp + 1);
+        else if (h < pe) f = 1;
+        else f = (off - h) / (off - pe + 1);
+      }
+      g.push(peaks.map(p => Math.round(p * Math.max(0, Math.min(1, f)))));
+    }
+    return g;
+  }
+  function clampH(v, d){ const n = num(v); return n == null ? d : Math.max(0, Math.min(23, Math.round(n))); }
+
+  function renderGridTable(){
+    $("lp-grid").innerHTML = '<thead><tr><th>Hour</th>' + CH.map(c => '<th><span class="chdot" style="background:' + c.color + '"></span>' + c.name + '</th>').join("") + '</tr></thead><tbody>' +
+      grid.map((row, h) => '<tr><td>' + hh(h) + '</td>' + row.map((v, i) => '<td><input type="number" min="0" max="100" step="1" data-h="' + h + '" data-c="' + i + '" id="lg-' + h + '-' + i + '" value="' + v + '" aria-label="' + CH[i].name + ' at ' + hh(h) + '"></td>').join("") + '</tr>').join("") + '</tbody>';
+  }
+  $("lp-grid").addEventListener("input", ev => {
+    const t = ev.target; if (!t.dataset.h) return;
+    grid[+t.dataset.h][+t.dataset.c] = clampPct(t.value); renderLightChart(); renderLightStats();
+  });
+  $("ls-apply").addEventListener("click", () => { grid = shapeGrid(); lpLoadedId = null; $("lp-loaded").textContent = "Unsaved changes"; renderGridTable(); renderLightChart(); renderLightStats(); });
+
+  function lineChart(el, series, opt){
+    const W = Math.max(260, el.clientWidth || 320), H = el.clientHeight || 180, m = {l:34, r:10, t:10, b:20};
+    const xs = series.flatMap(s => s.pts.map(p => p.x)), ys = series.flatMap(s => s.pts.map(p => p.y));
+    if (!xs.length) { el.innerHTML = '<div class="empty-chart" style="height:100%">' + esc(opt.empty || "No data yet") + '</div>'; return; }
+    const x0 = opt.x0 ?? Math.min(...xs), x1 = opt.x1 ?? Math.max(...xs, x0 + 1), y0 = 0, y1 = opt.yMax ?? Math.max(10, ...ys) * 1.12;
+    const X = x => m.l + (x - x0) / ((x1 - x0) || 1) * (W - m.l - m.r), Y = y => m.t + (1 - (y - y0) / (y1 - y0)) * (H - m.t - m.b);
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(opt.label || "chart") + '">';
+    for (let i = 0; i <= 4; i++) { const v = y0 + (y1 - y0) * i / 4, y = Y(v); s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y + '" y2="' + y + '" stroke="var(--grid)"/><text x="' + (m.l - 5) + '" y="' + (y + 3) + '" text-anchor="end">' + Math.round(v) + '</text>'; }
+    (opt.xTicks || [x0, (x0 + x1) / 2, x1]).forEach((xv, i, a) => { s += '<text x="' + X(xv) + '" y="' + (H - 4) + '" text-anchor="' + (i === 0 ? "start" : i === a.length - 1 ? "end" : "middle") + '">' + esc(opt.xFmt ? opt.xFmt(xv) : xv) + '</text>'; });
+    series.forEach(se => {
+      if (!se.pts.length) return;
+      s += '<path d="' + se.pts.map((p, i) => (i ? "L" : "M") + X(p.x).toFixed(1) + " " + Y(p.y).toFixed(1)).join(" ") + '" fill="none" stroke="' + se.color + '" stroke-width="' + (se.width || 1.8) + '" stroke-linejoin="round"' + (se.dash ? ' stroke-dasharray="4 3"' : '') + '><title>' + esc(se.name) + '</title></path>';
+      if (opt.dots) se.pts.forEach(p => { s += '<circle cx="' + X(p.x) + '" cy="' + Y(p.y) + '" r="2.6" fill="' + se.color + '"/>'; });
+    });
+    el.innerHTML = s + '</svg>';
+  }
+  function renderLightChart(){
+    lineChart($("lp-chart"), CH.map((c, i) => ({ name: c.name, color: c.color, pts: grid.map((r, h) => ({ x: h, y: r[i] })) })),
+      { x0: 0, x1: 23, yMax: 100, xTicks: [0, 6, 12, 18, 23], xFmt: hh, label: "Channel brightness through the day" });
+  }
+  function renderLightStats(){
+    const lit = grid.filter(r => r.some(v => v > 0)).length;
+    const avg = r => r.reduce((a, b) => a + b, 0) / 6;
+    const peakAvg = Math.max(...grid.map(avg)), maxCh = Math.max(...grid.flat());
+    const nearPeak = peakAvg ? grid.filter(r => avg(r) >= peakAvg * 0.8).length : 0;
+    const firstOn = grid.findIndex(r => r.some(v => v > 0)), lastOn = 23 - [...grid].reverse().findIndex(r => r.some(v => v > 0));
+    $("lp-stats").innerHTML = '<div><span class="label">Photoperiod</span><span class="big">' + lit + ' h</span><small>' + (firstOn >= 0 ? hh(firstOn) + '–' + hh(lastOn + 1) : "Off all day") + '</small></div>' +
+      '<div><span class="label">Near peak</span><span class="big">' + nearPeak + ' h</span><small>≥80% of peak average</small></div>' +
+      '<div><span class="label">Peak average</span><span class="big">' + Math.round(peakAvg) + '%</span><small>mean of 6 channels</small></div>' +
+      '<div class="net"><span class="label">Highest channel</span><span class="big">' + maxCh + '%</span><small>any hour</small></div>';
+    const warn = [];
+    if (maxCh > 50) warn.push("A channel goes above 50%. Noopsyche's manual advises starting at 50% total brightness when moving up from weaker lights; raise in steps and check PAR after each change.");
+    $("lp-warn").innerHTML = warn.map(w => '<div class="callout">' + esc(w) + '</div>').join("");
+  }
+
+  // saved programs
+  function renderPrograms(){
+    const host = $("lp-list");
+    if (!programs.length) { host.innerHTML = '<div class="skeleton">No saved programs yet. Save the current program to keep a dated record of every change.</div>'; return; }
+    host.innerHTML = [...programs].sort((a, b) => b.ts - a.ts).map((p, i) => {
+      const lit = (p.grid || []).filter(r => r.some(v => v > 0)).length, mx = Math.max(0, ...(p.grid || []).flat());
+      return '<div class="lp-item"><div style="min-width:0"><b>' + esc(p.name || "Untitled program") + '</b>' + (i === 0 ? ' <span class="pill ok">Latest</span>' : '') +
+        '<div class="d">' + dstr(p.ts) + ' · ' + lit + ' h lit · max ' + mx + '%</div>' + (p.note ? '<div class="hint">' + esc(p.note) + '</div>' : '') + '</div>' +
+        '<div class="btns"><button type="button" data-lpload="' + esc(p.id) + '">Load</button>' + (canWrite ? '<button type="button" class="danger" data-lpdel="' + esc(p.id) + '">Delete</button>' : '') + '</div></div>';
+    }).join("");
+  }
+  function loadProgram(p){
+    grid = (p.grid || []).map(r => r.map(clampPct)); while (grid.length < 24) grid.push([0,0,0,0,0,0]);
+    if (p.shape) { ["on","ramp","peakend","off"].forEach(k => { if (p.shape[k] != null) $("ls-" + k).value = p.shape[k]; }); CH.forEach(c => { if (p.shape.peaks && p.shape.peaks[c.key] != null) $("lsp-" + c.key).value = p.shape.peaks[c.key]; }); }
+    lpLoadedId = p.id || null; $("lp-name").value = p.name || ""; $("lp-note").value = p.note || "";
+    $("lp-loaded").textContent = p.id ? "Loaded: " + (p.name || "program") + ", saved " + dstr(p.ts) : "Loaded from QR code (unsaved)";
+    renderGridTable(); renderLightChart(); renderLightStats();
+  }
+  $("lp-list").addEventListener("click", async ev => {
+    const l = ev.target.closest("[data-lpload]"), d = ev.target.closest("[data-lpdel]");
+    if (l) { const p = programs.find(x => x.id === l.dataset.lpload); if (p) { loadProgram(p); $("tab-lighting").scrollIntoView({block:"start"}); } }
+    if (d) {
+      if (d.dataset.confirm !== "1") { d.dataset.confirm = "1"; d.textContent = "Confirm"; setTimeout(() => { d.dataset.confirm = ""; d.textContent = "Delete"; }, 4000); return; }
+      try { await db.collection("lightprograms").doc(d.dataset.lpdel).delete(); } catch (e) { setStatus("lp-status", "Couldn't delete that program.", true); }
+    }
+  });
+  $("lp-save").addEventListener("click", async () => {
+    if (!db) { setStatus("lp-status", "Saving isn't available in this view.", true); return; }
+    const name = $("lp-name").value.trim() || ("Program " + dstr(Date.now()));
+    const rec = { name, note: $("lp-note").value.trim(), ts: Date.now(), grid: grid.map(r => r.slice()),
+      shape: { on: num($("ls-on").value), ramp: num($("ls-ramp").value), peakend: num($("ls-peakend").value), off: num($("ls-off").value), peaks: Object.fromEntries(CH.map(c => [c.key, clampPct($("lsp-" + c.key).value)])) } };
+    $("lp-save").disabled = true;
+    try {
+      const ref = await db.collection("lightprograms").add(rec); lpLoadedId = ref.id;
+      if ($("lp-mark").checked) await db.collection("tests").add({ ts: rec.ts, events: ["Lighting"], note: "Light program: " + name, ...Object.fromEntries(PARAMS.map(p => [p.key, null])) });
+      setStatus("lp-status", "Program saved" + ($("lp-mark").checked ? " and marked on the chemistry charts." : ".")); $("lp-loaded").textContent = "Loaded: " + name + ", saved " + dstr(rec.ts);
+    } catch (e) { setStatus("lp-status", "Couldn't save (" + (e && e.code || "error") + ").", true); }
+    $("lp-save").disabled = false;
+  });
+
+  // QR: order mapping, make, read
+  function renderOrder(){
+    $("k7-order").innerHTML = k7.order.map((key, pos) => '<div class="field"><label for="ko-' + pos + '"><b>Position ' + (pos + 1) + '</b></label><select id="ko-' + pos + '">' +
+      CH.map(c => '<option value="' + c.key + '"' + (c.key === key ? " selected" : "") + '>' + c.name + '</option>').join("") + '</select></div>').join("");
+    $("k7-confirmed").checked = !!k7.confirmed; updateMakeBtn();
+  }
+  function readOrder(){ return k7.order.map((_, pos) => $("ko-" + pos).value); }
+  function updateMakeBtn(){
+    const ord = readOrder(), unique = new Set(ord).size === 6;
+    $("k7-make").disabled = !($("k7-confirmed").checked && unique);
+    if (!unique) setStatus("k7-status", "Each channel can appear in only one position.", true);
+  }
+  $("k7-order").addEventListener("change", () => { $("k7-confirmed").checked = false; updateMakeBtn(); setStatus("k7-status", "Order changed; confirm it before making a code."); });
+  $("k7-confirmed").addEventListener("change", updateMakeBtn);
+  $("k7-save").addEventListener("click", async () => {
+    const ord = readOrder(); if (new Set(ord).size !== 6) { setStatus("k7-status", "Each channel can appear in only one position.", true); return; }
+    k7 = { order: ord, confirmed: $("k7-confirmed").checked };
+    if (!db) { setStatus("k7-status", "Saving isn't available in this view.", true); return; }
+    try { await db.doc("settings/k7").set(k7); setStatus("k7-status", k7.confirmed ? "Order saved and confirmed." : "Order saved (not confirmed)."); } catch (e) { setStatus("k7-status", "Couldn't save the order.", true); }
+  });
+  const hx = v => clampPct(v).toString(16).toUpperCase().padStart(2, "0");
+  function peakRowOf(rows){ return rows.reduce((a, r) => r.reduce((s, v) => s + v, 0) > a.reduce((s, v) => s + v, 0) ? r : a, rows[0]); }
+  function encodeByPositions(rowsByPos, manualByPos){ // rowsByPos[h] = 6 values in QR position order
+    const man = manualByPos || peakRowOf(rowsByPos);
+    return man.map(hx).join("") + "#" + rowsByPos.map((r, h) => hx(h) + "00" + r.map(hx).join("")).join("");
+  }
+  function drawQR(text, caption, filename){
+    const out = $("qr-out");
+    if (typeof qrcode !== "function") { out.innerHTML = '<p class="status err">The QR library didn\'t load. Check your connection and reload the page.</p>'; return; }
+    const q = qrcode(0, "L"); q.addData(text, "Byte"); q.make();
+    const n = q.getModuleCount(), cell = Math.max(3, Math.floor(300 / n)), c = document.createElement("canvas");
+    c.width = c.height = n * cell; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.fillStyle = "#000";
+    for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) x.fillRect(k * cell, r * cell, cell, cell);
+    out.innerHTML = '<b>' + esc(caption) + '</b>'; out.appendChild(c);
+    const row = document.createElement("div"); row.className = "form-actions";
+    row.innerHTML = '<button type="button" id="qr-dl">Save image</button><span class="hint">Or screenshot it, then use Import in the Noopsyche app. Export your current program first as a backup.</span>';
+    out.appendChild(row);
+    const code = document.createElement("code"); code.textContent = text; out.appendChild(code);
+    $("qr-dl").addEventListener("click", async () => {
+      try { const dl = await claude.use("downloads"); if (!dl) throw {code:"unavailable"};
+        const blob = await new Promise(r => c.toBlob(r, "image/png")); await dl.save({ filename, data: blob }); setStatus("k7-status", "Image ready to save.");
+      } catch (e) { setStatus("k7-status", e && e.code === "declined" ? "Save cancelled." : "Saving isn't available here; take a screenshot instead.", e && e.code !== "declined"); }
+    });
+  }
+  $("k7-make").addEventListener("click", () => {
+    const ord = readOrder(); const idx = ord.map(k => CH.findIndex(c => c.key === k));
+    const text = encodeByPositions(grid.map(r => idx.map(i => r[i])));
+    drawQR(text, "Program: " + ($("lp-name").value.trim() || "current program"), "k7-program-" + today() + ".png");
+  });
+  $("k7-test").addEventListener("click", () => {
+    const rows = Array.from({length:24}, (_, h) => h >= 8 && h <= 20 ? [5,10,15,20,25,30] : [0,0,0,0,0,0]);
+    drawQR(encodeByPositions(rows, [5,10,15,20,25,30]), "Channel test: positions 1–6 at 5, 10, 15, 20, 25, 30% from 8 AM to 8 PM", "k7-channel-test.png");
+    setStatus("k7-status", "Import this in the app, note which channel shows each value, set the positions to match, then restore your backup.");
+  });
+  $("qr-imp").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; ev.target.value = ""; if (!f) return;
+    const host = $("qr-read");
+    if (typeof jsQR !== "function") { host.innerHTML = '<p class="status err">The QR reader didn\'t load. Reload the page and try again.</p>'; return; }
+    try {
+      const bmp = await createImageBitmap(f); const sc = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement("canvas"); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+      const x = c.getContext("2d"); x.drawImage(bmp, 0, 0, c.width, c.height);
+      const res = jsQR(x.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
+      if (!res) { host.innerHTML = '<p class="status err">No QR code found in that image. Crop closer to the code and try again.</p>'; return; }
+      const m = /^([0-9A-F]{12})#((?:[0-9A-F]{16}){24})$/i.exec(res.data.trim());
+      if (!m) { host.innerHTML = '<p class="status err">This QR code isn\'t in the 24-hour K7 format this planner knows.</p><code style="word-break:break-all;font-size:.7rem">' + esc(res.data) + '</code>'; return; }
+      const rows = []; const times = []; for (let h = 0; h < 24; h++) { const rec = m[2].substr(h * 16, 16); times.push([parseInt(rec.substr(0, 2), 16), parseInt(rec.substr(2, 2), 16)]); rows.push([0,1,2,3,4,5].map(i => parseInt(rec.substr(4 + i * 2, 2), 16))); }
+      const manual = [0,1,2,3,4,5].map(i => parseInt(m[1].substr(i * 2, 2), 16));
+      const offHour = times.some((t, i) => t[0] !== i || t[1] !== 0);
+      const ord = readOrder(), confirmed = $("k7-confirmed").checked;
+      const g = rows.map(r => CH.map(c => r[ord.indexOf(c.key)]));
+      const peakRow = peakRowOf(rows);
+      const nm = i => { const c = CH.find(x => x.key === ord[i]); return c ? c.name : "Position " + (i + 1); };
+      host.innerHTML = '<div class="callout">Read 24 points' + (offHour ? ' (some times are not on the hour; the planner uses one point per hour)' : '') + '. Brightest hour: ' + peakRow.map((v, i) => nm(i) + ' ' + v + '%').join(", ") +
+        '. Manual-mode values in the code: ' + manual.map((v, i) => nm(i) + ' ' + v + '%').join(", ") + '. ' +
+        (confirmed ? 'Loaded into the program using your confirmed channel order.' : 'Channel order isn\'t confirmed yet, so the names in the program may not match your app. Run the channel test before relying on them.') + '</div>';
+      loadProgram({ grid: g, name: f.name.replace(/\.[^.]+$/, ""), note: "Imported from QR" });
+    } catch (e) { host.innerHTML = '<p class="status err">Couldn\'t read that image.</p>'; }
+  });
+
+  // K7 LED Controller preset (kind k7_community_preset, schema 1, lamp k7pro; rows [hour, minute, ch1..ch6])
+  function controllerPreset(){
+    const name = ($("lp-name").value.trim() || "Reef log program").slice(0, 64);
+    return { kind: "k7_community_preset", schema: 1, lamp: "k7pro", name,
+      use_case: $("esp-use").value.trim(), notes: ($("lp-note").value.trim() || "Exported from 75-Gallon Reef Log").slice(0, 500),
+      manual: peakRowOf(grid).map(clampPct), schedule: grid.map((r, h) => [h, 0, ...r.map(clampPct)]) };
+  }
+  $("esp-export").addEventListener("click", async () => {
+    const p = controllerPreset(); const fn = p.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "k7_preset";
+    try { const dl = await claude.use("downloads"); if (!dl) throw {code:"unavailable"};
+      await dl.save({ filename: fn + "_k7pro.json", data: JSON.stringify(p, null, 2) }); setStatus("esp-status", "Preset ready. In the controller: Import Preset, review, then Push.");
+    } catch (e) { setStatus("esp-status", e && e.code === "declined" ? "Save cancelled." : "Saving files isn't available in this view.", e && e.code !== "declined"); }
+  });
+  $("esp-imp").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; ev.target.value = ""; if (!f) return;
+    try {
+      const p = JSON.parse(await f.text());
+      if (!p || p.kind !== "k7_community_preset" || p.schema !== 1) throw new Error("This isn't a K7 LED Controller preset file.");
+      const lamp = p.lamp || p.device;
+      if (lamp !== "k7pro") throw new Error(lamp === "k7mini" ? "This preset is for the 3-channel K7 Mini, not the K7 Pro." : "Unknown lamp type in this preset.");
+      if (!Array.isArray(p.schedule) || p.schedule.length !== 24) throw new Error("The preset's schedule must have 24 rows.");
+      const g = p.schedule.map((row, h) => { if (!Array.isArray(row) || row.length < 8) throw new Error("Schedule row " + h + " is incomplete."); return row.slice(2, 8).map(clampPct); });
+      if (p.use_case) $("esp-use").value = String(p.use_case).slice(0, 80);
+      loadProgram({ grid: g, name: String(p.name || f.name).slice(0, 64), note: String(p.notes || "").slice(0, 500) });
+      setStatus("esp-status", "Preset loaded into the program. Save it to keep a dated copy.");
+    } catch (e) { setStatus("esp-status", e.message || "Couldn't read that file.", true); }
+  });
+  $("esp-copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText("http://k7controller.local"); setStatus("esp-status", "Address copied."); }
+    catch (e) { const r = document.createRange(); r.selectNodeContents($("esp-host")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); setStatus("esp-status", "Address selected; copy it with your keyboard or long-press."); }
+  });
+
+  // PAR
+  $("par-date").value = today();
+  function renderPar(){
+    const pts = [...parLog].sort((a, b) => a.ts - b.ts);
+    const ser = [["sand","Sand","var(--ch-db)"],["mid","Mid rock","var(--ch-lb)"],["top","Rock top","var(--ch-uv)"]].map(([k, n, col]) => ({ name: n, color: col, pts: pts.filter(p => p[k] != null).map(p => ({ x: p.ts, y: p[k] })) }));
+    const xsAll = pts.map(p => p.ts);
+    lineChart($("par-chart"), ser, { dots: true, xFmt: dshort, label: "PAR over time", empty: "PAR readings will chart here", x1: xsAll.length ? Math.max(...xsAll, Math.min(...xsAll) + DAY) : undefined });
+    $("par-list").innerHTML = pts.length ? '<div class="tablewrap"><table><thead><tr><th>Date</th><th>Sand</th><th>Mid</th><th>Top</th><th class="note">Notes</th><th></th></tr></thead><tbody>' +
+      [...pts].reverse().map(p => '<tr><td>' + dstr(p.ts) + '</td><td>' + (p.sand ?? "—") + '</td><td>' + (p.mid ?? "—") + '</td><td>' + (p.top ?? "—") + '</td><td class="note">' + esc(p.note) + '</td><td class="act">' + (canWrite ? '<button type="button" class="danger" data-pardel="' + esc(p.id) + '">Delete</button>' : '') + '</td></tr>').join("") + '</tbody></table></div>'
+      : '<p class="hint">Log Photone readings at the same spots and time of day after each program change.</p>';
+  }
+  $("par-save").addEventListener("click", async () => {
+    const rec = { ts: toTs($("par-date").value || today(), "13:00"), sand: num($("par-sand").value), mid: num($("par-mid").value), top: num($("par-top").value), note: $("par-note").value.trim() };
+    if (rec.sand == null && rec.mid == null && rec.top == null) { setStatus("par-status", "Enter at least one reading.", true); return; }
+    if (!db) { setStatus("par-status", "Saving isn't available in this view.", true); return; }
+    try { await db.collection("par").add(rec); ["par-sand","par-mid","par-top","par-note"].forEach(k => { $(k).value = ""; }); setStatus("par-status", "Reading saved."); } catch (e) { setStatus("par-status", "Couldn't save.", true); }
+  });
+  $("par-list").addEventListener("click", async ev => {
+    const d = ev.target.closest("[data-pardel]"); if (!d) return;
+    if (d.dataset.confirm !== "1") { d.dataset.confirm = "1"; d.textContent = "Confirm"; return; }
+    try { await db.collection("par").doc(d.dataset.pardel).delete(); } catch (e) { setStatus("par-status", "Couldn't delete.", true); }
+  });
+  function renderLighting(){ renderLightChart(); renderLightStats(); renderPar(); }
+  grid = shapeGrid(); renderGridTable(); renderOrder();
+  $("lp-loaded").textContent = "Starting template (unsaved)";
+
+  // ---------- backup ----------
+  const BK_COLS = ["tests","equipment","photos","lightprograms","par"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7"];
+  const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+  async function buildBackup(){
+    const docs = [], blobs = {};
+    for (const c of BK_COLS) { const snap = await db.collection(c).limit(1000).get(); snap.docs.forEach(d => docs.push({ path: c + "/" + d.id, data: d.data() })); }
+    for (const path of BK_DOCS) { const d = await db.doc(path).get(); if (d.exists) docs.push({ path, data: d.data() }); }
+    const assetIds = docs.filter(d => d.path.startsWith("photos/") && d.data.asset).map(d => d.data.asset);
+    let n = 0;
+    for (const id of assetIds) {
+      n++; setStatus("bk-status", "Packing photo " + n + " of " + assetIds.length + "…");
+      try { const r = await fetch(blobUrl(id)); if (r.ok) blobs[id] = await blobToDataURL(await r.blob()); } catch (e) {}
+    }
+    return { app: "reef-log", format: 1, exportedAt: new Date().toISOString(), docs, blobs };
+  }
+  $("bk-export").addEventListener("click", async () => {
+    if (!db) { setStatus("bk-status", "Backup isn't available in this view.", true); return; }
+    $("bk-export").disabled = true; setStatus("bk-status", "Building backup…");
+    try {
+      const b = await buildBackup(); const text = JSON.stringify(b);
+      const dl = await claude.use("downloads"); if (!dl) throw { code: "unavailable" };
+      await dl.save({ filename: "reef-log-backup-" + today() + ".json", data: text });
+      const missing = b.docs.filter(d => d.path.startsWith("photos/")).length - Object.keys(b.blobs).length;
+      setStatus("bk-status", "Backup ready: " + b.docs.length + " records, " + Object.keys(b.blobs).length + " photos" + (missing > 0 ? " (" + missing + " photos couldn't be packed)" : "") + ".", missing > 0);
+    } catch (e) { setStatus("bk-status", e && e.code === "declined" ? "Backup cancelled." : "Couldn't build the backup (" + (e && (e.code || e.message) || "error") + ").", e && e.code !== "declined"); }
+    $("bk-export").disabled = false;
+  });
+  let pendingRestore = null;
+  if (window.__reefRestore) {
+    $("bk-restore-label").hidden = false;
+    $("bk-restore").addEventListener("change", async ev => {
+      const f = ev.target.files[0]; ev.target.value = ""; if (!f) return;
+      try { const b = JSON.parse(await f.text()); if (!b || b.app !== "reef-log" || !Array.isArray(b.docs)) throw new Error("That file isn't a Reef Log backup.");
+        pendingRestore = b; $("bk-confirm").hidden = false; setStatus("bk-status", "Backup from " + (b.exportedAt ? dstr(Date.parse(b.exportedAt)) : "unknown date") + ": " + b.docs.length + " records, " + Object.keys(b.blobs || {}).length + " photos.");
+      } catch (e) { setStatus("bk-status", e.message || "Couldn't read that file.", true); }
+    });
+    $("bk-no").addEventListener("click", () => { pendingRestore = null; $("bk-confirm").hidden = true; setStatus("bk-status", "Restore cancelled."); });
+    $("bk-yes").addEventListener("click", async () => {
+      if (!pendingRestore) return; $("bk-confirm").hidden = true; setStatus("bk-status", "Restoring…");
+      try { await window.__reefRestore(pendingRestore); setStatus("bk-status", "Restored. Reloading…"); setTimeout(() => location.reload(), 600); }
+      catch (e) { setStatus("bk-status", "Restore failed: " + (e.message || e), true); }
+      pendingRestore = null;
+    });
+  }
+
+  // ---------- boot ----------
+  buildForm(); renderTargets(); renderAll();
+  showTab((location.hash || "").slice(1) || (() => { try { return localStorage.getItem("reef-tab"); } catch (e) { return null; } })() || "chemistry");
+  document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => { try { localStorage.setItem("reef-tab", b.dataset.tab); } catch (e) {} }));
+  let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (!$("tab-chemistry").hidden) renderCards(data()); if (!$("tab-lighting").hidden) renderLighting(); }, 150); });
+
+  (async () => {
+    if (!window.claude || !claude.use) { eqLoaded = phLoaded = true; renderEquipment(); renderPhotos(); renderPrograms(); return; }
+    db = await claude.use("db");
+    const user = await claude.use("user");
+    if (user) { const c = await user.can("data.write"); if (c === false) { canWrite = false; $("ro-notice").hidden = false; $("f-save").disabled = true; $("imp").disabled = true; $("e-save").disabled = true; $("drop").hidden = true; renderAll(); } }
+    if (!db) { eqLoaded = phLoaded = true; renderEquipment(); renderPhotos(); renderPrograms(); return; }
+    db.collection("equipment").limit(500).onSnapshot(snap => { equipment = snap.docs.map(d => ({ id: d.id, ...d.data() })); eqLoaded = true; renderEquipment(); }, () => { eqLoaded = true; renderEquipment(); });
+    db.collection("photos").orderBy("ts", "desc").limit(1000).onSnapshot(snap => { photos = snap.docs.map(d => ({ id: d.id, ...d.data() })); phLoaded = true; renderPhotos(); }, () => { phLoaded = true; renderPhotos(); });
+    db.doc("settings/k7").onSnapshot(snap => { if (snap.exists) { const d = snap.data(); if (Array.isArray(d.order) && d.order.length === 6) k7 = { order: d.order, confirmed: !!d.confirmed }; renderOrder(); } }, () => {});
+    let firstPrograms = true;
+    db.collection("lightprograms").orderBy("ts", "desc").limit(200).onSnapshot(snap => { programs = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderPrograms();
+      if (firstPrograms) { firstPrograms = false; if (programs.length) loadProgram(programs[0]); } }, () => { renderPrograms(); });
+    db.collection("par").orderBy("ts", "asc").limit(500).onSnapshot(snap => { parLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (!$("tab-lighting").hidden) renderPar(); }, () => {});
+    db.doc("settings/dosing").onSnapshot(snap => { applyDosingDoc(snap.exists ? snap.data() : null); }, () => {});
+    claude.use("assets").then(a => { assets = a; if (!a) { $("ph-label").hidden = true; setStatus("ph-status", canWrite ? "Photo uploads aren't available in this view." : ""); } });
+    db.collection("tests").orderBy("ts", "asc").limit(1000).onSnapshot(snap => {
+      tests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      usingExamples = tests.length === 0; renderAll();
+    }, () => {});
+    db.doc("settings/targets").onSnapshot(snap => {
+      if (snap.exists) { const d = snap.data(); PARAMS.forEach(p => { if (d[p.key]) targets[p.key] = {lo: d[p.key].lo, hi: d[p.key].hi}; }); }
+      else targets = JSON.parse(JSON.stringify(DEFAULTS));
+      renderTargets(); renderAll();
+    }, () => {});
+  })();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+}
+</script>
+</body>
+</html>
