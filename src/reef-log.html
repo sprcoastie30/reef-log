@@ -2418,18 +2418,18 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const rows = []; let c = cur, totalSwap = 0, totalSalt = 0;
     for (let day = 1; day <= 30 && Math.abs(tgt - c) > 0.05; day++) {
       const next = c + Math.sign(tgt - c) * Math.min(SC_STEP, Math.abs(tgt - c));
-      if (method === "salt") { const g = V * (next - c) * gpp; totalSalt += g; rows.push([day, "—", Math.round(g) + " g of salt" + (isMetric() ? "" : " (" + (g / 28.35).toFixed(1) + " oz)"), next]); }
-      else { const m = method === "ro" ? 0 : mix, x = V * (next - c) / (m - c); totalSwap += x; rows.push([day, fmtVol(x, x < 5 ? 2 : 1) + " of tank water", fmtVol(x, x < 5 ? 2 : 1) + " of " + (method === "ro" ? "RO/DI" : "saltwater at " + fmtS(mix)), next]); }
+      if (method === "salt") { const g = V * (next - c) * gpp; totalSalt += g; rows.push([day, "—", Math.round(g) + " g" + (isMetric() ? "" : " (" + (g / 28.35).toFixed(1) + " oz)"), next]); }
+      else { const m = method === "ro" ? 0 : mix, x = V * (next - c) / (m - c); totalSwap += x; rows.push([day, fmtVol(x, x < 5 ? 2 : 1), fmtVol(x, x < 5 ? 2 : 1), next]); }
       c = next;
     }
     const notes = dir < 0
       ? ["First top off to your normal water line with RO/DI and retest. Evaporation alone raises salinity, and topping off may fix it.", "If it keeps creeping up, check the auto top-off: it should add fresh RO/DI, never saltwater."]
       : ["Check the auto top-off isn't overfilling with fresh water, and that no fresh water is getting in.", method === "salt" ? "Dissolve the salt completely in a gallon or two of RO/DI first, then add it slowly to the sump in a high-flow spot, never straight into the display." : "Match the new water's temperature to the tank and add it slowly to the sump."];
-    notes.unshift("Before correcting, calibrate your refractometer with 35 ppt fluid and retest. A drifting refractometer is the most common cause of a surprise reading.");
+    notes.unshift("Before correcting, calibrate your refractometer or salinity meter with 35 ppt calibration fluid and retest. A drifting refractometer or meter is the most common cause of a surprise reading.");
     out.innerHTML = '<ul class="result-list"><li><span>Change</span><span><b>' + fmtS(cur) + ' → ' + fmtS(tgt) + '</b> over ' + nDays(rows.length) + '</span></li>' +
       (method === "salt" ? '<li><span>Salt in total</span><span><b>' + Math.round(totalSalt) + ' g</b>' + (isMetric() ? '' : ' (' + (totalSalt / 453.6).toFixed(2) + ' lb)') + '</span></li>' : '<li><span>Water swapped in total</span><span><b>' + fmtVol(totalSwap, totalSwap < 5 ? 2 : 1) + '</b></span></li>') + '</ul>' +
-      '<div class="tablewrap"><table><thead><tr><th>Day</th><th class="note">Remove</th><th class="note">Add</th><th>Salinity after</th></tr></thead><tbody>' +
-      rows.map(r => '<tr><td>' + r[0] + '</td><td class="note">' + esc(r[1]) + '</td><td class="note">' + esc(r[2]) + '</td><td>' + fmtS(r[3]) + '</td></tr>').join("") + '</tbody></table></div>' +
+      '<div class="tablewrap"><table><thead><tr><th>Day</th><th>Remove</th><th>' + (method === "salt" ? "Add salt" : method === "ro" ? "Add RO/DI" : "Add " + fmtS(mix) + " water") + '</th><th>Then reads</th></tr></thead><tbody>' +
+      rows.map(r => '<tr><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td>' + fmtS(r[3]) + '</td></tr>').join("") + '</tbody></table></div>' +
       notes.map(n => '<p class="hint">' + esc(n) + '</p>').join("") + '<p class="hint">Retest before each day\'s step and stop early if you reach your range. Amounts use your net system volume of ' + fmtVol(V) + '.</p>';
   }
   const fmtS = ppt => SALU === "sg" ? (1 + ppt / SAL_K).toFixed(4) + " SG" : (+ppt).toFixed(1) + " ppt";
@@ -3544,6 +3544,10 @@ details.backup summary { cursor: pointer; list-style: revert; }
     let reminders = []; try { reminders = allReminders().filter(r => r.due.d <= 0); } catch (e) {}
     let supply = []; try { supply = supplyCheck().filter(a => a.state === "need" || a.state === "notneeded" || (a.state === "salt" && !tipsOn())); } catch (e) {}
     const tt = profile && TANK_TYPES[profile.tankType];
+    // latest readings well outside the user's range ("needs attention"), newest data only, not already flagged for retest
+    const outs = []; try { const ct0 = canonTests(); PARAMS.forEach(p => { const pts = ct0.filter(t => hasVal(t, p.key)); if (!pts.length || flags.some(f => f.k === p.key)) return;
+      const last = pts[pts.length - 1]; if (Date.now() - last.ts > 14 * DAY) return; const v = p.ut ? +toDisp(p.ut, last[p.key]).toFixed(p.dp) : last[p.key];
+      if (readingStatus(p, v) === "act") outs.push({ p, v }); }); } catch (e) {}
     // next step
     let next;
     if (!profile) next = ["Set up your tank", "Enter your tank size and a few details so the dosing and water change math fits your system.", "btn-profile"];
@@ -3552,6 +3556,9 @@ details.backup summary { cursor: pointer; list-style: revert; }
     else if (rd.cyc.alarm) next = [rd.cyc.stage === "ammonia" ? "Ammonia is showing" : "Nitrite is showing", rd.cyc.text, "go-test"];
     else if (!rd.cyc.done && rd.cyc.stage !== "none") next = ["Keep cycling", rd.cyc.text, "go-test"];
     else if (rd.cyc.stage === "none" && (age == null || age < 90) && !livestock.some(l => l.type === "fish" && (l.status || "alive") === "alive")) next = ["Start your tank's cycle", rd.cyc.text, "go-test"];
+    else if (outs.length) { const o = outs[0], t = targets[o.p.key];
+      next = [o.p.name + " is " + (o.v < t.lo ? "low" : "high") + (outs.length > 1 ? " (and " + outs.slice(1).map(x => x.p.name.toLowerCase()).join(", ") + ")" : ""),
+        "It reads " + fmt(o.p, o.v) + " " + o.p.unit + ", well outside your range of " + fmt(o.p, t.lo) + "–" + fmt(o.p, t.hi) + ". Retest first if the number surprises you, then tap it under Latest readings for likely causes and what to do. Correct slowly.", "go-test"]; }
     else if (supply.some(a => a.state === "need")) next = ["Start dosing " + supply.filter(a => a.state === "need").map(a => DOSE[a.k].name.toLowerCase()).join(" and "), "Water changes no longer keep up with what your tank uses. The Dosing tab has the daily amount.", "go-dosing"];
     else if (reminders.length) next = [reminders.length + (reminders.length === 1 ? " task due today" : " tasks due today"), reminders.slice(0, 3).map(r => r.name).join(", ") + (reminders.length > 3 ? " and more" : "") + ".", "go-maint"];
     else next = ["Nothing needs doing today", "Your tank is on track. Keep feeding lightly and testing on schedule.", ""];
