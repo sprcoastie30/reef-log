@@ -957,6 +957,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       <p class="hint"><b>No ads, analytics or tracking cookies.</b> Loading the app does contact a few services that see your connection (like any website): Cloudflare hosts the app, jsDelivr serves code libraries, Google Fonts serves the typefaces, and Supabase handles sign-in and sync if you use them.</p>
       <p class="hint"><b>Your data stays yours.</b> Download a full backup any time under Data &amp; backup. To have your synced account and everything in it deleted, ask through the feedback link.</p>
       <h3 class="label">About the numbers</h3>
+      <p class="hint"><b>Garbage in, garbage out.</b> Every suggestion here comes from what you log. Test on a schedule, log every test, water change and dosing change, and calibrate your test gear. Old, missing or wrong numbers give wrong advice, and no app replaces looking at your tank every day.</p>
       <p class="hint">Dosing, consumption and water change figures are estimates built from product labels (or strengths worked out from the maker's stated concentration) and your own test results. Check them against the product label, change doses gradually, and retest before and after any big change. Light and equipment details are starting points; your fixture's app and manual have the final word.</p>
       <p class="hint">Product, brand and fixture names (Noopsyche, K7, Brightwell, Red Sea, Tropic Marin, Seachem, ESV, Aquaforest, Bulk Reef Supply, AI, EcoTech, Kessil, NICREW, Hanna and others; AI means Aqua Illumination) are trademarks of their owners and are used only to identify the products the app works with. Holdfast is not affiliated with, sponsored by or endorsed by any of them.</p>
       <p class="hint">Holdfast: Reef Log &amp; Dosing © Carl Peterson. All rights reserved. Uses open-source components under their own licenses: qrcode-generator (MIT), jsQR (Apache-2.0), supabase-js (MIT) and IBM Plex fonts (SIL Open Font License).</p>
@@ -968,7 +969,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
   <div class="box" style="max-width:640px">
     <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
       <div><h2 id="sh-title">Share for help</h2><p class="hint">A summary of your tank for a Facebook group, Reef2Reef or your local club. Add your question, then copy or share it. Nothing is posted for you.</p></div>
-      <div class="field"><label for="sh-q"><b>Your question</b> (optional)</label><input id="sh-q" type="text" maxlength="300" placeholder="e.g. My hammer coral hasn't opened in two days. What should I check?"></div>
+      <div class="field"><label for="sh-q"><b>Your question</b></label><textarea id="sh-q" rows="3" maxlength="800" placeholder="What are you seeing, when did it start, and what changed in the last two weeks? e.g. My hammer coral hasn't opened in two days. I raised the lights on Sunday."></textarea></div>
+      <p class="hint" style="margin:0"><b>Add a photo to your post.</b> A clear, close shot of the problem, taken with the blue lights turned down or off (blue light hides color and tissue detail), plus one of the whole tank. The summary below can only report what you've logged, so log your latest tests first.</p>
       <div class="field"><label for="sh-text"><b>Tank summary</b> (you can edit it)</label><textarea id="sh-text" rows="14" style="font:0.8rem var(--f-mono)"></textarea></div>
       <div class="form-actions"><button type="button" class="primary" id="sh-copy">Copy</button><button type="button" id="sh-share">Share…</button><button type="button" id="sh-close">Close</button><span class="status" id="sh-status" role="status"></span></div>
     </div>
@@ -3547,7 +3549,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     ["A coral won't open", "New corals can take a few days. Look for a recent swing in alkalinity, salinity or temperature, a lighting change, pests, or a fish picking at it. Keep things steady and change one thing at a time."],
     ["A fish is scratching or has white spots", "It could be ich (white salt-like grains) or velvet (a fine gold dust with fast breathing), which can kill within days. If spots spread or breathing speeds up, act within a day. Treat fish in a separate hospital tank, never the display: copper and many fish medicines kill corals and invertebrates. The parasite also lives on in the display, so it needs to stay fish-free for about 11 weeks. Occasional scratching alone is common and not always a sign of disease. Quarantining new fish is the best prevention."]
   ];
-  const GOLDEN = ["Go slow: most reef losses come from changing things too fast.", "Change one thing at a time, then watch for a few days.", "Test before you act, and retest a surprising number.", "Feed lightly; you can always feed more tomorrow.", "Add livestock gradually, and quarantine fish if you can."];
+  const GOLDEN = ["Go slow: most reef losses come from changing things too fast.", "Change one thing at a time, then watch for a few days.", "Test before you act, and retest a surprising number.", "Feed lightly; you can always feed more tomorrow.", "Add livestock gradually, and quarantine fish if you can.", "Log every test, water change and dosing change. This log is only as good as what goes into it."];
   function helpHtml(p, v){
     const h = HELP[p.key]; if (!h) return "";
     const st = readingStatus(p, v), t = targets[p.key], side = st === "good" || st === "none" ? null : v < t.lo ? "low" : "high", g = side && h[side];
@@ -3577,6 +3579,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
     else if (outs.length) { const o = outs[0], t = targets[o.p.key];
       next = [o.p.name + " is " + (o.v < t.lo ? "low" : "high") + (outs.length > 1 ? " (and " + outs.slice(1).map(x => x.p.name.toLowerCase()).join(", ") + ")" : ""),
         "It reads " + fmt(o.p, o.v) + " " + o.p.unit + ", well outside your range of " + fmt(o.p, t.lo) + "–" + fmt(o.p, t.hi) + ". Retest first if the number surprises you, then tap it under Latest readings for likely causes and what to do. Correct slowly.", "go-test"]; }
+    else if (Date.now() - Math.max(...real.map(t => t.ts)) > 14 * DAY) { const dd = Math.floor((Date.now() - Math.max(...real.map(t => t.ts))) / DAY);
+      next = ["Time to test", "Your last test was " + nDays(dd) + " ago. Everything on this screen is only as good as your latest numbers, so test and log what you can today.", "go-test"]; }
     else if (supply.some(a => a.state === "need")) next = ["Start dosing " + supply.filter(a => a.state === "need").map(a => DOSE[a.k].name.toLowerCase()).join(" and "), "Water changes no longer keep up with what your tank uses. The Dosing tab has the daily amount.", "go-dosing"];
     else if (reminders.length) next = [reminders.length + (reminders.length === 1 ? " task due today" : " tasks due today"), reminders.slice(0, 3).map(r => r.name).join(", ") + (reminders.length > 3 ? " and more" : "") + ".", "go-maint"];
     else next = ["Nothing needs doing today", "Your tank is on track. Keep feeding lightly and testing on schedule.", ""];
@@ -3625,7 +3629,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     L.push((profile && profile.name ? profile.name : "My tank") + ": " + [profile && profile.display, profile && profile.hasSump && profile.sumpModel ? profile.sumpModel + " sump" : ""].filter(Boolean).join(" + ") + (V ? " (about " + fmtVol(V, 0) + " total water)" : "") + (age != null ? ", running " + nDays(age) : "") + (tt ? ", " + tt.label.toLowerCase() : "") + ".");
     L.push(""); L.push("Latest tests:");
     PARAMS.forEach(p => { const pts = ct.filter(t => hasVal(t, p.key)); if (!pts.length) return; const d = v => p.ut ? +toDisp(p.ut, v).toFixed(p.dp) : +(+v).toFixed(p.dp), last = pts[pts.length - 1], prev = pts.length > 1 ? pts[pts.length - 2] : null;
-      L.push("- " + p.name + " " + d(last[p.key]) + " " + p.unit + " (" + dshort(last.ts) + (prev ? "; before that " + d(prev[p.key]) + " on " + dshort(prev.ts) : "") + ")" + (jumpFor(p.key) ? "  [big jump, retesting]" : "")); });
+      L.push("- " + p.name + " " + d(last[p.key]) + " " + p.unit + " (" + dshort(last.ts) + (prev ? "; before that " + d(prev[p.key]) + " on " + dshort(prev.ts) : "") + ")" + (Date.now() - last.ts > 14 * DAY ? "  [" + nDays(Math.floor((Date.now() - last.ts) / DAY)) + " old]" : "") + (jumpFor(p.key) ? "  [big jump, retesting]" : "")); });
     const doses = CONS_KEYS.filter(k => doseAt(k, Date.now()) > 0).map(k => DOSE[k].product + " " + doseAt(k, Date.now()) + " " + du(k) + "/day");
     L.push(""); L.push("Dosing: " + (doses.length ? doses.join(", ") : "none"));
     const w30 = wcLog.filter(e => e.ts >= Date.now() - 30 * DAY), g30 = w30.reduce((a, e) => a + e.gal, 0), s = getSalt();
@@ -3635,6 +3639,18 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const alive = livestock.filter(l => (l.status || "alive") === "alive"), cnt = t => alive.filter(l => l.type === t).reduce((a, l) => a + (Number(l.qty) || 1), 0);
     if (alive.length) { L.push("Livestock: " + [cnt("fish") + " fish", cnt("coral") + " corals", cnt("invert") + " inverts"].join(", ") + ".");
       const recent = alive.filter(l => l.added && Date.now() - toTs(l.added) <= 30 * DAY); if (recent.length) L.push("Added in the last 30 days: " + recent.map(l => l.name).join(", ") + "."); }
+    const gone = livestock.filter(l => (l.status === "lost" || l.status === "rehomed") && l.statusDate && Date.now() - toTs(l.statusDate) <= 90 * DAY).sort((a, b) => toTs(b.statusDate) - toTs(a.statusDate));
+    if (gone.length) L.push("Lost or rehomed in the last 90 days: " + gone.slice(0, 10).map(l => l.name + (l.qty > 1 ? " ×" + l.qty : "") + " (" + (l.status === "rehomed" ? "rehomed " : "") + dshort(toTs(l.statusDate)) + ")").join(", ") + ".");
+    const lc = [...lightLog, ...programs.map(k7AsLogEntry)].filter(e => e.ts >= Date.now() - 30 * DAY).sort((a, b) => b.ts - a.ts);
+    if (lc.length) L.push("Light changes in the last 30 days: " + lc.slice(0, 5).map(e => dshort(e.ts) + (e.program || e.fixtureName ? " (" + (e.program || e.fixtureName) + ")" : "")).join(", ") + ".");
+    const tg = gear.filter(g => g.params && g.params.length);
+    if (tg.length) { L.push(""); L.push("Test gear:");
+      tg.forEach(g => { const chk = (g.log || []).filter(e => e.type === "Calibration" || e.type === "Reference check").sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+        const needsCal = g.every > 0 || /meter|refract|probe|monitor/i.test((GEAR[g.kind] && GEAR[g.kind].label) || g.kind || "");
+        const exp = g.expires && g.expires < ymdToday();
+        L.push("- " + [g.brand, g.model].filter(Boolean).join(" ") + " (" + g.params.map(k => (PARAMS.find(p => p.key === k) || { name: k }).name.toLowerCase()).join(", ") + ")" +
+          (chk ? "; last " + chk.type.toLowerCase() + " " + dshort(toTs(chk.date)) + (chk.result === "fail" ? " (needed attention)" : chk.result === "pass" ? " (passed)" : "") : needsCal ? "; no calibration logged" : "") +
+          (exp ? "; reagent expired " + dshort(toTs(g.expires)) : "")); }); }
     const ev = testsRaw.filter(t => t.events && t.events.length && t.ts >= Date.now() - 21 * DAY).sort((a, b) => b.ts - a.ts).slice(0, 6);
     if (ev.length) L.push("Recent changes: " + ev.map(t => dshort(t.ts) + " " + t.events.join("/") + (t.note ? " (" + t.note + ")" : "")).join("; ") + ".");
     L.push(""); L.push("Logged with Holdfast: Reef Log & Dosing");
