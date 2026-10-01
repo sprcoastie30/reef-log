@@ -137,7 +137,7 @@
   function render() {
     var host = $("sy-box"); if (!host) return;
     if (!backend) {
-      host.innerHTML = '<p class="hint">Sync isn\'t set up for this copy of the app yet. Data stays on this device; use the backup file to move it.</p>';
+      host.innerHTML = '<p class="callout"><b>Live sync is coming in a future update.</b> For now your log stays on this device, and changes made on one phone or computer won\'t show up on another. To move your log, tap <b>Download full backup</b> here, then open Holdfast on the other device and use <b>Restore from backup</b> with that file.</p>';
       setStatus(); return;
     }
     if (recovering && user) {
