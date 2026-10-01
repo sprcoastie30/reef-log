@@ -3,6 +3,8 @@
 A reef aquarium log that runs in any browser and installs to a phone's home screen:
 
 - **Today**: the home screen. One suggested next step, alerts, readings in plain words against the user's own targets (tap any reading for what it means, likely causes, what to do and what to avoid), what's due, a tank-cycle tracker, a readiness ladder (first fish, soft corals, LPS, SPS) checked against logged tests and tank age, golden rules and common beginner problems. Includes "Share for help", a one-tap tank summary for forums and Facebook groups.
+- **PAR map**: record PAR across the tank (up to 6 spots left to right, 1–3 rows front to back, at the top of the rock, middle and sand), shown as a one-hue heat map with values in every cell; highlight where soft corals, LPS or SPS typically fit (about 50–150, 100–250 and 250–450 PAR); compare with the previous map after a light change.
+- **Salinity correction**: works out a day-by-day plan to reach the target salinity at no more than about 1 ppt a day, by swapping tank water for stronger or weaker saltwater, swapping for RO/DI, or dissolving salt in RO/DI; reminds users to calibrate the refractometer and top off to the water line first.
 - **Retest check**: a reading that jumps more than a tank normally moves between tests is flagged, and dosing suggestions hold until a retest confirms it.
 - **Targets**: users set their own ranges inside broad safe limits; suggested ranges by tank type (fish only, soft corals, LPS, SPS/mixed) and a "Match my salt" button are offered, never forced.
 - **Tank setup**: standard glass-tank size presets, or the maker's total volume for all-in-ones; ammonia and nitrite tracking for new tanks.

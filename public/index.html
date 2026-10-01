@@ -195,6 +195,21 @@ table.calc td.res { font-weight: 500; color: var(--ink); }
 .result-list li span:last-child { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
 .callout { border-left: 3px solid var(--event); padding: 6px 10px; font-size: 0.86rem; background: var(--warn-bg); border-radius: 0 6px 6px 0; margin-top: 8px; }
 .callout.warn { border-left-color: var(--warn); }
+.pm-in, .pm-grid { display: grid; gap: 4px; align-items: center; }
+.pm-in input { width: 100%; min-width: 0; text-align: center; padding: 6px 2px; }
+.pm-ch { text-align: center; } .pm-rh { font-size: 0.78rem; }
+.pm-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; margin: 8px 0; }
+.pm-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 8px; }
+.pm-lh { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 6px; flex-wrap: wrap; }
+.pm-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 44px; border-radius: 4px; font: 600 0.9rem var(--f-mono); outline-offset: 1px; }
+.pm-cell small { font-size: 0.68rem; font-weight: 500; opacity: 0.85; }
+.pm-cell.empty { background: var(--grid); color: var(--muted); font-weight: 400; }
+.pm-cell.hit { outline: 2px solid var(--ink); }
+.pm-cell.dim { opacity: 0.28; }
+.pm-cell:focus-visible { outline: 2px solid var(--ink); }
+.pm-legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.75rem; color: var(--muted); }
+.pm-ramp { flex: 0 1 220px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 10%, var(--panel)), color-mix(in srgb, var(--accent) 90%, var(--panel))); }
+.pm-place { margin: 6px 0 0; padding-left: 1.1em; font-size: 0.88rem; display: flex; flex-direction: column; gap: 4px; }
 .td-hero { display: flex; flex-direction: column; gap: 12px; }
 .td-hero h2 { font-size: 1.35rem; margin-top: 2px; }
 .td-hero p { color: var(--ink); max-width: 70ch; }
@@ -746,6 +761,17 @@ details.backup summary { cursor: pointer; list-style: revert; }
         <p class="hint">For other salts, pick Custom and enter the maker's published values, or your own test of freshly mixed water.</p>
       </section>
 
+      <section class="panel" id="sc-panel">
+        <div><h2>Salinity correction</h2><p class="hint">Works out how much water to swap, or salt to add, to move salinity to your target safely: no more than about 1 ppt a day.</p></div>
+        <div class="fields three">
+          <div class="field"><label for="sc-cur"><b>Now</b> <span data-ul="sal">ppt</span></label><input id="sc-cur" type="number" step="any" min="0"></div>
+          <div class="field"><label for="sc-tgt"><b>Target</b> <span data-ul="sal">ppt</span></label><input id="sc-tgt" type="number" step="any" min="0"></div>
+          <div class="field" id="sc-mix-wrap"><label for="sc-mix"><b>New saltwater mixed to</b> <span data-ul="sal">ppt</span></label><input id="sc-mix" type="number" step="any" min="0"></div>
+        </div>
+        <div class="field"><label for="sc-method"><b>How</b></label><select id="sc-method"></select></div>
+        <div id="sc-out"></div>
+      </section>
+
       <section class="panel" id="wc-panel">
         <div><h2>Water change plan</h2><p class="hint">Pick how you change water. Everything below uses your net system volume, the salt above, and your latest test results.</p></div>
         <div class="fields">
@@ -873,7 +899,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       </section>
 
       <section class="panel">
-        <h2>PAR readings</h2>
+        <h2>Quick PAR readings</h2>
         <div class="fields three">
           <div class="field"><label for="par-date"><b>Date</b></label><input id="par-date" type="date"></div>
           <div class="field"><label for="par-sand"><b>Sand</b></label><input id="par-sand" type="number" step="1" min="0"></div>
@@ -886,6 +912,27 @@ details.backup summary { cursor: pointer; list-style: revert; }
         <div id="par-list"></div>
       </section>
     </div>
+    <section class="panel" id="pm-panel" style="margin-top:18px">
+      <div><h2>PAR map</h2><p class="hint">Measure PAR across the tank at a few heights and see where each kind of coral fits. Take readings at the same time of day (at peak light) with the meter's sensor pointing straight up, and remap after any light change.</p></div>
+      <details id="pm-form-wrap"><summary class="label" style="cursor:pointer">Record a new map</summary>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+          <div class="fields three">
+            <div class="field"><label for="pm-date"><b>Date</b></label><input id="pm-date" type="date"></div>
+            <div class="field"><label for="pm-cols"><b>Spots left to right</b></label><select id="pm-cols"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div>
+            <div class="field"><label for="pm-rows"><b>Front to back</b></label><select id="pm-rows"><option value="1">1 row</option><option value="2" selected>2 rows (front, back)</option><option value="3">3 rows (front, middle, back)</option></select></div>
+          </div>
+          <div class="chips" id="pm-levels"><span class="label">Heights</span>
+            <label class="chip"><input type="checkbox" value="top" checked>Top of the rock</label>
+            <label class="chip"><input type="checkbox" value="mid" checked>Middle of the rock</label>
+            <label class="chip"><input type="checkbox" value="sand" checked>Sand bed</label>
+          </div>
+          <div id="pm-grids"></div>
+          <div class="field"><label for="pm-note"><b>Notes</b></label><input id="pm-note" type="text" maxlength="160" placeholder="Meter, light program, light height"></div>
+          <div class="form-actions"><button type="button" class="primary" id="pm-save">Save map</button><button type="button" id="pm-copy">Copy last map's layout</button><span class="status" id="pm-status" role="status"></span></div>
+        </div>
+      </details>
+      <div id="pm-view"><div class="skeleton">Loading PAR maps…</div></div>
+    </section>
   </div>
   <details class="panel backup" id="backup">
     <summary><span class="label" style="font-size:.8rem">Data &amp; backup</span></summary>
@@ -2355,6 +2402,56 @@ details.backup summary { cursor: pointer; list-style: revert; }
   }
   $("w-save").addEventListener("click", () => saveDosing("w-status"));
 
+  // ---------- salinity correction ----------
+  // Mixing math in ppt: swapping x gallons of tank water (salinity c) for water at m gives c + x(m − c)/V.
+  // Steps are capped at about 1 ppt a day, a common safe pace for fish and corals.
+  const SC_STEP = 1.0;
+  let scDir = 0;
+  ["sc-cur","sc-tgt","sc-mix"].forEach(id => $(id).addEventListener("input", () => { $(id).dataset.dirty = "1"; renderSC(); }));
+  $("sc-method").addEventListener("change", renderSC);
+  function scPrefill(){
+    const ct = testsRaw.filter(t => t.sal != null).sort((a, b) => a.ts - b.ts), last = ct.length ? salPpt(ct[ct.length - 1].sal) : null;
+    const t = (targetsRaw && targetsRaw.sal) || DEFAULTS.sal, tgt = t.t != null ? salPpt(t.t) : (salPpt(t.lo) + salPpt(t.hi)) / 2;
+    if (!$("sc-cur").dataset.dirty) setU("sc-cur", "sal", last == null ? "" : +last.toFixed(1));
+    if (!$("sc-tgt").dataset.dirty) setU("sc-tgt", "sal", +tgt.toFixed(1));
+  }
+  function renderSC(){
+    const out = $("sc-out"); if (!out) return;
+    scPrefill();
+    const V = volume().net, cur = getU("sc-cur", "sal"), tgt = getU("sc-tgt", "sal");
+    if (!V) { out.innerHTML = NO_VOL; return; }
+    if (cur == null || tgt == null) { out.innerHTML = '<p class="hint">Enter your current salinity and your target.</p>'; return; }
+    if (cur < 20 || cur > 45 || tgt < 25 || tgt > 40) { out.innerHTML = '<p class="callout warn">Those numbers look outside the reef range. Check the units (ppt or SG) and recalibrate your refractometer before correcting anything.</p>'; return; }
+    const d = tgt - cur, dir = Math.abs(d) < 0.3 ? 0 : d > 0 ? 1 : -1;
+    if (dir !== scDir) { scDir = dir;
+      $("sc-method").innerHTML = dir > 0 ? '<option value="mix">Swap tank water for stronger saltwater</option><option value="salt">Dissolve salt in RO/DI and add it to the sump</option>'
+        : dir < 0 ? '<option value="ro">Swap tank water for fresh RO/DI</option><option value="mix">Swap tank water for weaker saltwater</option>' : '<option value="">No correction needed</option>';
+      if (!$("sc-mix").dataset.dirty) setU("sc-mix", "sal", dir > 0 ? +(tgt + 5).toFixed(1) : +(tgt - 5).toFixed(1));
+    }
+    const method = $("sc-method").value, mix = getU("sc-mix", "sal");
+    $("sc-mix-wrap").hidden = method !== "mix";
+    if (!dir) { out.innerHTML = '<p class="callout good">Within about 0.3 ppt of your target. No correction needed; most refractometers read in steps of about 1.3 ppt (0.001 SG), so smaller differences are within reading error.</p>'; return; }
+    if (method === "mix" && (mix == null || (dir > 0 ? mix <= tgt : mix >= tgt))) { out.innerHTML = '<p class="hint">The new saltwater has to be ' + (dir > 0 ? 'stronger' : 'weaker') + ' than your target. Try about ' + fmtS(dir > 0 ? tgt + 5 : tgt - 5) + '.</p>'; return; }
+    const s = getSalt(), gpp = (s.gpg || 157) / 35; // grams of salt per gallon per ppt, scaled from your salt's mixing rate
+    const rows = []; let c = cur, totalSwap = 0, totalSalt = 0;
+    for (let day = 1; day <= 30 && Math.abs(tgt - c) > 0.05; day++) {
+      const next = c + Math.sign(tgt - c) * Math.min(SC_STEP, Math.abs(tgt - c));
+      if (method === "salt") { const g = V * (next - c) * gpp; totalSalt += g; rows.push([day, "—", Math.round(g) + " g of salt" + (isMetric() ? "" : " (" + (g / 28.35).toFixed(1) + " oz)"), next]); }
+      else { const m = method === "ro" ? 0 : mix, x = V * (next - c) / (m - c); totalSwap += x; rows.push([day, fmtVol(x, x < 5 ? 2 : 1) + " of tank water", fmtVol(x, x < 5 ? 2 : 1) + " of " + (method === "ro" ? "RO/DI" : "saltwater at " + fmtS(mix)), next]); }
+      c = next;
+    }
+    const notes = dir < 0
+      ? ["First top off to your normal water line with RO/DI and retest. Evaporation alone raises salinity, and topping off may fix it.", "If it keeps creeping up, check the auto top-off: it should add fresh RO/DI, never saltwater."]
+      : ["Check the auto top-off isn't overfilling with fresh water, and that no fresh water is getting in.", method === "salt" ? "Dissolve the salt completely in a gallon or two of RO/DI first, then add it slowly to the sump in a high-flow spot, never straight into the display." : "Match the new water's temperature to the tank and add it slowly to the sump."];
+    notes.unshift("Before correcting, calibrate your refractometer with 35 ppt fluid and retest. A drifting refractometer is the most common cause of a surprise reading.");
+    out.innerHTML = '<ul class="result-list"><li><span>Change</span><span><b>' + fmtS(cur) + ' → ' + fmtS(tgt) + '</b> over ' + nDays(rows.length) + '</span></li>' +
+      (method === "salt" ? '<li><span>Salt in total</span><span><b>' + Math.round(totalSalt) + ' g</b>' + (isMetric() ? '' : ' (' + (totalSalt / 453.6).toFixed(2) + ' lb)') + '</span></li>' : '<li><span>Water swapped in total</span><span><b>' + fmtVol(totalSwap, totalSwap < 5 ? 2 : 1) + '</b></span></li>') + '</ul>' +
+      '<div class="tablewrap"><table><thead><tr><th>Day</th><th class="note">Remove</th><th class="note">Add</th><th>Salinity after</th></tr></thead><tbody>' +
+      rows.map(r => '<tr><td>' + r[0] + '</td><td class="note">' + esc(r[1]) + '</td><td class="note">' + esc(r[2]) + '</td><td>' + fmtS(r[3]) + '</td></tr>').join("") + '</tbody></table></div>' +
+      notes.map(n => '<p class="hint">' + esc(n) + '</p>').join("") + '<p class="hint">Retest before each day\'s step and stop early if you reach your range. Amounts use your net system volume of ' + fmtVol(V) + '.</p>';
+  }
+  const fmtS = ppt => SALU === "sg" ? (1 + ppt / SAL_K).toFixed(4) + " SG" : (+ppt).toFixed(1) + " ppt";
+
   // ---------- water change log ----------
   let wcLog = [];
   function wcRate(){ // share of the system replaced per day: from logged changes when there are recent ones, otherwise the plan
@@ -2708,7 +2805,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       '<div><span class="label">Sump</span><span class="big">+' + n(r.sump) + '</span><small>' + u + ' at running level</small></div>' +
       '<div class="net"><span class="label">Net system</span><span class="big">' + n(r.net) + '</span><small>' + (isMetric() ? 'L · ' + r.net.toFixed(1) + ' US gal' : 'gal · ' + (r.net * L_GAL).toFixed(0) + ' L') + '</small></div>';
   }
-  function renderDosing(){ renderVol(); if (!$("corr").innerHTML) renderCorrection(); else updateCorrection(); renderConsumption(); renderMaint(); renderWC(); renderSupplyAlerts(); }
+  function renderDosing(){ renderVol(); if (!$("corr").innerHTML) renderCorrection(); else updateCorrection(); renderConsumption(); renderMaint(); renderWC(); renderSC(); renderSupplyAlerts(); }
   function refillCurrents(){ Object.keys(DOSE).forEach(k => { const inp = $("c-" + k); if (inp && !inp.dataset.dirty) { const t = latestVal(k); inp.value = t ? t[k] : ""; } }); }
   $("tab-dosing").addEventListener("input", ev => {
     const id = ev.target.id || "";
@@ -3229,6 +3326,87 @@ details.backup summary { cursor: pointer; list-style: revert; }
     $("pf-save").disabled = false;
   });
 
+  // ---------- PAR map ----------
+  // Typical PAR ranges by coral group. Common hobby guidelines only: individual corals vary, and all need slow light acclimation.
+  const PAR_ZONES = { soft: { label: "Soft corals", lo: 50, hi: 150 }, lps: { label: "LPS", lo: 100, hi: 250 }, sps: { label: "SPS", lo: 250, hi: 450 } };
+  const PM_LEVELS = { top: "Top of the rock", mid: "Middle of the rock", sand: "Sand bed" };
+  const PM_MAX = 600; // top of the color scale
+  let parMaps = [], pmZone = "", pmSel = "", pmDiff = false;
+  const rowNames = n => n === 1 ? ["Across the tank"] : n === 2 ? ["Back", "Front"] : ["Back", "Middle", "Front"];
+  const colName = (c, cols) => c === 0 ? "Left" : c === cols - 1 ? "Right" : "Spot " + (c + 1);
+  const pmLevelsSel = () => [...document.querySelectorAll("#pm-levels input:checked")].map(i => i.value);
+  function readPmVals(){ const out = {}; document.querySelectorAll("[data-pm]").forEach(el => { const [l, r, c] = el.dataset.pm.split("-"); const v = num(el.value); out[l] = out[l] || []; out[l][r] = out[l][r] || []; out[l][r][c] = v == null ? null : Math.round(v); }); return out; }
+  function renderPmGrids(vals){
+    const cols = +$("pm-cols").value, rows = +$("pm-rows").value, lv = pmLevelsSel();
+    $("pm-grids").innerHTML = lv.map(l => '<fieldset><legend class="label">' + PM_LEVELS[l] + ' (PAR)</legend><div class="pm-in" style="grid-template-columns:64px repeat(' + cols + ', minmax(0, 1fr))"><span></span>' +
+      Array.from({ length: cols }, (_, c) => '<span class="hint pm-ch">' + (c === 0 ? "Left" : c === cols - 1 ? "Right" : String(c + 1)) + '</span>').join("") +
+      rowNames(rows).map((rn, r) => '<span class="hint pm-rh">' + rn + '</span>' + Array.from({ length: cols }, (_, c) => { const v = vals && vals[l] && vals[l][r] ? vals[l][r][c] : null;
+        return '<input type="number" min="0" max="2500" step="1" inputmode="numeric" data-pm="' + l + '-' + r + '-' + c + '" aria-label="' + PM_LEVELS[l] + ', ' + rn + ', ' + colName(c, cols) + '" value="' + (v ?? "") + '">'; }).join("")).join("") +
+      '</div></fieldset>').join("") || '<p class="hint">Pick at least one height.</p>';
+  }
+  ["pm-cols", "pm-rows"].forEach(id => $(id).addEventListener("change", () => renderPmGrids(readPmVals())));
+  $("pm-levels").addEventListener("change", () => renderPmGrids(readPmVals()));
+  $("pm-date").value = today(); renderPmGrids();
+  $("pm-copy").addEventListener("click", () => { const m = parMaps[0]; if (!m) { setStatus("pm-status", "No map saved yet.", true); return; }
+    $("pm-cols").value = m.cols; $("pm-rows").value = m.rows; document.querySelectorAll("#pm-levels input").forEach(i => { i.checked = m.levels.includes(i.value); }); renderPmGrids();
+    setStatus("pm-status", "Same layout as your last map. Enter today's readings."); });
+  function currentLightName(){
+    const cur = [...lightLog.map(e => ({ ...e })), ...programs.map(k7AsLogEntry)].sort((a, b) => b.ts - a.ts)[0];
+    return cur ? (cur.program || cur.fixtureName || "") : "";
+  }
+  $("pm-save").addEventListener("click", async () => {
+    const lv = pmLevelsSel(), cols = +$("pm-cols").value, rows = +$("pm-rows").value, raw = readPmVals();
+    if (!lv.length) { setStatus("pm-status", "Pick at least one height.", true); return; }
+    let n = 0; const values = {};
+    lv.forEach(l => { values[l] = Array.from({ length: rows }, (_, r) => Array.from({ length: cols }, (_, c) => { const v = raw[l] && raw[l][r] ? raw[l][r][c] : null; if (v != null) n++; return v == null ? null : v; })); });
+    if (!n) { setStatus("pm-status", "Enter at least one reading.", true); return; }
+    if (!db) { setStatus("pm-status", "Saving isn't available in this view.", true); return; }
+    const rec = { ts: toTs($("pm-date").value || today(), "13:00"), cols, rows, levels: lv, values, note: $("pm-note").value.trim(), light: currentLightName() };
+    try { const ref = await db.collection("parmaps").add(rec); pmSel = ref.id; renderParMaps(); $("pm-note").value = ""; renderPmGrids(); setStatus("pm-status", "Map saved with " + n + (n === 1 ? " reading." : " readings.")); $("pm-form-wrap").open = false; }
+    catch (e) { setStatus("pm-status", "Couldn't save (" + (e && e.code || "error") + ").", true); }
+  });
+  // one hue, light to dark with PAR (the accent mixed into the panel color), value printed in every cell
+  const pmShade = v => Math.max(0, Math.min(1, v / PM_MAX));
+  const pmBg = v => "color-mix(in srgb, var(--accent) " + Math.round(10 + pmShade(v) * 80) + "%, var(--panel))";
+  const pmInk = v => pmShade(v) > 0.45 ? "var(--accent-ink)" : "var(--ink)";
+  const fitsZones = v => Object.values(PAR_ZONES).filter(z => v >= z.lo && v <= z.hi).map(z => z.label);
+  function renderParMaps(){
+    const host = $("pm-view"); if (!host) return;
+    if (!parMaps.length) { host.innerHTML = '<p class="hint">No maps yet. Open "Record a new map", pick how many spots you will measure, and enter the readings. Two rows of four spots at three heights (24 readings) takes about ten minutes with a meter.</p>'; return; }
+    const i = Math.max(0, parMaps.findIndex(x => x.id === pmSel)), m = parMaps[i];
+    const prev = parMaps.slice(i + 1).find(x => x.cols === m.cols && x.rows === m.rows);
+    const zone = PAR_ZONES[pmZone];
+    const all = m.levels.flatMap(l => (m.values[l] || []).flat().filter(v => v != null));
+    const fitLevels = z => { const out = []; m.levels.forEach(l => (m.values[l] || []).forEach(row => row.forEach(v => { if (v != null && v >= z.lo && v <= z.hi) out.push(l); }))); return out; };
+    const placement = Object.values(PAR_ZONES).map(z => { const s = fitLevels(z); const where = m.levels.map(l => [l, s.filter(x => x === l).length]).sort((a, b) => b[1] - a[1]).filter(x => x[1] > 0);
+      return '<li><b>' + z.label + '</b> (' + z.lo + '–' + z.hi + '): ' + (s.length ? s.length + ' of ' + all.length + ' spots, mostly ' + PM_LEVELS[where[0][0]].toLowerCase() : 'no spots in range') + '</li>'; }).join("");
+    const grid = l => { const vals = m.values[l] || [], cols = m.cols, pv = prev && prev.values[l], f = vals.flat().filter(v => v != null);
+      return '<div class="pm-level"><div class="pm-lh"><b>' + PM_LEVELS[l] + '</b><span class="hint">' + (f.length ? Math.min(...f) + "–" + Math.max(...f) + " PAR · average " + Math.round(f.reduce((a, b) => a + b, 0) / f.length) : "no readings") + '</span></div>' +
+        '<div class="pm-grid" role="table" aria-label="' + PM_LEVELS[l] + ' PAR" style="grid-template-columns:64px repeat(' + cols + ', minmax(0, 1fr))"><span role="columnheader"></span>' +
+        Array.from({ length: cols }, (_, c) => '<span class="hint pm-ch" role="columnheader">' + (c === 0 ? "Left" : c === cols - 1 ? "Right" : String(c + 1)) + '</span>').join("") +
+        rowNames(m.rows).map((rn, r) => '<span class="hint pm-rh" role="rowheader">' + rn + '</span>' + Array.from({ length: cols }, (_, c) => { const v = vals[r] ? vals[r][c] : null;
+          if (v == null) return '<span class="pm-cell empty" role="cell">—</span>';
+          const d = pmDiff && pv && pv[r] && pv[r][c] != null ? v - pv[r][c] : null, fits = fitsZones(v), inZ = zone ? v >= zone.lo && v <= zone.hi : null;
+          return '<span class="pm-cell' + (inZ === true ? " hit" : inZ === false ? " dim" : "") + '" role="cell" tabindex="0" style="background:' + pmBg(v) + ';color:' + pmInk(v) + '" title="' + esc(PM_LEVELS[l] + ", " + rn.toLowerCase() + ", " + colName(c, cols).toLowerCase() + ": " + v + " PAR" + (fits.length ? " (fits " + fits.join(", ") + ")" : v < 50 ? " (low light)" : " (very high light)") + (d != null ? "; " + (d >= 0 ? "+" : "−") + Math.abs(d) + " since " + dshort(prev.ts) : "")) + '">' +
+            v + (d != null && d !== 0 ? '<small>' + (d > 0 ? "+" : "−") + Math.abs(d) + '</small>' : '') + '</span>'; }).join("")).join("") + '</div></div>'; };
+    host.innerHTML =
+      '<div class="pm-bar"><div class="field"><label for="pm-pick"><b>Map</b></label><select id="pm-pick">' + parMaps.map(x => '<option value="' + esc(x.id) + '"' + (x === m ? " selected" : "") + '>' + dstr(x.ts) + (x.light ? " · " + esc(x.light) : "") + '</option>').join("") + '</select></div>' +
+        '<div class="seg" role="group" aria-label="Highlight where a coral group fits"><button type="button" data-pmzone="" aria-pressed="' + (!pmZone) + '">All</button>' + Object.entries(PAR_ZONES).map(([k, z]) => '<button type="button" data-pmzone="' + k + '" aria-pressed="' + (pmZone === k) + '">' + z.label + '</button>').join("") + '</div>' +
+        (prev ? '<label class="chip"><input type="checkbox" id="pm-diff"' + (pmDiff ? " checked" : "") + '>Show change since ' + dshort(prev.ts) + '</label>' : '') + '</div>' +
+      (zone ? '<p class="hint">Outlined spots read ' + zone.lo + '–' + zone.hi + ' PAR, a typical range for ' + zone.label.toLowerCase() + '. Faded spots are outside it.</p>' : '') +
+      '<div class="pm-levels">' + m.levels.map(grid).join("") + '</div>' +
+      '<div class="pm-legend" aria-hidden="true"><span>0</span><span class="pm-ramp"></span><span>' + PM_MAX + '+ PAR</span></div>' +
+      '<div class="cols" style="margin-top:12px"><div><span class="label">Where corals fit on this map</span><ul class="pm-place">' + placement + '</ul></div>' +
+      '<div><p class="hint">Typical ranges: soft corals about 50–150 PAR, LPS about 100–250, SPS about 250–450. These are common hobby guidelines; individual corals vary, and any coral moved to brighter light needs to adjust slowly over a couple of weeks.</p>' + (m.note ? '<p class="hint"><b>Notes:</b> ' + esc(m.note) + '</p>' : '') +
+        (canWrite ? '<div class="form-actions"><button type="button" class="danger" data-pmdel="' + esc(m.id) + '">Delete this map</button></div>' : '') + '</div></div>';
+  }
+  $("pm-view").addEventListener("click", async ev => {
+    const z = ev.target.closest("[data-pmzone]"), d = ev.target.closest("[data-pmdel]");
+    if (z) { pmZone = z.dataset.pmzone; renderParMaps(); }
+    if (d) { if (d.dataset.confirm !== "1") { d.dataset.confirm = "1"; d.textContent = "Confirm delete"; return; } try { await db.collection("parmaps").doc(d.dataset.pmdel).delete(); pmSel = ""; } catch (e) { setStatus("pm-status", "Couldn't delete.", true); } }
+  });
+  $("pm-view").addEventListener("change", ev => { if (ev.target.id === "pm-pick") { pmSel = ev.target.value; renderParMaps(); } if (ev.target.id === "pm-diff") { pmDiff = ev.target.checked; renderParMaps(); } });
+
   // ---------- Today: plain-language home screen ----------
   // Readings and tank history in stored units (ppt, °F), whatever the display units are.
   const canonTests = () => testsRaw.map(t => ({ ...t, sal: salPpt(t.sal) })).sort((a, b) => a.ts - b.ts);
@@ -3347,8 +3525,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
       low: ["A phosphate remover (GFO, lanthanum), carbon dosing, an algae reactor or refugium, or very light feeding.", "Ease off the phosphate remover and feed a little more. Corals can pale at zero.", "Don't run phosphate removers without testing often."],
       high: ["Overfeeding, rock releasing stored phosphate, or not enough export.", "Feed less, keep up water changes, and add a phosphate remover gently while testing every few days.", "Don't drop it fast; lower it over a couple of weeks."] },
     sal: { what: "Salinity is how salty the water is. Most reefs run about 35 ppt (1.026 SG).",
-      low: ["Topping off with too much fresh water, or a refractometer that needs calibration.", "Calibrate with 35 ppt fluid first. Then raise it slowly, about 1 ppt a day, by topping off with saltwater.", "Don't correct it all at once."],
-      high: ["Evaporation topped off with saltwater instead of fresh RO/DI, or the auto top-off not working.", "Check the auto top-off and top off with fresh RO/DI water. Lower it about 1 ppt a day.", "Don't dump in a lot of fresh water at once."] },
+      low: ["Topping off with too much fresh water, or a refractometer that needs calibration.", "Calibrate with 35 ppt fluid first. Then raise it slowly, about 1 ppt a day; the Salinity correction calculator on the Dosing & salt tab works out the amounts.", "Don't correct it all at once."],
+      high: ["Evaporation topped off with saltwater instead of fresh RO/DI, or the auto top-off not working.", "Check the auto top-off and top off to your normal water line with fresh RO/DI, then retest. If it's still high, lower it about 1 ppt a day; the Salinity correction calculator on the Dosing & salt tab works out the amounts.", "Don't dump in a lot of fresh water at once."] },
     temp: { what: "Temperature should stay steady; the daily swing matters as much as the number.",
       low: ["A failing or undersized heater, or a cold room.", "Check the heater. A separate heater controller adds a safety cutoff. Raise it slowly.", "Don't change it more than about 2 °F (1 °C) a day."],
       high: ["Summer heat, lights or pumps adding heat, or a heater stuck on.", "Blow a fan across the water surface, shorten the light period, and use a heater controller so a stuck heater can't cook the tank. Warm water holds less oxygen, so add surface movement or an air stone.", "Don't cool it quickly with ice or large cold water changes."] },
@@ -3465,7 +3643,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   $("sh").addEventListener("keydown", ev => { if (ev.key === "Escape") $("sh").hidden = true; });
 
   // ---------- backup ----------
-  const BK_COLS = ["tests","tasks","gear","rodilog","livestock","equipment","photos","lightprograms","lightlog","par","waterchanges"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile","settings/rodi"];
+  const BK_COLS = ["tests","tasks","gear","rodilog","livestock","equipment","photos","lightprograms","lightlog","par","parmaps","waterchanges"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile","settings/rodi"];
   const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
   async function buildBackup(){
     const docs = [], blobs = {};
@@ -3552,6 +3730,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       if (firstPrograms) { firstPrograms = false; if (programs.length) loadProgram(programs[0]); } }, () => { renderPrograms(); });
     db.collection("lightlog").orderBy("ts", "desc").limit(500).onSnapshot(snap => { lightLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderLightLog(); }, () => { renderLightLog(); });
     db.collection("waterchanges").orderBy("ts", "asc").limit(2000).onSnapshot(snap => { wcLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderWcLog(); if (!$("tab-dosing").hidden) renderDosing(); else renderSupplyAlerts(); }, () => { renderWcLog(); });
+    db.collection("parmaps").orderBy("ts", "desc").limit(200).onSnapshot(snap => { parMaps = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderParMaps(); }, () => { renderParMaps(); });
     db.collection("par").orderBy("ts", "asc").limit(500).onSnapshot(snap => { parLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (!$("tab-lighting").hidden) renderPar(); }, () => {});
     db.doc("settings/profile").onSnapshot(snap => {
       applyProfile(snap.exists ? snap.data() : null);
