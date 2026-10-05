@@ -446,7 +446,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
           <div class="fields">
             <div class="field" style="grid-column:1/-1"><label for="e-name"><b>Name</b></label><input id="e-name" type="text" placeholder="e.g. Return pump"></div>
             <div class="field"><label for="e-cat"><b>Category</b></label><select id="e-cat"></select></div>
-            <div class="field"><label for="e-status"><b>Status</b></label><select id="e-status"><option>In use</option><option>Planned</option><option>Retired</option></select></div>
+            <div class="field"><label for="e-status"><b>Status</b></label><select id="e-status"><option>In use</option><option>Spare</option><option>Planned</option><option>Retired</option></select></div>
             <div class="field" style="grid-column:1/-1"><label for="e-details"><b>Make / model / specs</b></label><input id="e-details" type="text"></div>
             <div class="field"><label for="e-installed"><b>Installed</b></label><input id="e-installed" type="date"></div>
             <div class="field"><label for="e-serviced"><b>Last serviced</b></label><input id="e-serviced" type="date"></div>
@@ -1479,11 +1479,11 @@ details.backup summary { cursor: pointer; list-style: revert; }
     if (!equipment.length) { host.innerHTML = '<div class="skeleton">No equipment listed yet. Add your sump, lights, pumps, skimmer and anything else on the system with the form.</div>'; $("eq-summary").textContent = ""; return; }
     const inUse = equipment.filter(e => e.status === "In use").length, planned = equipment.filter(e => e.status === "Planned").length;
     $("eq-summary").textContent = inUse + " in use" + (planned ? " · " + planned + " planned" : "");
-    const order = s => ({"In use":0,"Planned":1,"Retired":2})[s] ?? 3;
+    const order = s => ({"In use":0,"Spare":1,"Planned":2,"Retired":3})[s] ?? 4;
     host.innerHTML = CATS.filter(c => equipment.some(e => (e.category || "Other") === c)).map(c => {
       const items = equipment.filter(e => (e.category || "Other") === c).sort((a,b) => order(a.status) - order(b.status) || String(a.name).localeCompare(String(b.name)));
       return '<div class="eq-group"><h3>' + esc(c) + '</h3>' + items.map(e => {
-        const cls = e.status === "Planned" ? "planned" : e.status === "Retired" ? "retired" : "inuse";
+        const cls = e.status === "Planned" || e.status === "Spare" ? "planned" : e.status === "Retired" ? "retired" : "inuse";
         const dates = [e.installed ? "Installed " + dstr(toTs(e.installed)) : "", e.serviced ? "Serviced " + dstr(toTs(e.serviced)) : ""].filter(Boolean);
         return '<div class="eq-row"><div style="min-width:0"><div class="name">' + esc(e.name) + '</div>' +
           (e.details ? '<div class="details">' + esc(e.details) + '</div>' : '') +
@@ -3546,6 +3546,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     ["Green hair algae", "Fed by extra nutrients, especially phosphate. Pull it out by hand, feed a little less, test phosphate, and add algae-eating snails once the tank is cycled. It takes weeks to win, so be patient."],
     ["Brown snotty strings or bubbles", "Possibly dinoflagellates, which often show up when nitrate and phosphate sit near zero. Dinos often fade at night and come back with the lights, while cyano usually stays put. If you can, confirm with a microscope, or post photos to your local club or forum. Don't strip nutrients further; raise nitrate and phosphate slowly into a normal range."],
     ["Cloudy water", "In a new tank this is often a bacterial bloom that clears in a few days. A white cloud right after dosing can mean calcium and alkalinity came out of solution; dose slower and in different spots. Don't add more chemicals to clear it."],
+    ["The heater failed or the temperature dropped", "Unplug a failed heater and check it for cracks before anything else. Warm the tank back up slowly, over 12 to 24 hours, without overshooting; a fast jump back is a second shock. Don't add hot water. Watch fish closely for ich (white grains, scratching, fast breathing) for the next 1 to 3 weeks, since temperature stress often sets it off. To keep it from happening again: run heaters through a controller with phone alerts, keep a second heater as backup, and keep a spare on the shelf."],
     ["A coral won't open", "New corals can take a few days. Look for a recent swing in alkalinity, salinity or temperature, a lighting change, pests, or a fish picking at it. Keep things steady and change one thing at a time."],
     ["A fish is scratching or has white spots", "It could be ich (white salt-like grains) or velvet (a fine gold dust with fast breathing), which can kill within days. If spots spread or breathing speeds up, act within a day. Treat fish in a separate hospital tank, never the display: copper and many fish medicines kill corals and invertebrates. The parasite also lives on in the display, so it needs to stay fish-free for about 11 weeks. Occasional scratching alone is common and not always a sign of disease. Quarantining new fish is the best prevention."]
   ];
