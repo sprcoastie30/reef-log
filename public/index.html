@@ -310,6 +310,8 @@ a { color: var(--accent); }
 .ls-summary small { color: var(--muted); font-size: 0.78rem; }
 .ls-filter { flex-wrap: wrap; max-width: 100%; }
 .ls-filter button { white-space: nowrap; }
+.ls-bulk { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--grid); }
+.ls-bulk ul { margin: 4px 0 0; padding-left: 18px; }
 .ls-photo-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ls-photo-row img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
 .ls-group h3 { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 14px 0 4px; }
@@ -625,6 +627,24 @@ details.backup summary { cursor: pointer; list-style: revert; }
             <span class="status" id="l-status-msg" role="status"></span>
           </div>
         </form>
+        <details class="ls-bulk" id="lsb-wrap">
+          <summary class="label" style="cursor:pointer">Bulk add from a list</summary>
+          <p class="hint">Paste a list or load a spreadsheet saved as CSV. Everything is added to what's already here and nothing is replaced. Anything already listed under the same name is skipped; if the list gives a date added or source, those have to match too.</p>
+          <p class="hint">A plain list works: one name per line, with an optional count (<code>Royal gramma</code>, <code>Black clownfish, 2</code>). The choices below fill in anything a line doesn't say. For more detail, use a CSV whose first row names the columns: <code>type, group, name, scientific, qty, added, source, status, status date, placement, notes</code> (any order, only <code>name</code> required).</p>
+          <div class="fields">
+            <div class="field"><label for="lsb-type"><b>Type</b></label><select id="lsb-type"><option value="fish">Fish</option><option value="coral">Coral</option><option value="invert">Invertebrate</option></select></div>
+            <div class="field" id="lsb-kind-wrap" hidden><label for="lsb-kind"><b>Coral group</b></label><select id="lsb-kind"><option>LPS</option><option>SPS</option><option>Soft</option><option>Zoanthid / Palythoa</option><option>Mushroom</option><option>Other</option></select></div>
+            <div class="field"><label for="lsb-added"><b>Date added</b></label><input id="lsb-added" type="date"></div>
+            <div class="field"><label for="lsb-source"><b>Source</b></label><input id="lsb-source" type="text" maxlength="80" placeholder="Store, online, frag swap"></div>
+          </div>
+          <div class="field" style="margin-top:10px"><label for="lsb-text"><b>List</b></label><textarea id="lsb-text" rows="6" placeholder="Royal gramma&#10;Black clownfish, 2&#10;Diamond goby"></textarea></div>
+          <div class="form-actions" style="margin-top:10px">
+            <label class="btn" for="lsb-file">Load a CSV file</label><input type="file" id="lsb-file" accept=".csv,.txt,text/csv,text/plain" hidden>
+            <button class="primary" type="button" id="lsb-save" disabled>Add to livestock</button>
+            <span class="status" id="lsb-status" role="status"></span>
+          </div>
+          <div id="lsb-preview" class="hint"></div>
+        </details>
       </section>
       <section class="panel">
         <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
@@ -1707,6 +1727,101 @@ details.backup summary { cursor: pointer; list-style: revert; }
     $("l-save").disabled = false;
   });
   lsReset();
+
+  // ---------- livestock: bulk add from a pasted list or CSV ----------
+  const LSB_KINDS = ["LPS","SPS","Soft","Zoanthid / Palythoa","Mushroom","Other"];
+  const LSB_COLS = { type:"type", group:"kind", "coral group":"kind", kind:"kind", category:"kind", name:"name", "common name":"name",
+    scientific:"sci", "scientific name":"sci", sci:"sci", qty:"qty", quantity:"qty", count:"qty", added:"added", "date added":"added", date:"added",
+    source:"source", status:"status", "status date":"statusDate", "lost date":"statusDate", statusdate:"statusDate", placement:"placement", notes:"notes", note:"notes" };
+  function lsbCells(line){
+    const out = []; let cur = "", q = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (q) { if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; } else if (ch === '"') q = false; else cur += ch; }
+      else if (ch === '"') q = true; else if (ch === "," || ch === "\t") { out.push(cur.trim()); cur = ""; } else cur += ch;
+    }
+    out.push(cur.trim()); return out;
+  }
+  function lsbType(v){ v = String(v || "").toLowerCase(); if (!v) return null;
+    if (/^fish/.test(v)) return "fish"; if (/^coral/.test(v)) return "coral"; if (/invert|anemone|snail|crab|shrimp|urchin|star|clam/.test(v)) return "invert"; return null; }
+  function lsbKind(v){ v = String(v || "").toLowerCase(); if (!v) return null;
+    if (/zoa|paly/.test(v)) return "Zoanthid / Palythoa"; if (/mush|rhodactis|ricordea|discosoma/.test(v)) return "Mushroom";
+    if (/^sps|small/.test(v)) return "SPS"; if (/^lps|large/.test(v)) return "LPS"; if (/soft|leather/.test(v)) return "Soft"; return "Other"; }
+  function lsbStatus(v){ v = String(v || "").toLowerCase(); if (/lost|dead|died/.test(v)) return "lost"; if (/rehom|sold|traded|gave/.test(v)) return "rehomed"; return "alive"; }
+  function lsbDate(v){ v = String(v || "").trim(); if (!v) return "";
+    let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); if (m) return m[1] + "-" + m[2].padStart(2, "0") + "-" + m[3].padStart(2, "0");
+    m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/); if (m) return (m[3].length === 2 ? "20" + m[3] : m[3]) + "-" + m[1].padStart(2, "0") + "-" + m[2].padStart(2, "0");
+    return null; }
+  function lsbParse(text){
+    const lines = String(text || "").replace(/\r/g, "").split("\n").filter(l => l.trim());
+    const defs = { type: $("lsb-type").value, kind: $("lsb-kind").value, added: $("lsb-added").value || "", source: $("lsb-source").value.trim() };
+    const recs = [], problems = [];
+    if (!lines.length) return { recs, problems };
+    const head = lsbCells(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, " ").trim());
+    const map = head.includes("name") || head.includes("common name") ? head.map(h => LSB_COLS[h] || null) : null;
+    (map ? lines.slice(1) : lines).forEach((line, i) => {
+      const n = i + (map ? 2 : 1);
+      let f = {};
+      if (map) { lsbCells(line).forEach((c, j) => { if (map[j] && c !== "") f[map[j]] = c; }); }
+      else {
+        let s = line.trim(), q = null, m;
+        if ((m = s.match(/^(\d+)\s*[x×]?\s+(.+)$/i))) { q = m[1]; s = m[2]; }
+        else if ((m = s.match(/^(.+?)\s*[,;]\s*[x×]?\s*(\d+)$/i)) || (m = s.match(/^(.+?)\s+[x×]\s*(\d+)$/i))) { s = m[1]; q = m[2]; }
+        f.name = s; if (q) f.qty = q;
+      }
+      const name = String(f.name || "").trim().slice(0, 80);
+      if (!name) { problems.push("Line " + n + ": no name, skipped."); return; }
+      const type = f.type ? lsbType(f.type) : defs.type;
+      if (!type) { problems.push("Line " + n + " (" + name + "): type \"" + f.type + "\" isn't fish, coral or invert; skipped."); return; }
+      const added = f.added != null ? lsbDate(f.added) : defs.added;
+      if (added === null) { problems.push("Line " + n + " (" + name + "): couldn't read the date \"" + f.added + "\"; left blank."); }
+      const status = f.status ? lsbStatus(f.status) : "alive";
+      let sdate = status === "alive" ? "" : (f.statusDate ? lsbDate(f.statusDate) : "");
+      if (sdate === null) { problems.push("Line " + n + " (" + name + "): couldn't read the status date; left blank."); sdate = ""; }
+      const qty = Math.max(1, Math.round(num(f.qty) || 1));
+      recs.push({ type, kind: type === "coral" ? (f.kind ? lsbKind(f.kind) : defs.kind) : "", name, sci: String(f.sci || "").slice(0, 80), qty,
+        added: added || "", source: String(f.source != null ? f.source : defs.source).slice(0, 80), status, statusDate: sdate,
+        placement: String(f.placement || "").slice(0, 80), notes: String(f.notes || ""), asset: "" });
+    });
+    return { recs, problems };
+  }
+  const lsbKey = r => [r.type, String(r.name).toLowerCase().trim(), r.added || "", String(r.source || "").toLowerCase().trim()].join("|");
+  let lsbPending = [];
+  function lsbPreview(){
+    $("lsb-kind-wrap").hidden = $("lsb-type").value !== "coral";
+    const { recs, problems } = lsbParse($("lsb-text").value);
+    // An entry counts as already listed when the type and name match and, where the list gives them, the date added and source match too.
+    const low = v => String(v || "").toLowerCase().trim();
+    const listed = r => livestock.some(l => l.type === r.type && low(l.name) === low(r.name) && (!r.added || (l.added || "") === r.added) && (!r.source || low(l.source) === low(r.source)));
+    const seen = new Set(); let dup = 0;
+    lsbPending = recs.filter(r => { const k = lsbKey(r); if (listed(r) || seen.has(k)) { dup++; return false; } seen.add(k); return true; });
+    const cnt = t => lsbPending.filter(r => r.type === t).reduce((a, r) => a + r.qty, 0);
+    const parts = [["fish", "fish", "fish"], ["coral", "coral", "corals"], ["invert", "invert", "inverts"]].map(([t, one, many]) => cnt(t) ? cnt(t) + " " + (cnt(t) === 1 ? one : many) : "").filter(Boolean);
+    $("lsb-save").disabled = !lsbPending.length || !canWrite;
+    $("lsb-save").textContent = lsbPending.length ? "Add " + lsbPending.length + (lsbPending.length === 1 ? " entry" : " entries") : "Add to livestock";
+    $("lsb-preview").innerHTML = (lsbPending.length ? "<p>Ready to add " + esc(parts.join(", ")) + ".</p>" : "") +
+      (dup ? "<p>" + dup + (dup === 1 ? " is" : " are") + " already listed and will be skipped.</p>" : "") +
+      (problems.length ? "<ul>" + problems.slice(0, 12).map(p => "<li>" + esc(p) + "</li>").join("") + (problems.length > 12 ? "<li>…and " + (problems.length - 12) + " more</li>" : "") + "</ul>" : "");
+  }
+  ["lsb-text","lsb-type","lsb-kind","lsb-added","lsb-source"].forEach(id => $(id).addEventListener("input", lsbPreview));
+  $("lsb-type").addEventListener("change", lsbPreview); $("lsb-kind").addEventListener("change", lsbPreview);
+  $("lsb-file").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; ev.target.value = ""; if (!f) return;
+    try { $("lsb-text").value = await f.text(); setStatus("lsb-status", "Loaded " + f.name + "."); lsbPreview(); }
+    catch (e) { setStatus("lsb-status", "Couldn't read that file.", true); }
+  });
+  $("lsb-save").addEventListener("click", async () => {
+    lsbPreview(); if (!lsbPending.length) return;
+    if (!db) { setStatus("lsb-status", "Saving isn't available in this view.", true); return; }
+    const list = lsbPending.slice(); $("lsb-save").disabled = true; let done = 0;
+    try {
+      const col = db.collection("livestock");
+      for (const r of list) { await col.add(r); done++; if (done % 10 === 0) setStatus("lsb-status", "Adding… " + done + " of " + list.length); }
+      setStatus("lsb-status", "Added " + done + (done === 1 ? " entry." : " entries.")); $("lsb-text").value = ""; lsbPending = []; $("lsb-preview").innerHTML = "";
+      $("lsb-save").textContent = "Add to livestock";
+    } catch (e) { setStatus("lsb-status", "Added " + done + " of " + list.length + ", then couldn't save (" + ((e && (e.code || e.message)) || "error") + "). Load the list again to add the rest; the ones already added are skipped.", true); $("lsb-save").disabled = false; }
+  });
+  lsbPreview();
 
   // ---------- maintenance: schedule, test gear, calibration log, calendar ----------
   const MT_MARKERS = ["", "Water change", "Dosing change", "Equipment", "Filter media", "Lighting", "Treatment"];
