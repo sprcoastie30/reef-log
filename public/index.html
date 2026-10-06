@@ -981,7 +981,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       <h3 class="label">About the numbers</h3>
       <p class="hint"><b>Garbage in, garbage out.</b> Every suggestion here comes from what you log. Test on a schedule, log every test, water change and dosing change, and calibrate your test gear. Old, missing or wrong numbers give wrong advice, and no app replaces looking at your tank every day.</p>
       <p class="hint">Dosing, consumption and water change figures are estimates built from product labels (or strengths worked out from the maker's stated concentration) and your own test results. Check them against the product label, change doses gradually, and retest before and after any big change. Light and equipment details are starting points; your fixture's app and manual have the final word.</p>
-      <p class="hint">Product, brand and fixture names (Noopsyche, K7, Brightwell, Red Sea, Tropic Marin, Seachem, ESV, Aquaforest, Bulk Reef Supply, AI, EcoTech, Kessil, NICREW, Hanna and others; AI means Aqua Illumination) are trademarks of their owners and are used only to identify the products the app works with. Holdfast is not affiliated with, sponsored by or endorsed by any of them.</p>
+      <p class="hint">Product, brand and fixture names (Noopsyche, K7, Brightwell, Red Sea, Tropic Marin, Seachem, ESV, Aquaforest, Bulk Reef Supply, AI, EcoTech, Kessil, NICREW, Current USA, Orbit, Reef Breeders, Orphek, Neptune Systems, Hanna and others; AI means Aqua Illumination) are trademarks of their owners and are used only to identify the products the app works with. Holdfast is not affiliated with, sponsored by or endorsed by any of them.</p>
       <p class="hint">Holdfast: Reef Log &amp; Dosing © Carl Peterson. All rights reserved. Uses open-source components under their own licenses: qrcode-generator (MIT), jsQR (Apache-2.0), supabase-js (MIT) and IBM Plex fonts (SIL Open Font License).</p>
     </div>
   </details>
@@ -3194,25 +3194,39 @@ details.backup summary { cursor: pointer; list-style: revert; }
   });
 
   // ---------- light fixtures and settings log ----------
-  // Channel names: K7 Pro from the open-source K7 LED Controller project; AI Hydra HD and Red Sea ReefLED from retailer listings.
-  // Radion and Kessil channel groupings depend on their apps, so they are starting points the user can rename.
+  // Channel names checked Oct 2026 against maker and retailer listings:
+  //   K7 Pro from the open-source K7 LED Controller project; AI Hydra / Prime HD from AI's listings; Red Sea ReefLED from Red Sea's listing;
+  //   NICREW controller (B0DBHG5HQX) confirms 5 channels on HyperReef Gen 2 / NavaReef and 2 on Gen 1; Orbit Marine IC Pro has 4-channel LOOP color control (BRS listing).
+  // Entries marked custom: true have channel counts or LED colors from the maker but app labels that vary, so the names are starting points the user can rename.
   const FIXTURES = [
     { id: "k7pro4", name: "Noopsyche K7 Pro IV", channels: ["White","Royal Blue","Green","UV","Cyan","Red"], note: "Full programmer, QR codes and controller presets above." },
     { id: "k7pro3", name: "Noopsyche K7 Pro III", channels: ["White","Royal Blue","Green","UV","Cyan","Red"], note: "Full programmer, QR codes and controller presets above." },
     { id: "hydra", name: "AI Hydra 32 / 64 HD", channels: ["UV","Violet","Royal Blue","Blue","Cool White","Green","Photo Red","Moonlight"], note: "Channel names from AI's Hydra HD listing (7 colors plus moonlight)." },
     { id: "prime", name: "AI Prime 16 HD", channels: ["UV","Violet","Royal Blue","Blue","Cool White","Green","Photo Red"], note: "Same color set as the Hydra HD; rename any channel if your app differs." },
-    { id: "radion", name: "EcoTech Radion XR15 / XR30 (G5 / G6)", channels: ["UV","Violet","Royal Blue","Blue","Cool White","Warm White","Green","Red"], custom: true, note: "Starting names from the Radion's LED colors; match them to the channels in your Mobius app." },
-    { id: "kessilx", name: "Kessil A360X / A500X / AP9X", channels: ["Intensity","Color"], custom: true, note: "Intensity and color (spectrum) are the main controls; add others your Kessil app shows." },
-    { id: "reefled", name: "Red Sea ReefLED 90 / 160S", channels: ["Blue","White","Moon"], note: "Channels from Red Sea's listing: Reef Spec Blue, 8000K White and moonlights." },
-    { id: "nicrew", name: "NICREW HyperReef", channels: ["Blue","White"], custom: true, note: "Enter the channel names your controller shows." },
+    { id: "blade", name: "AI Blade Smart (Coral Glow / Coral Grow / Grow)", channels: ["Intensity"], custom: true, note: "Each Blade strip has one spectrum, so log intensity per strip (for example Glow 1, Grow 1)." },
+    { id: "radion", name: "EcoTech Radion XR15 / XR30 (G5 / G6)", channels: ["UV","Violet","Royal Blue","Blue","Cool White","Warm White","Green","Red"], custom: true, note: "These are the G6's LED colors (EcoTech spec); match them to the channels in your Mobius app." },
+    { id: "kessilx", name: "Kessil A360X / A360XE / A500X / AP9X", channels: ["Intensity","Color"], custom: true, note: "Kessil X lights use an intensity and a color (spectrum) control; add others your Kessil app shows." },
+    { id: "kessil80", name: "Kessil A80 / A160WE", channels: ["Intensity","Color"], custom: true, note: "Intensity and color knobs (or the Spectral Controller); log the knob positions as percentages." },
+    { id: "reefled", name: "Red Sea ReefLED 50 / 90 / 160S", channels: ["Blue","White","Moon"], note: "Channels from Red Sea's listing: Reef Spec Blue, 8000K White and moonlights." },
+    { id: "nicrew2", name: "NICREW HyperReef Gen 2 / NavaReef", channels: ["White","Blue","Violet","Red","Green"], custom: true, note: "5 channels on the HyperReef Gen 2 controller (NICREW); match these starting names to your controller's channels 1 to 5." },
+    { id: "nicrew", name: "NICREW HyperReef Gen 1", channels: ["Blue","White"], custom: true, note: "2 channels on the Gen 1 (NICREW controller listing)." },
+    { id: "nicrewc", name: "NICREW ClassicLED Marine / Plus", channels: ["Blue","White"], custom: true, note: "Blue and white LEDs; use 100% for on, or the dimmer level if yours has one." },
+    { id: "orbitpro", name: "Current USA Orbit Marine IC Pro (LOOP)", channels: ["White","Blue","Red","Green"], custom: true, note: "4-channel color control in the LOOP app (Current USA); rename to match your app's sliders." },
+    { id: "orbit", name: "Current USA Orbit Marine LED / IC", channels: ["White","Blue","Red","Green"], custom: true, note: "Daylight white, actinic blue and RGB LEDs set with the remote or LOOP; log the levels you set." },
+    { id: "photon", name: "Reef Breeders Photon V2+", channels: ["Ch 1","Ch 2","Ch 3","Ch 4","Ch 5","Ch 6"], custom: true, note: "Rename each channel to the color your app shows for it." },
+    { id: "orphek", name: "Orphek Atlantik iCon", channels: ["Ch 1","Ch 2","Ch 3","Ch 4","Ch 5","Ch 6"], custom: true, note: "Six channels in the Orphek app; rename each to its color." },
+    { id: "sky", name: "Neptune SKY", channels: ["Ch 1","Ch 2","Ch 3","Ch 4","Moonlight"], custom: true, note: "Four color channels plus moonlights (Neptune); rename them to match Apex Fusion." },
     { id: "t5", name: "T5 fixture", channels: [], custom: true, note: "List your tubes as channels (for example ATI Blue Plus, Coral Plus) and use 100% for tubes that are on." },
     { id: "custom", name: "Other fixture", channels: [], custom: true, note: "Type your channel names, separated by commas." }
   ];
   let lightLog = [];
   const fixtureById = id => FIXTURES.find(f => f.id === id) || FIXTURES[FIXTURES.length - 1];
   function fixtureFromProfile(){ const n = (profile && profile.light || "").toLowerCase(); if (!n) return "k7pro4";
-    if (/k7.*(iv|4|v4)/.test(n)) return "k7pro4"; if (/k7/.test(n)) return "k7pro3"; if (/hydra/.test(n)) return "hydra"; if (/prime/.test(n)) return "prime";
-    if (/radion/.test(n)) return "radion"; if (/kessil|a360|a500|ap9/.test(n)) return "kessilx"; if (/reefled|red sea/.test(n)) return "reefled"; if (/nicrew|hyperreef/.test(n)) return "nicrew"; if (/t5/.test(n)) return "t5"; return "custom"; }
+    const rules = [[/k7.*(iv|4|v4)/,"k7pro4"],[/k7/,"k7pro3"],[/hydra/,"hydra"],[/prime/,"prime"],[/blade/,"blade"],[/radion|xr15|xr30/,"radion"],
+      [/a80|a160/,"kessil80"],[/kessil|a360|a500|ap9/,"kessilx"],[/reefled|red sea/,"reefled"],
+      [/navareef|hyperreef.*(gen ?2|g2|ii)/,"nicrew2"],[/hyperreef/,"nicrew"],[/classic ?led|nicrew/,"nicrewc"],
+      [/orbit.*pro|ic ?pro/,"orbitpro"],[/orbit|current usa/,"orbit"],[/photon|reef ?breeders/,"photon"],[/orphek|atlantik/,"orphek"],[/neptune|\bsky\b/,"sky"],[/t5/,"t5"]];
+    const hit = rules.find(r => r[0].test(n)); return hit ? hit[1] : "custom"; }
   $("ll-fixture").innerHTML = FIXTURES.map(f => '<option value="' + f.id + '">' + esc(f.name) + '</option>').join("");
   $("pf-light-list").innerHTML = FIXTURES.filter(f => f.id !== "custom").map(f => '<option value="' + esc(f.name) + '">').join("");
   function llChannelNames(){
