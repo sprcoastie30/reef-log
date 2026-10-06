@@ -334,6 +334,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     </div>
     <div class="actions">
       <label class="theme-pick" for="theme-pick"><span class="label">Theme</span><select id="theme-pick"><option value="auto">Auto</option><option value="light">Light</option><option value="dark">Dark</option><option value="blue">Blue</option></select></label>
+      <a class="btn guide-link" id="btn-guide" href="https://reef-log.sprcoastie30.workers.dev/guide.html" target="_blank" rel="noopener" style="text-decoration:none">Guide</a>
       <button type="button" id="btn-profile">Tank profile</button>
       <button class="primary" id="btn-jump" type="button">Log a test</button>
     </div>
@@ -953,6 +954,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   <details class="panel backup" id="about">
     <summary><span class="label" style="font-size:.8rem">About, privacy &amp; feedback</span></summary>
     <div class="about" style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+      <div class="form-actions"><a class="btn guide-link" href="https://reef-log.sprcoastie30.workers.dev/guide.html" target="_blank" rel="noopener">How to use Holdfast (guide)</a><span class="hint">A walkthrough of every screen, with pictures.</span></div>
       <div class="form-actions"><a class="btn primary" id="fb-link" href="https://github.com/sprcoastie30/reef-log/issues/new" target="_blank" rel="noopener">Send feedback or report a problem</a><span class="hint" id="fb-hint">Opens the Holdfast issue tracker on GitHub (free account needed).</span></div>
       <h3 class="label">Privacy</h3>
       <p class="hint" id="priv-claude" hidden>This copy runs inside Claude, and its log is stored with this Claude artifact under your account. The notes below describe the standalone Holdfast website.</p>
@@ -983,7 +985,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
 <div class="lightbox" id="pf" hidden role="dialog" aria-modal="true" aria-labelledby="pf-title">
   <div class="box" style="max-width:720px">
     <form id="pf-form" novalidate style="padding:16px;display:flex;flex-direction:column;gap:14px">
-      <div><h2 id="pf-title">Tank profile</h2><p class="hint">These settings fill in the header, the water-volume math, dosing products, the salt preset and the lighting planner. You can change any of it later with the Tank profile button.</p></div>
+      <div><h2 id="pf-title">Tank profile</h2><p class="hint">These settings fill in the header, the water-volume math, dosing products, the salt preset and the lighting planner. You can change any of it later with the Tank profile button.</p><p class="hint" id="pf-guide" hidden>New to Holdfast? <a class="guide-link" href="https://reef-log.sprcoastie30.workers.dev/guide.html" target="_blank" rel="noopener">Read the short guide</a> to see what each screen does.</p></div>
       <fieldset><legend class="label">Tank</legend>
         <div class="fields">
           <div class="field"><label for="pf-name"><b>Name</b></label><input id="pf-name" type="text" placeholder="e.g. 75-Gallon Reef" maxlength="40"></div>
@@ -3403,6 +3405,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function openProfile(first){
     pfUnitsShown = UNITS; fillProfileForm({ ...(profile || PROFILE_BLANK), units: UNITS }); pfLabels();
     $("pf-title").textContent = first ? "Set up your tank" : "Tank profile";
+    $("pf-guide").hidden = !first;
     $("pf-second").hidden = !first || !(window.REEF_CONFIG && window.REEF_CONFIG.supabaseUrl); $("pf-cancel").textContent = first ? "Skip for now" : "Cancel";
     setStatus("pf-status", ""); $("pf").hidden = false; $("pf-name").focus();
   }
@@ -3811,6 +3814,8 @@ details.backup summary { cursor: pointer; list-style: revert; }
   // ---------- boot ----------
   buildForm(); renderTargets(); renderAll();
   if (!window.__standalone) $("priv-claude").hidden = false;
+  // on the website itself, open the guide in the same window so it stays inside the installed app
+  if (window.__standalone) document.querySelectorAll("a.guide-link").forEach(a => { a.href = "guide.html"; a.removeAttribute("target"); a.removeAttribute("rel"); });
   // keyboard access for file pickers styled as buttons
   document.querySelectorAll("label[for]").forEach(l => { const inp = $(l.htmlFor); if (!inp || inp.type !== "file") return;
     l.tabIndex = 0; l.setAttribute("role", "button");

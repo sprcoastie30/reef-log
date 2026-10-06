@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Holdfast guide</title>
+<meta name="description" content="How to use Holdfast: Reef Log & Dosing, a free reef log for new reefers.">
+<meta name="theme-color" content="#0b7480">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #eef3f4; --panel: #ffffff; --ink: #13242b; --muted: #4d6169; --line: #d3dee1;
+  --accent: #0b7480; --accent-ink: #ffffff; --soft: #e2eef0; --warn: #b04a33; --warn-bg: #fbe9df;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0d171b; --panel: #132127; --ink: #dce8eb; --muted: #9fb2b8; --line: #24363d;
+          --accent: #3fb4c0; --accent-ink: #06181c; --soft: #18292f; --warn: #e8a08a; --warn-bg: #2a1d18; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--f-body);
+       padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0); }
+.wrap { max-width: 880px; margin: 0 auto; padding: 16px 16px 64px; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.15; margin: 0; text-wrap: balance; }
+h1 { font-size: 2.2rem; }
+h2 { font-size: 1.55rem; }
+h3 { font-size: 1.1rem; }
+p { margin: 0; }
+a { color: var(--accent); }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 0 14px; border-bottom: 2px solid var(--ink); }
+.eyebrow { font: 600 .75rem var(--f-display); letter-spacing: .12em; text-transform: uppercase; color: var(--warn); }
+.btn { display: inline-block; font: 600 .9rem var(--f-display); letter-spacing: .03em; text-decoration: none; border-radius: 6px; padding: 8px 14px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); white-space: nowrap; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.hero { padding: 28px 0 8px; display: flex; flex-direction: column; gap: 12px; }
+.hero p { color: var(--muted); font-size: 1.05rem; max-width: 60ch; }
+nav.toc { margin: 20px 0 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+nav.toc ol { margin: 8px 0 0; padding-left: 1.3em; columns: 2 240px; column-gap: 24px; }
+nav.toc li { margin: 2px 0; break-inside: avoid; }
+section { margin-top: 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 20px; scroll-margin-top: 12px; }
+section.split { grid-template-columns: 1fr; }
+@media (min-width: 720px) { section.split { grid-template-columns: 1fr 260px; align-items: start; } }
+.text { display: flex; flex-direction: column; gap: 10px; }
+.text p, .text li { color: var(--muted); }
+.text b, .text strong { color: var(--ink); }
+figure { margin: 0; }
+figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: var(--soft); }
+figure.phone { max-width: 260px; justify-self: center; }
+figcaption { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+ol.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; counter-reset: s; }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 32px 1fr; gap: 10px; }
+ol.steps li::before { content: counter(s); font: 600 1rem var(--f-display); width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+.cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.card { background: var(--soft); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+.card p { color: var(--muted); }
+.callout { background: var(--warn-bg); border-left: 4px solid var(--warn); border-radius: 6px; padding: 12px 14px; color: var(--ink); }
+.rules { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+footer { margin-top: 32px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+footer p { color: var(--muted); font-size: .9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow" style="color:var(--ink)">Holdfast · Guide</div>
+    <a class="btn" href="./">Open the app</a>
+  </header>
+
+  <div class="hero">
+    <div class="eyebrow">A walkthrough for new reefers</div>
+    <h1>How to use Holdfast</h1>
+    <p>Holdfast is a free reef log that reads your test results in plain words and tells you the one thing to do next. It runs in any phone or computer browser, with no account, and you can add it to your home screen like an app.</p>
+  </div>
+
+  <nav class="toc" aria-label="Contents">
+    <b>In this guide</b>
+    <ol>
+      <li><a href="#why">Why it exists</a></li>
+      <li><a href="#start">Getting started</a></li>
+      <li><a href="#today">The Today screen</a></li>
+      <li><a href="#plain">Readings in plain words</a></li>
+      <li><a href="#charts">Log a test, see the trend</a></li>
+      <li><a href="#retest">Retest check</a></li>
+      <li><a href="#ready">Cycle and readiness</a></li>
+      <li><a href="#wc">Water changes before dosing</a></li>
+      <li><a href="#salinity">Fixing salinity safely</a></li>
+      <li><a href="#schedule">Maintenance schedule</a></li>
+      <li><a href="#lights">Lighting</a></li>
+      <li><a href="#share">Asking for help</a></li>
+      <li><a href="#data">Your data, backup and restore</a></li>
+      <li><a href="#rules">Garbage in, garbage out, and the golden rules</a></li>
+    </ol>
+  </nav>
+
+  <section id="why">
+    <div class="text">
+      <div class="eyebrow">Why it exists</div>
+      <h2>Most reef losses come from changing things too fast, or from a number nobody understood.</h2>
+    </div>
+    <div class="cards">
+      <div class="card"><h3>1. Test and log</h3><p>Every result in one place, charted against your own targets.</p></div>
+      <div class="card"><h3>2. Understand it</h3><p>Each reading in plain words: good, keep an eye on it, or needs attention, and why.</p></div>
+      <div class="card"><h3>3. Act slowly</h3><p>One suggested next step, and math that keeps corrections gentle.</p></div>
+    </div>
+    <p class="text" style="color:var(--muted)">One example from the builder: a newly calibrated salinity meter read 38.6 ppt, and water swaps started. Checked against two more calibration packets, the meter was fine and the 38.6 was a bad test. That's why Holdfast asks for a retest before it suggests any change, and keeps a calibration log for every piece of test gear.</p>
+  </section>
+
+  <section id="start" class="split">
+    <div class="text">
+      <div class="eyebrow">Getting started</div>
+      <h2>Up and running in about two minutes</h2>
+      <ol class="steps">
+        <li><div><h3>Open the link</h3><p>On your phone, go to <b>reef-log.sprcoastie30.workers.dev</b>. No account or download needed.</p></div></li>
+        <li><div><h3>Add it to your home screen</h3><p>iPhone (Safari): Share, then <b>Add to Home Screen</b>. Android (Chrome): menu, then <b>Add to Home screen</b> or <b>Install app</b>.</p></div></li>
+        <li><div><h3>Set up your tank</h3><p>Pick your tank size, the month you set it up, what it's for and your salt. That drives all the water-volume and dosing math. For an all-in-one tank, choose that option and type the total volume the maker lists. You can change any of it later with <b>Tank profile</b>.</p></div></li>
+      </ol>
+    </div>
+    <figure class="phone"><img src="guide/setup.webp" width="600" height="1154" alt="Tank setup screen with name, setup month, tank type and a 75 gallon size preset" loading="lazy"></figure>
+  </section>
+
+  <section id="today" class="split">
+    <div class="text">
+      <div class="eyebrow">The Today screen</div>
+      <h2>One next step, every time you open it</h2>
+      <p>Holdfast looks at your latest tests, your schedule and your tank's age, then shows the single most important thing to do: finish your cycle, retest something, a reading out of range, start dosing, or tasks that are due. Below that are your latest readings against your targets.</p>
+      <p>Most days it says <b>Nothing needs doing today</b>. That's the goal: a steady tank.</p>
+    </div>
+    <figure class="phone"><img src="guide/today.webp" width="600" height="908" alt="Today screen showing day 122, nothing needs doing today, and the latest readings" loading="lazy"></figure>
+  </section>
+
+  <section id="plain" class="split">
+    <div class="text">
+      <div class="eyebrow">Plain words</div>
+      <h2>Tap any reading to learn what it means</h2>
+      <p>Each reading is marked <b>Good</b>, <b>Keep an eye on it</b> or <b>Needs attention</b> against your own targets.</p>
+      <p>Tap it for what the parameter does, the likely causes when it's high or low, what to do, and what to avoid, like chasing pH with buffers or stripping nutrients to zero.</p>
+    </div>
+    <figure class="phone"><img src="guide/reading-help.webp" width="600" height="502" alt="An alkalinity reading opened to show what it means and what to do" loading="lazy"></figure>
+  </section>
+
+  <section id="charts">
+    <div class="text">
+      <div class="eyebrow">Chemistry</div>
+      <h2>Log a test, see the trend</h2>
+      <p>Log only what you tested and leave the rest blank. Every parameter gets a chart with your target range shaded. Water changes, dosing changes and new livestock show up as markers, so you can see cause and effect. The app even catches a target set above what your salt mixes to.</p>
+    </div>
+    <figure><img src="guide/charts.webp" width="1200" height="798" alt="Charts for alkalinity, calcium, magnesium, nitrate, phosphate and salinity against target bands" loading="lazy"></figure>
+  </section>
+
+  <section id="retest" class="split">
+    <div class="text">
+      <div class="eyebrow">Retest check</div>
+      <h2>A surprising number gets a retest before anything changes</h2>
+      <p>If a reading jumps more than a tank normally moves between tests, Holdfast flags it and holds any dosing suggestion.</p>
+      <p>Bad tests happen: an old reagent, the wrong water in the vial, a misread color. A retest costs a few minutes; overcorrecting can cost corals.</p>
+    </div>
+    <figure class="phone"><img src="guide/retest.webp" width="600" height="1262" alt="Today screen asking to retest alkalinity after a jump from 8.5 to 11.2 dKH" loading="lazy"></figure>
+  </section>
+
+  <section id="ready" class="split">
+    <div class="text">
+      <div class="eyebrow">Cycle and readiness</div>
+      <h2>Know when your tank is ready for the next step</h2>
+      <p>A cycle tracker follows ammonia and nitrite in a new tank.</p>
+      <p><b>Ready for…</b> checks your logged tests and tank age before first fish, soft corals, LPS and SPS, and shows exactly what's still missing. These are common hobby guidelines, not guarantees; healthy, steady animals are the real sign.</p>
+    </div>
+    <figure class="phone"><img src="guide/ready.webp" width="600" height="1257" alt="Ready-for checklist: first fish, soft corals and LPS ready; SPS not yet, with reasons" loading="lazy"></figure>
+  </section>
+
+  <section id="wc" class="split">
+    <div class="text">
+      <div class="eyebrow">Water changes first</div>
+      <h2>Water changes before dosing</h2>
+      <p>Log each water change with its amount. Holdfast compares what your tank uses with what your water changes put back.</p>
+      <p>In a young tank, regular water changes usually supply everything corals use. Hold off on dosing until water changes stop keeping up; the app tells you when that happens, and the Dosing tab works out the daily amount from your own test history.</p>
+    </div>
+    <figure class="phone"><img src="guide/water-changes.webp" width="600" height="964" alt="Water change log with 30-day volume, weekly average and a weekly bar chart" loading="lazy"></figure>
+  </section>
+
+  <section id="salinity" class="split">
+    <div class="text">
+      <div class="eyebrow">Salinity correction</div>
+      <h2>Fix salinity safely, about 1 ppt a day</h2>
+      <p>Enter where you are and where you want to be. Holdfast plans each day's swap of tank water for RO/DI, or saltwater, or salt to dissolve.</p>
+      <p><b>Calibrate first.</b> Use 35 ppt calibration fluid (not RO water) and retest before acting. A surprising number is more often a bad test than a real change.</p>
+    </div>
+    <figure class="phone"><img src="guide/salinity.webp" width="600" height="1115" alt="Salinity correction plan lowering 38.6 ppt to 35 ppt over four days with RO/DI swaps" loading="lazy"></figure>
+  </section>
+
+  <section id="schedule" class="split">
+    <div class="text">
+      <div class="eyebrow">Maintenance</div>
+      <h2>A schedule that keeps itself</h2>
+      <p>One tap fills in a sensible starting schedule: tests, glass cleaning, skimmer cup, RO/DI checks, water changes. Adjust it to your tank. Tests mark themselves done when you log them.</p>
+      <p>Download the schedule to your phone's calendar for reminders even when the app is closed, and track RO/DI filters, test kit expiry and calibration.</p>
+    </div>
+    <figure class="phone"><img src="guide/schedule.webp" width="600" height="1257" alt="Maintenance schedule with due tasks and Done buttons" loading="lazy"></figure>
+  </section>
+
+  <section id="lights">
+    <div class="text">
+      <div class="eyebrow">Lighting</div>
+      <h2>Plan your light, then map it</h2>
+      <p>Log settings for any fixture, so every light change shows up on your chemistry charts; light changes are a common cause of coral losses, so raise intensity slowly. Noopsyche K7 owners can build a program and export it as a QR code for the Noopsyche app.</p>
+      <p>With a PAR meter, record a PAR map at three heights and see where soft corals (about 50–150 PAR), LPS (about 100–250) and SPS (about 250–450) fit.</p>
+    </div>
+    <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(200px,260px));justify-content:center">
+      <figure><img src="guide/light-program.webp" width="600" height="1257" alt="Noopsyche K7 light program planner with channel sliders and a 24-hour curve" loading="lazy"><figcaption>Light program planner</figcaption></figure>
+      <figure><img src="guide/par-map.webp" width="600" height="1374" alt="PAR map heat grid at three heights with a coral fit summary" loading="lazy"><figcaption>PAR map</figcaption></figure>
+    </div>
+  </section>
+
+  <section id="share" class="split">
+    <div class="text">
+      <div class="eyebrow">Ask for help</div>
+      <h2>Share for help puts your numbers in one post</h2>
+      <p>"Help, my corals are dying" isn't enough. <b>Share for help</b> adds what experienced reefers ask for: tests with trends, dosing, water changes, recent losses, light changes, and your test gear with its last calibration.</p>
+      <p>Copy it into a Facebook group, Reef2Reef or a club forum, and add a photo. Nothing is posted for you.</p>
+    </div>
+    <figure class="phone"><img src="guide/share-for-help.webp" width="600" height="1153" alt="Share for help dialog with question prompts, a photo tip and an editable tank summary" loading="lazy"></figure>
+  </section>
+
+  <section id="data">
+    <div class="text">
+      <div class="eyebrow">Your data</div>
+      <h2>Your log stays on your device</h2>
+    </div>
+    <div class="cards">
+      <div class="card"><h3>No account needed</h3><p>Everything is saved in your browser on your phone or computer.</p></div>
+      <div class="card"><h3>Works offline</h3><p>Log a test with no signal. It's all there next time.</p></div>
+      <div class="card"><h3>One device at a time, for now</h3><p>Live sync between devices is coming in a future update. Until then, a test logged on your phone won't show up on your computer. Pick one device as your main log.</p></div>
+    </div>
+    <div class="callout"><b>Clearing your browser data clears your log.</b> Make a backup weekly, and always before clearing browser data or switching phones.</div>
+    <div style="display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));align-items:start">
+      <div class="text">
+        <h3>Back up your log</h3>
+        <ol class="steps">
+          <li><p>On any screen, scroll to the bottom and tap <b>Data &amp; backup</b>.</p></li>
+          <li><p>Tap <b>Download full backup</b>. It saves one file with everything, photos included, named like <b>holdfast-backup-2026-09-30.json</b>.</p></li>
+          <li><p>Keep a copy somewhere safe: email it to yourself, or put it in iCloud or Google Drive.</p></li>
+        </ol>
+        <figure class="phone" style="justify-self:start"><img src="guide/backup.webp" width="600" height="858" alt="Data and backup panel with Download full backup and Restore from backup buttons" loading="lazy"></figure>
+      </div>
+      <div class="text">
+        <h3>Move your log to another device</h3>
+        <ol class="steps">
+          <li><p>Get the backup file onto that device (AirDrop, email, iCloud or Google Drive).</p></li>
+          <li><p>Open Holdfast there. If the tank setup screen appears, tap <b>Skip for now</b>; the backup brings your tank profile with it.</p></li>
+          <li><p>In <b>Data &amp; backup</b>, tap <b>Restore from backup</b> and choose the file.</p></li>
+          <li><p>Tap <b>Replace my data</b>. Restoring <b>replaces</b> everything on that device; it doesn't merge two logs.</p></li>
+        </ol>
+        <figure class="phone" style="justify-self:start"><img src="guide/restore.webp" width="600" height="652" alt="Restore confirmation warning that restoring replaces everything, with Replace my data and Cancel buttons" loading="lazy"></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="rules">
+    <div class="text">
+      <div class="eyebrow">The honest part</div>
+      <h2>Garbage in, garbage out</h2>
+      <p>Holdfast is only as good as what you put into it. Every suggestion comes from the tests, water changes and dosing you log; old, missing or wrong numbers give wrong advice. Stale tests are flagged, overdue tasks show on the Today screen, and every piece of test gear has a calibration reminder, but no app replaces looking at your tank every day.</p>
+    </div>
+    <div class="cards">
+      <div class="card"><h3>Test on a schedule</h3><p>The app reminds you. If your last test is two weeks old, it says so first.</p></div>
+      <div class="card"><h3>Log everything</h3><p>Every test, water change, dosing change and new animal.</p></div>
+      <div class="card"><h3>Calibrate your gear</h3><p>A drifting meter or old reagent makes every number after it wrong.</p></div>
+    </div>
+    <div class="text">
+      <h3>Six golden rules</h3>
+      <ol class="rules">
+        <li>Go slow: most reef losses come from changing things too fast.</li>
+        <li>Change one thing at a time, then watch for a few days.</li>
+        <li>Test before you act, and retest a surprising number.</li>
+        <li>Feed lightly; you can always feed more tomorrow.</li>
+        <li>Add livestock gradually, and quarantine fish if you can.</li>
+        <li>Log every test, water change and dosing change.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    <a class="btn" href="./">Open Holdfast</a>
+    <p>Found a bug or have an idea? Use the feedback link under <b>About, privacy &amp; feedback</b> at the bottom of the app.</p>
+    <p>Holdfast: Reef Log &amp; Dosing © Carl Peterson. Free to use.</p>
+  </footer>
+</div>
+</body>
+</html>
