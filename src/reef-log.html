@@ -246,6 +246,8 @@ a { color: var(--accent); }
 .spec-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px; }
 .spec-row div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .spec-row b { font-weight: 500; }
+.safety { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
+.safety .callout button { margin-left: 6px; }
 .sp-sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 6px 18px; }
 .sp-sl { display: grid; grid-template-columns: 1fr 48px; align-items: center; gap: 0 8px; font-size: .85rem; }
 .sp-sl label { grid-column: 1 / -1; }
@@ -360,6 +362,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     <button type="button" role="tab" id="tb-lighting" data-tab="lighting" aria-selected="false">Lighting</button>
   </nav>
 
+  <div id="safety" class="safety"></div>
   <div class="tabpanel" id="tab-today" role="tabpanel" aria-labelledby="tb-today">
     <div id="td-root" style="display:flex;flex-direction:column;gap:18px"><div class="skeleton">Loading…</div></div>
   </div>
@@ -1307,7 +1310,9 @@ details.backup summary { cursor: pointer; list-style: revert; }
 
   // ---------- form ----------
   function buildForm(){
-    $("param-fields").innerHTML = PARAMS.map(p => '<div class="field"><label for="f-' + p.key + '"><b>' + p.name + '</b> ' + (p.ut ? '<span data-ul="' + p.ut + '">' + p.unit + '</span>' : p.unit) + '</label><input id="f-' + p.key + '" type="number" inputmode="decimal" step="' + p.step + '"></div>').join("");
+    $("param-fields").innerHTML = PARAMS.map(p => '<div class="field"><label for="f-' + p.key + '"><b>' + p.name + '</b> ' + (p.ut ? '<span data-ul="' + p.ut + '">' + p.unit + '</span>' : p.unit) + '</label><input id="f-' + p.key + '" type="number" inputmode="decimal" step="' + p.step + '"></div>').join("") +
+      '<div class="field"><label for="f-pppb"><b>Phosphorus</b> ppb P <span class="hint">(Hanna HI736)</span></label><input id="f-pppb" type="number" inputmode="decimal" step="1" placeholder="fills phosphate"></div>';
+    $("f-pppb").addEventListener("input", () => { const v = num($("f-pppb").value); if (v != null) $("f-po4").value = (v * 3.066 / 1000).toFixed(3); });
     $("f-events").innerHTML = EVENTS.map((e, i) => '<label class="chip"><input type="checkbox" id="f-ev' + i + '" value="' + esc(e) + '">' + esc(e) + '</label>').join("");
     resetForm();
   }
@@ -1849,7 +1854,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     kit: { label:"Test kit (titration / color)", brands:["Salifert","Red Sea","API","Nyos","Fauna Marin","Tropic Marin","Aquaforest","Seachem","Elos","Instant Ocean"],
       advice:"Write the reagent expiry and lot from the box. To check a kit's accuracy, test a reference solution (for example Tropic Marin, Fauna Marin or Aquaforest AF Reference Solution) and log the result.", every:null },
     checker: { label:"Hanna Checker (handheld photometer)", brands:["Hanna"],
-      models:[["HI772 Marine Alkalinity (dKH) Checker",["alk"]],["HI758 Marine Calcium Checker",["ca"]],["HI783 Marine Magnesium Checker",["mg"]],["HI774 Marine Phosphate ULR Checker",["po4"]],["HI736 Phosphorus ULR Checker",["po4"]]],
+      models:[["HI772 Marine Alkalinity (dKH) Checker",["alk"]],["HI758 Marine Calcium Checker",["ca"]],["HI783 Marine Magnesium Checker",["mg"]],["HI774 Marine Phosphate ULR Checker",["po4"]],["HI736 Phosphorus ULR Checker (reads ppb phosphorus; the test form converts it)",["po4"]]],
       advice:"Hanna sells CAL Check standard sets for its Checkers (for example HI772-11 for the alkalinity Checker) to calibrate the meter and confirm it reads correctly. Hanna doesn't state a frequency; many hobbyists check monthly or when readings look off. Reagent packets have their own expiry.", every:null },
     refractometer: { label:"Refractometer", brands:["Milwaukee","Hanna","BRS","Vee Gee","Other"], params:["sal"],
       advice:"Calibrate with 35 ppt (1.026 SG) calibration fluid, not RO water, so it's accurate at reef salinity. Bulk Reef Supply's guide says calibration is usually needed about every couple of months; more often is fine.", every:60 },
@@ -3958,12 +3963,35 @@ details.backup summary { cursor: pointer; list-style: revert; }
   $("sh-close").addEventListener("click", () => { $("sh").hidden = true; });
   $("sh").addEventListener("keydown", ev => { if (ev.key === "Escape") $("sh").hidden = true; });
 
+  // ---------- safety reminders: iPhone storage and backups ----------
+  const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  function renderSafety(){
+    const host = $("safety"); if (!host || !window.__standalone) return;
+    const now = Date.now(), out = [];
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const installed = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+    if (ios && !installed && now > +(lsGet("reef-ios-snooze") || 0))
+      out.push('<div class="callout"><b>Keep your log safe on iPhone and iPad.</b> Safari deletes a website\'s saved data if you don\'t visit it for 7 days. Add Holdfast to your Home Screen (Share button, then <b>Add to Home Screen</b>) and open it from there, and download a backup now and then. <button type="button" data-safety="ios">Got it</button></div>');
+    const last = +(lsGet("reef-last-backup") || 0), n = (typeof tests !== "undefined" && tests ? tests.length : 0);
+    const first = n ? Math.min(...tests.map(t => t.ts || now)) : now;
+    if (n >= 10 && now - Math.max(last, first) > 30 * DAY && now > +(lsGet("reef-bk-snooze") || 0))
+      out.push('<div class="callout"><b>' + (last ? "Your last backup was " + Math.round((now - last) / DAY) + " days ago." : "You haven't downloaded a backup yet.") + '</b> Your log lives only on this device. <button type="button" class="primary" data-safety="backup">Download backup</button> <button type="button" data-safety="later">Remind me next week</button></div>');
+    host.innerHTML = out.join("");
+  }
+  $("safety").addEventListener("click", ev => {
+    const b = ev.target.closest("[data-safety]"); if (!b) return;
+    if (b.dataset.safety === "ios") lsSet("reef-ios-snooze", String(Date.now() + 30 * DAY));
+    if (b.dataset.safety === "later") lsSet("reef-bk-snooze", String(Date.now() + 7 * DAY));
+    if (b.dataset.safety === "backup") { $("bk-export").click(); }
+    renderSafety();
+  });
+
   // ---------- backup ----------
   const BK_COLS = ["tests","tasks","gear","rodilog","livestock","equipment","photos","lightprograms","lightlog","par","parmaps","waterchanges"], BK_DOCS = ["settings/targets","settings/dosing","settings/k7","settings/profile","settings/rodi"];
   const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
   async function buildBackup(){
     const docs = [], blobs = {};
-    for (const c of BK_COLS) { const snap = await db.collection(c).limit(1000).get(); snap.docs.forEach(d => docs.push({ path: c + "/" + d.id, data: d.data() })); }
+    for (const c of BK_COLS) { const snap = await db.collection(c).get(); snap.docs.forEach(d => docs.push({ path: c + "/" + d.id, data: d.data() })); }
     for (const path of BK_DOCS) { const d = await db.doc(path).get(); if (d.exists) docs.push({ path, data: d.data() }); }
     const assetIds = [...new Set(docs.filter(d => d.data && typeof d.data.asset === "string" && d.data.asset).map(d => d.data.asset))];
     let n = 0;
@@ -3981,6 +4009,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       const dl = await claude.use("downloads"); if (!dl) throw { code: "unavailable" };
       await dl.save({ filename: "holdfast-backup-" + today() + ".json", data: text });
       const missing = new Set(b.docs.filter(d => d.data && d.data.asset).map(d => d.data.asset)).size - Object.keys(b.blobs).length;
+ try { localStorage.setItem("reef-last-backup", String(Date.now())); } catch (x) {} renderSafety();
       setStatus("bk-status", "Backup ready: " + b.docs.length + " records, " + Object.keys(b.blobs).length + " photos" + (missing > 0 ? " (" + missing + " photos couldn't be packed)" : "") + ".", missing > 0);
     } catch (e) { setStatus("bk-status", e && e.code === "declined" ? "Backup cancelled." : "Couldn't build the backup (" + (e && (e.code || e.message) || "error") + ").", e && e.code !== "declined"); }
     $("bk-export").disabled = false;
@@ -4034,31 +4063,31 @@ details.backup summary { cursor: pointer; list-style: revert; }
     const user = await claude.use("user");
     if (user) { const c = await user.can("data.write"); if (c === false) { canWrite = false; document.body.classList.add("readonly"); document.querySelectorAll(".tabpanel button.primary, .tabpanel [id$='-save'], .tabpanel input[type=file], #btn-profile").forEach(el => { el.disabled = true; }); $("ro-notice").hidden = false; $("f-save").disabled = true; $("imp").disabled = true; $("e-save").disabled = true; $("drop").hidden = true; renderAll(); } }
     if (!db) { eqLoaded = phLoaded = lsLoaded = mtLoaded = gearLoaded = true; renderEquipment(); renderPhotos(); renderLivestock(); renderMaintenance(); renderGear(); renderPrograms(); renderLightLog(); return; }
-    db.collection("tasks").limit(500).onSnapshot(snap => { tasks = snap.docs.map(d => ({ id: d.id, ...d.data() })); mtLoaded = true; renderMaintenance(); }, () => { mtLoaded = true; renderMaintenance(); });
-    db.collection("gear").limit(500).onSnapshot(snap => { gear = snap.docs.map(d => ({ id: d.id, ...d.data() })); gearLoaded = true; renderGear(); renderMaintenance(); }, () => { gearLoaded = true; renderGear(); renderMaintenance(); });
+    db.collection("tasks").onSnapshot(snap => { tasks = snap.docs.map(d => ({ id: d.id, ...d.data() })); mtLoaded = true; renderMaintenance(); }, () => { mtLoaded = true; renderMaintenance(); });
+    db.collection("gear").onSnapshot(snap => { gear = snap.docs.map(d => ({ id: d.id, ...d.data() })); gearLoaded = true; renderGear(); renderMaintenance(); }, () => { gearLoaded = true; renderGear(); renderMaintenance(); });
     setInterval(renderDueChip, 10 * 60 * 1000);
     db.doc("settings/rodi").onSnapshot(snap => applyRodi(snap.exists ? snap.data() : null), () => {});
-    db.collection("rodilog").orderBy("ts", "asc").limit(1000).onSnapshot(snap => { roLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderRoReadings(); renderMaintenance(); }, () => {});
-    db.collection("livestock").limit(1000).onSnapshot(snap => { livestock = snap.docs.map(d => ({ id: d.id, ...d.data() })); lsLoaded = true; renderLivestock(); }, () => { lsLoaded = true; renderLivestock(); });
-    db.collection("equipment").limit(500).onSnapshot(snap => { equipment = snap.docs.map(d => ({ id: d.id, ...d.data() })); eqLoaded = true; renderEquipment(); }, () => { eqLoaded = true; renderEquipment(); });
-    db.collection("photos").orderBy("ts", "desc").limit(1000).onSnapshot(snap => { photos = snap.docs.map(d => ({ id: d.id, ...d.data() })); phLoaded = true; renderPhotos(); }, () => { phLoaded = true; renderPhotos(); });
+    db.collection("rodilog").orderBy("ts", "asc").onSnapshot(snap => { roLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderRoReadings(); renderMaintenance(); }, () => {});
+    db.collection("livestock").onSnapshot(snap => { livestock = snap.docs.map(d => ({ id: d.id, ...d.data() })); lsLoaded = true; renderLivestock(); }, () => { lsLoaded = true; renderLivestock(); });
+    db.collection("equipment").onSnapshot(snap => { equipment = snap.docs.map(d => ({ id: d.id, ...d.data() })); eqLoaded = true; renderEquipment(); }, () => { eqLoaded = true; renderEquipment(); });
+    db.collection("photos").orderBy("ts", "desc").onSnapshot(snap => { photos = snap.docs.map(d => ({ id: d.id, ...d.data() })); phLoaded = true; renderPhotos(); }, () => { phLoaded = true; renderPhotos(); });
     db.doc("settings/k7").onSnapshot(snap => { if (snap.exists) { const d = snap.data(); if (Array.isArray(d.order) && d.order.length === 6) k7 = { order: d.order, confirmed: !!d.confirmed }; renderOrder(); } }, () => {});
     let firstPrograms = true;
-    db.collection("lightprograms").orderBy("ts", "desc").limit(200).onSnapshot(snap => { programs = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderPrograms(); renderLightLog();
+    db.collection("lightprograms").orderBy("ts", "desc").onSnapshot(snap => { programs = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderPrograms(); renderLightLog();
       if (firstPrograms) { firstPrograms = false; if (programs.length) loadProgram(programs[0]); } }, () => { renderPrograms(); });
-    db.collection("lightlog").orderBy("ts", "desc").limit(500).onSnapshot(snap => { lightLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderLightLog(); }, () => { renderLightLog(); });
-    db.collection("waterchanges").orderBy("ts", "asc").limit(2000).onSnapshot(snap => { wcLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderWcLog(); if (!$("tab-dosing").hidden) renderDosing(); else renderSupplyAlerts(); }, () => { renderWcLog(); });
-    db.collection("parmaps").orderBy("ts", "desc").limit(200).onSnapshot(snap => { parMaps = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderParMaps(); }, () => { renderParMaps(); });
-    db.collection("par").orderBy("ts", "asc").limit(500).onSnapshot(snap => { parLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (!$("tab-lighting").hidden) renderPar(); }, () => {});
+    db.collection("lightlog").orderBy("ts", "desc").onSnapshot(snap => { lightLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderLightLog(); }, () => { renderLightLog(); });
+    db.collection("waterchanges").orderBy("ts", "asc").onSnapshot(snap => { wcLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderWcLog(); if (!$("tab-dosing").hidden) renderDosing(); else renderSupplyAlerts(); }, () => { renderWcLog(); });
+    db.collection("parmaps").orderBy("ts", "desc").onSnapshot(snap => { parMaps = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderParMaps(); }, () => { renderParMaps(); });
+    db.collection("par").orderBy("ts", "asc").onSnapshot(snap => { parLog = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (!$("tab-lighting").hidden) renderPar(); }, () => {});
     db.doc("settings/profile").onSnapshot(snap => {
       applyProfile(snap.exists ? snap.data() : null);
       if (!profileSeen) { profileSeen = true; if (!snap.exists && window.__standalone && canWrite) { let skip = false; try { skip = sessionStorage.getItem("reef-pf-skip") === "1"; } catch (e) {} if (!skip) openProfile(true); } }
     }, () => {});
     db.doc("settings/dosing").onSnapshot(snap => { applyDosingDoc(snap.exists ? snap.data() : null); }, () => {});
     claude.use("assets").then(a => { assets = a; if (!a) { $("ph-label").hidden = true; setStatus("ph-status", canWrite ? "Photo uploads aren't available in this view." : ""); } });
-    db.collection("tests").orderBy("ts", "asc").limit(1000).onSnapshot(snap => {
+    db.collection("tests").orderBy("ts", "asc").onSnapshot(snap => {
       testsRaw = snap.docs.map(d => ({ id: d.id, ...d.data() })); tests = testsRaw.map(convTest);
-      usingExamples = tests.length === 0; renderAll();
+      usingExamples = tests.length === 0; renderAll(); renderSafety();
     }, () => {});
     db.doc("settings/targets").onSnapshot(snap => {
       targetsRaw = snap.exists ? snap.data() : null; targets = targetsFrom(targetsRaw);
