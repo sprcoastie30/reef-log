@@ -246,6 +246,13 @@ a { color: var(--accent); }
 .spec-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px; }
 .spec-row div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .spec-row b { font-weight: 500; }
+.sp-sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 6px 18px; }
+.sp-sl { display: grid; grid-template-columns: 1fr 48px; align-items: center; gap: 0 8px; font-size: .85rem; }
+.sp-sl label { grid-column: 1 / -1; }
+.sp-sl input[type=range] { width: 100%; accent-color: var(--accent); }
+.sp-sl output { font-family: var(--f-mono); text-align: right; }
+#sp-chart .sp-line { fill: none; stroke: var(--ink); stroke-width: 1.6; }
+#sp-chart .sp-ref { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 4 3; }
 .chdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: baseline; }
 .qr-out { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .qr-out canvas { background: #fff; padding: 10px; border-radius: 6px; max-width: 100%; height: auto; image-rendering: pixelated; }
@@ -917,6 +924,22 @@ details.backup summary { cursor: pointer; list-style: revert; }
         <div id="par-list"></div>
       </section>
     </div>
+    <section class="panel" id="sp-panel" style="margin-top:18px">
+      <div><h2>Spectrum</h2><p class="hint">The modeled color spectrum of your light at the settings below. Move the sliders, or step through the hours of your program, to see how the mix changes. It's built from each fixture's LED list and standard LED shapes, not a spectrometer reading; the note under the chart says how solid each fixture's data is.</p></div>
+      <div class="fields three">
+        <div class="field"><label for="sp-fixture"><b>Fixture</b></label><select id="sp-fixture"></select></div>
+        <div class="field" id="sp-hour-wrap" style="grid-column:span 2"><label for="sp-hour"><b>Program hour</b> <span class="num" id="sp-hour-lbl"></span></label><input id="sp-hour" type="range" min="0" max="23" step="1" value="13"></div>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="sp-prog">Use my program</button><button type="button" id="sp-play" aria-pressed="false">Play the day</button>
+        <button type="button" id="sp-log">Use latest log entry</button><button type="button" id="sp-full">All channels 100%</button>
+        <label class="chip"><input type="checkbox" id="sp-each">Show each channel</label>
+      </div>
+      <div class="sp-sliders" id="sp-sliders"></div>
+      <div class="chart" id="sp-chart" style="height:240px"></div>
+      <div class="vol-out" id="sp-stats"></div>
+      <p class="hint" id="sp-note"></p>
+    </section>
     <section class="panel" id="pm-panel" style="margin-top:18px">
       <div><h2>PAR map</h2><p class="hint">Measure PAR across the tank at a few heights and see where each kind of coral fits. Take readings at the same time of day (at peak light) with the meter's sensor pointing straight up, and remap after any light change.</p></div>
       <details id="pm-form-wrap"><summary class="label" style="cursor:pointer">Record a new map</summary>
@@ -3006,6 +3029,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
   function renderLightChart(){
     lineChart($("lp-chart"), CH.map((c, i) => ({ name: c.name, color: c.color, pts: grid.map((r, h) => ({ x: h, y: r[i] })) })),
       { x0: 0, x1: 23, yMax: 100, xTicks: [0, 6, 12, 18, 23], xFmt: hh, label: "Channel brightness through the day" });
+    if (spInit) spEnsure();
   }
   function renderLightStats(){
     const lit = grid.filter(r => r.some(v => v > 0)).length;
@@ -3209,6 +3233,159 @@ details.backup summary { cursor: pointer; list-style: revert; }
       [/navareef|hyperreef.*(gen ?2|g2|ii)/,"nicrew2"],[/hyperreef/,"nicrew"],[/classic ?led|nicrew/,"nicrewc"],
       [/orbit.*pro|ic ?pro/,"orbitpro"],[/orbit|current usa/,"orbit"],[/photon|reef ?breeders/,"photon"],[/orphek|atlantik/,"orphek"],[/neptune|\bsky\b/,"sky"],[/t5/,"t5"]];
     const hit = rules.find(r => r[0].test(n)); return hit ? hit[1] : "custom"; }
+
+  // ---------- spectrum (modeled) ----------
+  // Each channel = sum of LED types x count x relative photon output per chip. LED shapes are generic
+  // (peak and width from Osram/Lumileds datasheets); white LEDs are a 450 nm pump plus a phosphor band tuned to the rated CCT.
+  const SP_WL = []; for (let w = 380; w <= 720; w += 2) SP_WL.push(w);
+  const spSum = a => a.reduce((x, y) => x + y, 0);
+  const spNorm = a => { const s = spSum(a) || 1; return a.map(v => v / s); };
+  const spG = (mu, s1, s2) => spNorm(SP_WL.map(w => { const t = (w - mu) / (w < mu ? s1 : s2); return Math.exp(-0.5 * t * t); }));
+  const spWhite = (mu, a, sd) => spNorm(SP_WL.map(w => (Math.exp(-0.5 * ((w - 450) / 10) ** 2) + a * Math.exp(-0.5 * ((w - mu) / sd) ** 2)) * w));
+  const SP_LED = { v400: spG(400,6,8), v405: spG(405,6,8), v415: spG(415,6,8), v420: spG(420,7,9), v430: spG(430,7,9), v435: spG(435,7,9),
+    rb: spG(450,8,10), b470: spG(470,9,11), g525: spG(525,13,16), r660: spG(660,9,11),
+    r625: spG(625,8,10), cw65: spWhite(555,0.697,55), cw8k: spWhite(575,0.353,55), cw10k: spWhite(555,0.393,55), ww30: spWhite(600,1.413,60) };
+  const HYDRA_PAR = { "UV":97, "Violet":92, "Royal Blue":595, "Blue":473, "Cool White":518, "Green":53, "Photo Red":110, "Moonlight":11 };
+  const SP_MODELS = {
+    k7pro4: { note: "LED list from Noopsyche's own K7 Pro IV launch image (Reef2Reef, March 2026): Epistar 6 cool white, 2 warm white, 12 blue, 8 royal blue, 2 red, 2 green; SemiLED 4 × 435, 4 × 415, 2 × 400 nm. Which slider drives which LEDs isn't published; this assumes the same split Noopsyche confirmed for the Pro III, with all 12 blues on Cyan. Noopsyche's own spectrum screenshot shows the same shape: a main peak near 450 nm, a violet shoulder near 410 and a small red bump at 660.",
+      ch: { "White": [["cw65",6,1.1],["ww30",2,0.7]], "Royal Blue": [["rb",8,1],["v435",4,0.8]], "Green": [["g525",2,0.45]], "UV": [["v400",2,0.6],["v415",4,0.65]], "Cyan": [["b470",12,0.9]], "Red": [["r660",2,1]] } },
+    k7pro3: { note: "LED table Noopsyche called correct on Reef2Reef (Nov 2025): White 6 cool + 2 warm white, Royal Blue 8 royal blue + 4 × 430, Green 2 green, UV 2 × 405 + 4 × 415, Cyan 10 blue, Red 2 × 660 (Osram and SemiLED). The table lists the green as 570 nm; Osram greens are rated 513–545, so this uses 525.",
+      ch: { "White": [["cw65",6,1.1],["ww30",2,0.7]], "Royal Blue": [["rb",8,1],["v430",4,0.8]], "Green": [["g525",2,0.45]], "UV": [["v405",2,0.6],["v415",4,0.65]], "Cyan": [["b470",10,0.9]], "Red": [["r660",2,1]] } },
+    hydra: { note: "Channel balance from a DaniReef lab test of the Hydra 32 HD (PAR from each channel alone at 17 cm). LED shapes are generic, and the white is assumed to be about 10,000 K.",
+      par: HYDRA_PAR, ch: { "UV": [["v400",1,1]], "Violet": [["v420",1,1]], "Royal Blue": [["rb",1,1]], "Blue": [["b470",1,1]], "Cool White": [["cw10k",1,1]], "Green": [["g525",1,1]], "Photo Red": [["r660",1,1]], "Moonlight": [["b470",1,1]] } },
+    prime: { note: "Assumes the Prime 16 HD has the same channel balance as the Hydra HD (DaniReef lab test). Rough.",
+      par: HYDRA_PAR, ch: { "UV": [["v400",1,1]], "Violet": [["v420",1,1]], "Royal Blue": [["rb",1,1]], "Blue": [["b470",1,1]], "Cool White": [["cw10k",1,1]], "Green": [["g525",1,1]], "Photo Red": [["r660",1,1]] } },
+    radion: { note: "Rough: EcoTech doesn't publish channel-by-channel output, so this uses typical LED counts for a Radion and generic LED shapes. Use it to see the direction a slider moves the spectrum, not exact heights.",
+      ch: { "UV": [["v400",4,0.6]], "Violet": [["v430",4,0.8]], "Royal Blue": [["rb",12,1]], "Blue": [["b470",6,0.9]], "Cool White": [["cw10k",6,1.1]], "Warm White": [["ww30",2,0.7]], "Green": [["g525",2,0.45]], "Red": [["r660",2,1]] } },
+    kessilx: { note: "Rough: Kessil doesn't publish spectra numerically. The Color dial is modeled as a blend from deep blue (0) to blue-white (100), and Intensity scales the whole thing.", kessil: true },
+    reefled: { note: "Rough: built from Red Sea's channel description (Reef Spec blue, 8000 K white, moonlight) with generic LED shapes.",
+      ch: { "Blue": [["rb",6,1],["v420",2,0.7],["b470",2,0.9]], "White": [["cw8k",4,1.1]], "Moon": [["b470",0.1,0.9]] } },
+    nicrew: { note: "Rough: built from a typical blue + white budget fixture with generic LED shapes.",
+      ch: { "Blue": [["rb",4,1],["v415",1,0.65]], "White": [["cw10k",4,1.1]] } },
+    nicrewc: { note: "Rough: built from a typical blue + white budget fixture with generic LED shapes.",
+      ch: { "Blue": [["rb",4,1],["v415",1,0.65]], "White": [["cw10k",4,1.1]] } },
+    nicrew2: { note: "Rough: NICREW doesn't publish LED counts per channel, so this uses typical counts and generic LED shapes for its five colors.",
+      ch: { "White": [["cw10k",6,1.1]], "Blue": [["rb",8,1],["b470",2,0.9]], "Violet": [["v415",4,0.65]], "Red": [["r660",2,1]], "Green": [["g525",2,0.45]] } },
+    blade: { note: "Rough: modeled as a Coral Glow strip (royal blue, violet and blue with a little white). A Coral Grow or Grow strip is whiter, so its real spectrum has more green and red.",
+      ch: { "Intensity": [["rb",6,1],["v420",2,0.7],["b470",2,0.9],["cw10k",1,1.1]] } },
+    kessil80: { note: "Rough: Kessil doesn't publish spectra numerically. The Color knob is modeled as a blend from deep blue (0) to blue-white (100), and Intensity scales the whole thing.", kessil: true },
+    orbitpro: { note: "Rough: Current USA lists daylight white, actinic blue and RGB LEDs; this uses typical counts with generic LED shapes, and an RGB red (about 625 nm) rather than a 660 nm reef red.",
+      ch: { "White": [["cw10k",6,1.1]], "Blue": [["rb",6,1]], "Red": [["r625",2,1]], "Green": [["g525",2,0.45]] } },
+    orbit: { note: "Rough: Current USA lists daylight white, actinic blue and RGB LEDs; this uses typical counts with generic LED shapes, and an RGB red (about 625 nm) rather than a 660 nm reef red.",
+      ch: { "White": [["cw10k",6,1.1]], "Blue": [["rb",6,1]], "Red": [["r625",2,1]], "Green": [["g525",2,0.45]] } }
+  };
+  // Fixtures without a model (Photon, Atlantik, SKY, T5, custom): guess each channel's LEDs from its name.
+  const SP_KEYS = [[/moon/,[["b470",0.2,0.9]]],[/\buv\b|395|400|405/,[["v400",4,0.6]]],[/violet|purple|415|420/,[["v420",4,0.7]]],[/430|435|deep blue/,[["v430",4,0.8]]],
+    [/royal|actinic|reef ?spec|\bblue plus\b/,[["rb",6,1]]],[/cyan|ice|light blue|aqua|470|480|490/,[["b470",4,0.9]]],[/warm/,[["ww30",2,0.7]]],
+    [/white|daylight|cool|\d{4,5} ?k\b/,[["cw10k",4,1.1]]],[/green|lime/,[["g525",2,0.45]]],[/red|660|630/,[["r660",2,1]]],[/blue/,[["rb",6,1]]]];
+  function spKeyword(name){ const n = String(name).toLowerCase(), hit = SP_KEYS.find(k => k[0].test(n)); if (!hit) return null;
+    let a = SP_WL.map(() => 0); hit[1].forEach(([led, c, w]) => { a = a.map((v, i) => v + SP_LED[led][i] * c * w); }); return a; }
+  const spPar = a => spSum(a.filter((v, i) => SP_WL[i] >= 400 && SP_WL[i] <= 700));
+  function spChannel(model, name){
+    let parts = model && model.ch && model.ch[name];
+    if (!parts && model && model.ch && Object.keys(model.ch).length === 1) parts = Object.values(model.ch)[0]; // one-spectrum lights (Blade strips)
+    if (!parts) return spKeyword(name);
+    let a = SP_WL.map(() => 0); parts.forEach(([led, n, w]) => { a = a.map((v, i) => v + SP_LED[led][i] * n * w); });
+    if (model.par && model.par[name] != null) { const k = model.par[name] / (spPar(a) || 1); a = a.map(v => v * k); }
+    return a;
+  }
+  function spNames(id){ const f = fixtureById(id), e = f.custom ? spLatestLog(id) : null; return e ? Object.keys(e.channels) : f.channels; }
+  function spSpectrum(id, vals){ // vals: array in spNames order, 0-100
+    const m = SP_MODELS[id] || null, names = spNames(id);
+    if (m && m.kessil) {
+      const I = (vals[0] ?? 0) / 100, c = (vals[1] ?? 50) / 100;
+      const blue = SP_WL.map((w, i) => 0.25 * SP_LED.v420[i] + 0.75 * SP_LED.rb[i]), white = SP_WL.map((w, i) => 0.55 * SP_LED.cw10k[i] + 0.3 * SP_LED.rb[i] + 0.15 * SP_LED.b470[i]);
+      const tot = SP_WL.map((w, i) => I * 30 * ((1 - c) * blue[i] + c * white[i]));
+      return { total: tot, parts: [] };
+    }
+    const parts = names.map((n, i) => { const a = spChannel(m, n); return a ? a.map(v => v * (vals[i] ?? 0) / 100) : null; });
+    const total = SP_WL.map((w, i) => parts.reduce((s, p) => s + (p ? p[i] : 0), 0));
+    return { total, parts };
+  }
+  // CIE 1931 2° color matching (Wyman, Sloan & Shirley 2013 fit) and nearest-Planckian color temperature
+  const spS = (x, mu, s1, s2) => { const t = (x - mu) / (x < mu ? s1 : s2); return Math.exp(-0.5 * t * t); };
+  const SP_X = SP_WL.map(w => 1.056 * spS(w,599.8,37.9,31.0) + 0.362 * spS(w,442.0,16.0,26.7) - 0.065 * spS(w,501.1,20.4,26.2));
+  const SP_Y = SP_WL.map(w => 0.821 * spS(w,568.8,46.9,40.5) + 0.286 * spS(w,530.9,16.3,31.1));
+  const SP_Z = SP_WL.map(w => 1.217 * spS(w,437.0,11.8,36.0) + 0.681 * spS(w,459.0,26.0,13.8));
+  const spUV = e => { let X = 0, Y = 0, Z = 0; e.forEach((v, i) => { X += v * SP_X[i]; Y += v * SP_Y[i]; Z += v * SP_Z[i]; }); const d = X + 15 * Y + 3 * Z || 1; return [4 * X / d, 6 * Y / d]; };
+  let spLocus = null;
+  function spCCT(photons){
+    if (!spLocus) { spLocus = []; for (let mr = 2; mr <= 1000; mr += 2) { const T = 1e6 / mr; spLocus.push([T, spUV(SP_WL.map(w => { const l = w * 1e-9; return 1 / (l ** 5 * (Math.exp(0.014388 / (l * T)) - 1)); }))]); } }
+    const [u, v] = spUV(photons.map((p, i) => p / SP_WL[i]));
+    let best = null; spLocus.forEach(([T, [lu, lv]]) => { const d = Math.hypot(u - lu, v - lv); if (!best || d < best[1]) best = [T, d]; });
+    return best;
+  }
+  const SP_STOPS = [[380,"#3c0a6e"],[410,"#5b10c8"],[440,"#2a2ef0"],[470,"#0a8cf5"],[495,"#00c8c8"],[520,"#18c840"],[560,"#b8e000"],[585,"#ffd000"],[610,"#ff7a00"],[640,"#f02800"],[680,"#b40000"],[720,"#6e0000"]];
+  let spVals = [], spPlay = null, spSrc = "";
+  function spFixture(){ return $("sp-fixture").value; }
+  function spIsK7(id){ return id === "k7pro4" || id === "k7pro3"; }
+  function spFromProgram(){ const h = clampH($("sp-hour").value, 13); spVals = (grid[h] || [0,0,0,0,0,0]).slice(); spSrc = "Your program at " + hh(h); }
+  function spLatestLog(id){ return lightLog.find(e => e.fixture === id && e.channels && Object.keys(e.channels).length); }
+  function spFromLog(){ const id = spFixture(), e = spLatestLog(id); if (!e) return false;
+    spVals = spNames(id).map(n => e.channels[n] ?? 0); spSrc = "Latest log entry, " + dstr(e.ts) + (e.program ? " (" + e.program + ")" : ""); return true; }
+  function spSetDefaults(){
+    const id = spFixture();
+    if (spIsK7(id)) spFromProgram(); else if (!spFromLog()) { spVals = spNames(id).map(() => 100); spSrc = "All channels 100%"; }
+  }
+  function renderSpSliders(){
+    const id = spFixture(), m = SP_MODELS[id], names = spNames(id);
+    $("sp-hour-wrap").hidden = !spIsK7(id); $("sp-prog").hidden = !spIsK7(id); $("sp-play").hidden = !spIsK7(id);
+    $("sp-log").hidden = !spLatestLog(id);
+    $("sp-sliders").innerHTML = names.map((n, i) => '<div class="sp-sl"><label for="spv-' + i + '">' + (spIsK7(id) ? '<span class="chdot" style="background:' + CH[i].color + '"></span>' : '') + esc(n) + (m && (m.kessil || (m.ch && m.ch[n])) || spKeyword(n) ? '' : ' <span class="hint">(color unknown)</span>') + '</label><input type="range" id="spv-' + i + '" min="0" max="100" step="1" value="' + (spVals[i] ?? 0) + '"><output id="spo-' + i + '">' + (spVals[i] ?? 0) + '%</output></div>').join("");
+  }
+  function renderSpectrum(){
+    if (!$("sp-chart")) return;
+    const id = spFixture(), f = fixtureById(id), m = SP_MODELS[id], el = $("sp-chart"), names = spNames(id);
+    $("sp-hour-lbl").textContent = hh(clampH($("sp-hour").value, 13));
+    const cur = spSpectrum(id, spVals), ref = spSpectrum(id, m && m.kessil ? [100, spVals[1] ?? 50] : names.map(() => 100));
+    const known = names.filter(n => !/moon/i.test(n) && ((m && (m.kessil || (m.ch && (m.ch[n] || Object.keys(m.ch).length === 1)))) || spKeyword(n)));
+    if (!Math.max(...ref.total) || !known.length) { el.innerHTML = '<div class="empty-chart" style="height:100%">No colors to show yet. Log this light in the light settings log with channel names that say the color (for example UV, Royal Blue, Cool White, Red), and its spectrum appears here.</div>'; $("sp-stats").innerHTML = ""; $("sp-note").textContent = ""; return; }
+    const refMax = Math.max(...ref.total) || 1, curMax = Math.max(...cur.total);
+    const W = Math.max(280, el.clientWidth || 320), H = el.clientHeight || 240, mg = { l: 34, r: 10, t: 10, b: 20 };
+    const X = w => mg.l + (w - 380) / 340 * (W - mg.l - mg.r), Y = v => mg.t + (1 - v / 100) * (H - mg.t - mg.b);
+    const pct = a => a.map(v => v / refMax * 100);
+    const path = a => pct(a).map((v, i) => (i ? "L" : "M") + X(SP_WL[i]).toFixed(1) + " " + Y(v).toFixed(1)).join(" ");
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Modeled spectrum, ' + esc(f.name) + '"><defs><linearGradient id="spgrad" x1="' + X(380) + '" x2="' + X(720) + '" y1="0" y2="0" gradientUnits="userSpaceOnUse">' +
+      SP_STOPS.map(([w, c]) => '<stop offset="' + ((w - 380) / 340).toFixed(3) + '" stop-color="' + c + '"/>').join("") + '</linearGradient></defs>';
+    for (let i = 0; i <= 4; i++) { const v = 25 * i, y = Y(v); s += '<line x1="' + mg.l + '" x2="' + (W - mg.r) + '" y1="' + y + '" y2="' + y + '" stroke="var(--grid)"/><text x="' + (mg.l - 5) + '" y="' + (y + 3) + '" text-anchor="end">' + v + '</text>'; }
+    [400, 450, 500, 550, 600, 650, 700].forEach(w => { s += '<text x="' + X(w) + '" y="' + (H - 4) + '" text-anchor="middle">' + w + '</text>'; });
+    s += '<path d="' + path(cur.total) + ' L' + X(720) + ' ' + Y(0) + ' L' + X(380) + ' ' + Y(0) + 'Z" fill="url(#spgrad)" fill-opacity="0.85" stroke="none"/>';
+    s += '<path class="sp-line" d="' + path(cur.total) + '"><title>Your setting</title></path>';
+    if ($("sp-each").checked && spIsK7(id)) cur.parts.forEach((p, i) => { if (p) s += '<path d="' + path(p) + '" fill="none" stroke="' + CH[i].color + '" stroke-width="1.2"><title>' + esc(f.channels[i]) + '</title></path>'; });
+    else if ($("sp-each").checked) cur.parts.forEach((p, i) => { if (p) s += '<path d="' + path(p) + '" fill="none" stroke="var(--muted)" stroke-width="1"><title>' + esc(names[i]) + '</title></path>'; });
+    s += '<path class="sp-ref" d="' + path(ref.total) + '"><title>All channels at 100%</title></path>';
+    el.innerHTML = s + '</svg>';
+    // stats
+    const totAll = spSum(cur.total.filter((v, i) => SP_WL[i] <= 700)) || 1;
+    const band = (lo, hi) => Math.round(spSum(cur.total.filter((v, i) => SP_WL[i] >= lo && SP_WL[i] < hi)) / totAll * 100);
+    const parRel = spPar(cur.total) / (spPar(ref.total) || 1) * 100;
+    const peakW = SP_WL[cur.total.indexOf(curMax)];
+    let color = "Off";
+    if (curMax > 0) { const [T, d] = spCCT(cur.total), bl = band(380, 500);
+      color = (bl >= 85 ? "Deep blue" : bl >= 72 ? "Blue" : bl >= 58 ? "Blue-white" : "White") + (T > 25000 || d > 0.03 ? "" : ", about " + (Math.round(T / 500) * 500).toLocaleString() + " K"); }
+    $("sp-stats").innerHTML = '<div><span class="label">Light output</span><span class="big">' + Math.round(parRel) + '%</span><small>of PAR at all channels 100%</small></div>' +
+      '<div><span class="label">Main peak</span><span class="big">' + (curMax > 0 ? peakW + ' nm' : '–') + '</span><small>' + esc(spSrc) + '</small></div>' +
+      '<div><span class="label">Color</span><span class="big" style="font-size:1rem">' + esc(color) + '</span><small>from the violet + blue share; Kelvin only near white</small></div>' +
+      '<div class="net"><span class="label">Mix of light</span><span class="big" style="font-size:1rem">' + (curMax > 0 ? band(380, 420) + ' / ' + band(420, 500) + ' / ' + band(500, 600) + ' / ' + band(600, 701) + '%' : '–') + '</span><small>violet / blue / green-yellow / red</small></div>';
+    $("sp-note").textContent = (m ? m.note : "Rough: each channel's LEDs are guessed from its name, with generic LED shapes. Channels whose names don't say a color are left out.") + " The dashed line is the same light with every channel at 100%.";
+  }
+  function spRefresh(resetVals){ if (resetVals) spSetDefaults(); renderSpSliders(); renderSpectrum(); }
+  $("sp-fixture").innerHTML = FIXTURES.map(f => '<option value="' + f.id + '">' + esc(f.name) + '</option>').join("");
+  $("sp-fixture").addEventListener("change", () => { spStop(); spRefresh(true); });
+  $("sp-sliders").addEventListener("input", ev => { const t = ev.target; if (!t.id || !t.id.startsWith("spv-")) return; const i = +t.id.slice(4); spVals[i] = clampPct(t.value); $("spo-" + i).textContent = spVals[i] + "%"; spSrc = "Your sliders"; spStop(); renderSpectrum(); });
+  $("sp-hour").addEventListener("input", () => { spFromProgram(); renderSpSliders(); renderSpectrum(); });
+  $("sp-prog").addEventListener("click", () => { spStop(); spRefresh(true); });
+  $("sp-log").addEventListener("click", () => { spStop(); if (spFromLog()) { renderSpSliders(); renderSpectrum(); } });
+  $("sp-full").addEventListener("click", () => { spStop(); spVals = spNames(spFixture()).map(() => 100); spSrc = "All channels 100%"; renderSpSliders(); renderSpectrum(); });
+  $("sp-each").addEventListener("change", renderSpectrum);
+  function spStop(){ if (spPlay) { clearInterval(spPlay); spPlay = null; $("sp-play").textContent = "Play the day"; $("sp-play").setAttribute("aria-pressed", "false"); } }
+  $("sp-play").addEventListener("click", () => {
+    if (spPlay) { spStop(); return; }
+    $("sp-play").textContent = "Stop"; $("sp-play").setAttribute("aria-pressed", "true");
+    spPlay = setInterval(() => { const h = (clampH($("sp-hour").value, 0) + 1) % 24; $("sp-hour").value = h; spFromProgram(); renderSpSliders(); renderSpectrum(); }, 700);
+  });
+  var spInit = false;
+  function spEnsure(){ if (!spInit) { spInit = true; $("sp-fixture").value = fixtureFromProfile(); spRefresh(true); } else if (spIsK7(spFixture()) && spSrc.startsWith("Your program")) { spFromProgram(); renderSpSliders(); renderSpectrum(); } else renderSpectrum(); }
   $("ll-fixture").innerHTML = FIXTURES.map(f => '<option value="' + f.id + '">' + esc(f.name) + '</option>').join("");
   $("pf-light-list").innerHTML = FIXTURES.filter(f => f.id !== "custom").map(f => '<option value="' + esc(f.name) + '">').join("");
   function llChannelNames(){
@@ -3250,6 +3427,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
       channels: Object.fromEntries(CH.map((c, i) => [c.name, peak[i] || 0])), on: first >= 0 ? String(first).padStart(2, "0") + ":00" : "", off: first >= 0 ? String((last + 1) % 24).padStart(2, "0") + ":00" : "", litHours: lit };
   }
   function renderLightLog(){
+    if (spInit) $("sp-log").hidden = !spLatestLog(spFixture());
     const all = lightLog.map(e => ({ ...e })).concat(programs.map(k7AsLogEntry)).sort((a, b) => b.ts - a.ts);
     const host = $("ll-list");
     if (!all.length) { host.innerHTML = '<div class="skeleton">No light settings logged yet. Open "Log current settings" to record what your lights run now; that becomes the baseline for every change after.</div>'; return; }
@@ -3308,7 +3486,7 @@ details.backup summary { cursor: pointer; list-style: revert; }
     if (d.dataset.confirm !== "1") { d.dataset.confirm = "1"; d.textContent = "Confirm"; return; }
     try { await db.collection("par").doc(d.dataset.pardel).delete(); } catch (e) { setStatus("par-status", "Couldn't delete.", true); }
   });
-  function renderLighting(){ renderLightChart(); renderLightStats(); renderPar(); }
+  function renderLighting(){ renderLightChart(); renderLightStats(); renderPar(); spEnsure(); }
   grid = shapeGrid(); renderGridTable(); renderOrder();
   $("lp-loaded").textContent = "Starting template (unsaved)";
 
